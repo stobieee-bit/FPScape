@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FPScape</title>
+    <link rel="stylesheet" href="style.css">
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+        }
+    }
+    </script>
+</head>
+<body>
+    <canvas id="game-canvas"></canvas>
+
+    <div id="hud">
+        <div id="crosshair">+</div>
+        <div id="target-info" class="hidden"></div>
+
+        <!-- Minimap -->
+        <div id="minimap-container" class="rs-panel">
+            <canvas id="minimap-canvas" width="152" height="152"></canvas>
+            <div id="compass">N</div>
+        </div>
+
+        <!-- Right panel -->
+        <div id="right-panel">
+            <div id="panel-tabs">
+                <button class="tab-btn active" data-tab="tab-inventory">Inv</button>
+                <button class="tab-btn" data-tab="tab-skills">Skills</button>
+                <button class="tab-btn" data-tab="tab-combat">Combat</button>
+                <button class="tab-btn" data-tab="tab-prayer">Prayer</button>
+                <button class="tab-btn" data-tab="tab-magic">Magic</button>
+                <button class="tab-btn" data-tab="tab-quests">Quest</button>
+                <button class="tab-btn" data-tab="tab-settings">Set</button>
+            </div>
+            <div id="panel-content" class="rs-panel">
+                <div id="tab-inventory" class="tab-panel active">
+                    <div id="inventory-grid"></div>
+                </div>
+                <div id="tab-skills" class="tab-panel">
+                    <div id="skills-grid"></div>
+                </div>
+                <div id="tab-combat" class="tab-panel">
+                    <div id="weapon-name" class="combat-weapon">Unarmed</div>
+                    <div id="style-buttons">
+                        <button class="style-btn active" data-style="melee">⚔️ Melee</button>
+                        <button class="style-btn" data-style="ranged">🏹 Ranged</button>
+                        <button class="style-btn" data-style="magic">🔮 Magic</button>
+                    </div>
+                    <div id="substyle-buttons">
+                        <button class="substyle-btn active" data-substyle="accurate">Accurate</button>
+                        <button class="substyle-btn" data-substyle="aggressive">Aggressive</button>
+                        <button class="substyle-btn" data-substyle="defensive">Defensive</button>
+                        <button class="substyle-btn" data-substyle="controlled">Controlled</button>
+                    </div>
+                    <div id="xp-style-info" class="xp-style-info">XP: Attack + Hitpoints</div>
+                    <div id="combat-level">Combat: 3</div>
+                    <button id="auto-retaliate-btn" class="style-btn active">Auto-Retaliate: ON</button>
+                    <div id="equipment-panel">
+                        <div class="equip-title">Equipment</div>
+                        <div id="equipment-slots"></div>
+                        <div id="equipment-stats"></div>
+                    </div>
+                </div>
+                <div id="tab-prayer" class="tab-panel">
+                    <div id="prayer-points">Prayer: 1/1</div>
+                    <div id="prayer-list"></div>
+                </div>
+                <div id="tab-magic" class="tab-panel">
+                    <div id="spell-list"></div>
+                </div>
+                <div id="tab-quests" class="tab-panel">
+                    <div id="quest-list"></div>
+                </div>
+                <div id="tab-settings" class="tab-panel">
+                    <div class="settings-title">Settings</div>
+                    <div id="settings-panel"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- OSRS-style orbs -->
+        <div id="stats-bar">
+            <div class="orb" id="orb-hp">
+                <svg class="orb-ring" viewBox="0 0 40 40">
+                    <circle class="orb-bg" cx="20" cy="20" r="17" />
+                    <circle class="orb-fill hp" id="orb-hp-fill" cx="20" cy="20" r="17" />
+                </svg>
+                <span class="orb-icon">❤️</span>
+                <span class="orb-text" id="orb-hp-text">10</span>
+            </div>
+            <div class="orb" id="orb-prayer">
+                <svg class="orb-ring" viewBox="0 0 40 40">
+                    <circle class="orb-bg" cx="20" cy="20" r="17" />
+                    <circle class="orb-fill prayer" id="orb-prayer-fill" cx="20" cy="20" r="17" />
+                </svg>
+                <span class="orb-icon">✨</span>
+                <span class="orb-text" id="orb-prayer-text">1</span>
+            </div>
+            <div class="orb" id="orb-run">
+                <svg class="orb-ring" viewBox="0 0 40 40">
+                    <circle class="orb-bg" cx="20" cy="20" r="17" />
+                    <circle class="orb-fill run" id="orb-run-fill" cx="20" cy="20" r="17" />
+                </svg>
+                <span class="orb-icon">🏃</span>
+                <span class="orb-text" id="orb-run-text">100</span>
+            </div>
+            <div class="orb" id="orb-spec">
+                <svg class="orb-ring" viewBox="0 0 40 40">
+                    <circle class="orb-bg" cx="20" cy="20" r="17" />
+                    <circle class="orb-fill spec" id="orb-spec-fill" cx="20" cy="20" r="17" />
+                </svg>
+                <span class="orb-icon">⚡</span>
+                <span class="orb-text" id="orb-spec-text">100</span>
+            </div>
+        </div>
+
+        <!-- Multiplayer status -->
+        <div id="mp-status" style="display:none;"></div>
+
+        <!-- Coords -->
+        <div id="coords">(0, 0)</div>
+
+        <!-- Chat box -->
+        <div id="chat-box" class="rs-panel">
+            <div id="chat-messages"></div>
+            <input type="text" id="chat-input" placeholder="Press Enter to chat..." maxlength="100" autocomplete="off">
+        </div>
+
+        <!-- XP drops -->
+        <div id="xp-drops"></div>
+
+        <!-- Loot pickup notifications -->
+        <div id="loot-notifications"></div>
+
+        <!-- Monster health bars container -->
+        <div id="monster-bars"></div>
+
+        <!-- Hitsplats container -->
+        <div id="hitsplats"></div>
+
+        <!-- Low HP warning vignette -->
+        <div id="low-hp-vignette"></div>
+
+        <!-- Wilderness atmosphere vignette -->
+        <div id="wilderness-vignette" class="wilderness-vignette"></div>
+
+        <!-- Death overlay -->
+        <div id="death-overlay">
+            <div style="text-align: center">
+                <div id="death-text">Oh dear, you are dead!</div>
+                <div id="death-subtitle">Respawning...</div>
+                <div id="death-countdown"></div>
+            </div>
+        </div>
+
+        <!-- Dialogue overlay -->
+        <div id="dialogue-overlay" class="hidden">
+            <div id="dialogue-box">
+                <div id="dialogue-npc-name"></div>
+                <div id="dialogue-text"></div>
+                <div id="dialogue-options"></div>
+            </div>
+        </div>
+
+        <!-- Context menu -->
+        <div id="context-menu" class="hidden">
+            <div id="context-menu-title"></div>
+            <div id="context-menu-options"></div>
+        </div>
+
+        <!-- Bank overlay -->
+        <div id="bank-overlay" class="overlay-panel hidden">
+            <div class="overlay-header">
+                <span>Bank</span>
+                <div id="bank-qty-buttons">
+                    <button class="bank-qty-btn active" data-qty="1">1</button>
+                    <button class="bank-qty-btn" data-qty="5">5</button>
+                    <button class="bank-qty-btn" data-qty="10">10</button>
+                    <button class="bank-qty-btn" data-qty="all">All</button>
+                </div>
+                <button id="bank-deposit-all" class="overlay-btn">Deposit All</button>
+                <button id="bank-close" class="overlay-btn">X</button>
+            </div>
+            <div id="bank-grid" class="overlay-grid"></div>
+            <div class="overlay-header"><span>Inventory</span></div>
+            <div id="bank-inventory" class="overlay-grid"></div>
+        </div>
+
+        <!-- Smithing (anvil) overlay -->
+        <div id="smithing-overlay" class="overlay-panel hidden">
+            <div class="overlay-header">
+                <span>What would you like to smith?</span>
+                <button id="smithing-close" class="overlay-btn">X</button>
+            </div>
+            <div id="smithing-bar-tabs"></div>
+            <div id="smithing-grid"></div>
+        </div>
+
+        <!-- Smelting (furnace) overlay -->
+        <div id="smelting-overlay" class="overlay-panel hidden">
+            <div class="overlay-header">
+                <span>Smelt bars</span>
+                <button id="smelting-close" class="overlay-btn">X</button>
+            </div>
+            <div id="smelting-grid"></div>
+        </div>
+
+        <!-- Shop overlay -->
+        <div id="shop-overlay" class="overlay-panel hidden">
+            <div class="overlay-header">
+                <span id="shop-name">Shop</span>
+                <button id="shop-close" class="overlay-btn">X</button>
+            </div>
+            <div id="shop-grid" class="overlay-grid"></div>
+        </div>
+
+        <!-- World map overlay -->
+        <div id="worldmap-overlay" class="hidden">
+            <canvas id="worldmap-canvas" width="600" height="600"></canvas>
+            <div id="worldmap-close">X</div>
+        </div>
+
+        <!-- Skill guide overlay -->
+        <div id="skill-guide-overlay" class="overlay-panel hidden">
+            <div class="overlay-header">
+                <span>Skill Guide</span>
+                <button id="skill-guide-close" class="overlay-btn">X</button>
+            </div>
+            <div id="skill-guide-content"></div>
+        </div>
+
+        <!-- Inventory item tooltip -->
+        <div id="inv-tooltip" class="hidden">
+            <div class="inv-tt-name"></div>
+            <div class="inv-tt-examine"></div>
+            <div class="inv-tt-value"></div>
+        </div>
+
+        <!-- Skill tooltip -->
+        <div id="skill-tooltip" class="hidden">
+            <div id="tooltip-title"></div>
+            <div id="tooltip-xp"></div>
+            <div id="tooltip-bar"><div id="tooltip-bar-fill"></div></div>
+            <div id="tooltip-next"></div>
+        </div>
+
+        <!-- Level-up banner -->
+        <div id="levelup-banner" class="hidden">
+            <div id="levelup-icon"></div>
+            <div id="levelup-text"></div>
+            <div id="levelup-detail"></div>
+        </div>
+
+        <!-- Achievement popup -->
+        <div id="achievement-popup" class="hidden"></div>
+
+        <!-- Skull indicator -->
+        <div id="skull-indicator" class="hidden"></div>
+
+        <!-- KBD fire breath warning -->
+        <div id="kbd-fire-warning"></div>
+
+        <!-- Wilderness warning -->
+        <div id="wilderness-warning" class="hidden"></div>
+
+        <!-- Click to start overlay -->
+        <div id="start-overlay">
+            <div id="start-content">
+                <h1>FPScape</h1>
+                <p>Click to start</p>
+                <div id="controls-hint">
+                    <p>WASD - Move | Mouse - Look</p>
+                    <p>Left Click - Interact | Right Click - Options</p>
+                    <p>Shift - Run | M - World Map | F - Special Attack</p>
+                    <p>1-7 - Panel tabs | ESC - Pause</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="src/main.js"></script>
+
+    <!-- Dev live-reload: polls key files for size changes every 2s -->
+    <script>
+    (function liveReload() {
+        const watchFiles = ['/', '/src/main.js', '/src/core/InputManager.js',
+            '/src/ui/UIManager.js', '/style.css', '/src/config.js',
+            '/src/systems/CombatSystem.js', '/src/systems/InteractionSystem.js'];
+        let sizes = {};
+        let ready = false;
+        setInterval(async () => {
+            try {
+                for (const f of watchFiles) {
+                    const r = await fetch(f, { cache: 'no-store', method: 'HEAD' });
+                    const len = r.headers.get('content-length') || '0';
+                    if (ready && sizes[f] && sizes[f] !== len) { location.reload(); return; }
+                    sizes[f] = len;
+                }
+                ready = true;
+            } catch {}
+        }, 2000);
+    })();
+    </script>
+</body>
+</html>

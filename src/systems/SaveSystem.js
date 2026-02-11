@@ -1,0 +1,184 @@
+import { CONFIG } from '../config.js';
+
+export class SaveSystem {
+    constructor(game) {
+        this.game = game;
+        this.SAVE_KEY = 'fpscape_save';
+        this.autoSaveInterval = 60; // seconds
+        this.autoSaveTimer = 0;
+    }
+
+    update(dt) {
+        this.autoSaveTimer += dt;
+        if (this.autoSaveTimer >= this.autoSaveInterval) {
+            this.autoSaveTimer = 0;
+            this.save();
+        }
+    }
+
+    save() {
+        const player = this.game.player;
+        const data = {
+            version: 2,
+            timestamp: Date.now(),
+            player: {
+                position: { x: player.position.x, y: player.position.y, z: player.position.z },
+                skills: {},
+                hp: player.hp,
+                maxHp: player.maxHp,
+                runEnergy: player.runEnergy,
+                equipment: player.equipment || {},
+                attackStyle: player.attackStyle,
+                meleeStyle: player.meleeStyle,
+                rangedStyle: player.rangedStyle,
+                magicStyle: player.magicStyle,
+                selectedSpell: player.selectedSpell,
+                killCounts: player.killCounts || {},
+            },
+            inventory: this.game.inventorySystem.slots.map(s =>
+                s ? { itemId: s.itemId, quantity: s.quantity } : null
+            ),
+            quests: this.game.questSystem ? { ...this.game.questSystem.quests } : {},
+        };
+
+        // Save skill data
+        for (const [key, skill] of Object.entries(player.skills)) {
+            data.player.skills[key] = { level: skill.level, xp: skill.xp };
+        }
+
+        // Save bank
+        if (this.game.bankSystem) {
+            data.bank = this.game.bankSystem.slots.map(s =>
+                s ? { itemId: s.itemId, quantity: s.quantity } : null
+            );
+        }
+
+        // Save prayer
+        if (this.game.prayerSystem) {
+            data.prayer = {
+                points: this.game.prayerSystem.points,
+                maxPoints: this.game.prayerSystem.maxPoints,
+            };
+        }
+
+        // Save slayer
+        if (this.game.slayerSystem) {
+            data.slayer = {
+                currentTask: this.game.slayerSystem.currentTask,
+                tasksCompleted: this.game.slayerSystem.tasksCompleted,
+            };
+        }
+
+        // Save achievements
+        if (this.game.achievementSystem) {
+            data.achievements = [...this.game.achievementSystem.completed];
+        }
+
+        try {
+            localStorage.setItem(this.SAVE_KEY, JSON.stringify(data));
+            // silent save — no chat spam
+        } catch (e) {
+            this.game.addChatMessage('Failed to save game!', 'damage');
+        }
+    }
+
+    load() {
+        try {
+            const raw = localStorage.getItem(this.SAVE_KEY);
+            if (!raw) return false;
+
+            const data = JSON.parse(raw);
+            if (!data) return false;
+
+            const player = this.game.player;
+
+            // Restore position
+            player.position.set(data.player.position.x, data.player.position.y, data.player.position.z);
+
+            // Restore skills
+            for (const [key, skill] of Object.entries(data.player.skills)) {
+                if (player.skills[key]) {
+                    player.skills[key].level = skill.level;
+                    player.skills[key].xp = skill.xp;
+                }
+            }
+
+            // Restore HP
+            player.hp = data.player.hp;
+            player.maxHp = data.player.maxHp;
+            player.runEnergy = data.player.runEnergy || 100;
+
+            // Restore equipment
+            if (data.player.equipment) {
+                player.equipment = data.player.equipment;
+            }
+
+            // Restore attack style + sub-styles
+            if (data.player.attackStyle) player.attackStyle = data.player.attackStyle;
+            if (data.player.meleeStyle) player.meleeStyle = data.player.meleeStyle;
+            if (data.player.rangedStyle) player.rangedStyle = data.player.rangedStyle;
+            if (data.player.magicStyle) player.magicStyle = data.player.magicStyle;
+            if (data.player.selectedSpell) player.selectedSpell = data.player.selectedSpell;
+
+            // Restore kill counts
+            if (data.player.killCounts) player.killCounts = data.player.killCounts;
+
+            // Restore inventory
+            if (data.inventory) {
+                for (let i = 0; i < 28; i++) {
+                    const s = data.inventory[i];
+                    if (s) {
+                        this.game.inventorySystem.slots[i] = { itemId: s.itemId || s.id, quantity: s.quantity || s.qty || 1 };
+                    } else {
+                        this.game.inventorySystem.slots[i] = null;
+                    }
+                }
+            }
+
+            // Restore quests
+            if (data.quests && this.game.questSystem) {
+                this.game.questSystem.quests = data.quests;
+            }
+
+            // Restore bank
+            if (data.bank && this.game.bankSystem) {
+                for (let i = 0; i < data.bank.length && i < this.game.bankSystem.slots.length; i++) {
+                    const s = data.bank[i];
+                    this.game.bankSystem.slots[i] = s ? { itemId: s.itemId || s.id, quantity: s.quantity || s.qty || 1 } : null;
+                }
+            }
+
+            // Restore prayer
+            if (data.prayer && this.game.prayerSystem) {
+                this.game.prayerSystem.points = data.prayer.points;
+                this.game.prayerSystem.maxPoints = data.prayer.maxPoints;
+            }
+
+            // Restore slayer
+            if (data.slayer && this.game.slayerSystem) {
+                this.game.slayerSystem.currentTask = data.slayer.currentTask;
+                this.game.slayerSystem.tasksCompleted = data.slayer.tasksCompleted || 0;
+            }
+
+            // Restore achievements
+            if (data.achievements && this.game.achievementSystem) {
+                this.game.achievementSystem.completed = new Set(data.achievements);
+            }
+
+            this.game.addChatMessage('Game loaded!', 'system');
+            return true;
+        } catch (e) {
+            this.game.addChatMessage('Failed to load save.', 'damage');
+            return false;
+        }
+    }
+
+    hasSave() {
+        return !!localStorage.getItem(this.SAVE_KEY);
+    }
+
+    deleteSave() {
+        localStorage.removeItem(this.SAVE_KEY);
+        this.game.addChatMessage('Save deleted.', 'system');
+    }
+}

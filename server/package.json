@@ -1,0 +1,19 @@
+{
+  "name": "fpscape-server",
+  "version": "1.0.0",
+  "description": "FPScape multiplayer server",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "ws": "^8.19.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
