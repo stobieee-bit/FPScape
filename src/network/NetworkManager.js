@@ -59,6 +59,11 @@ export class NetworkManager {
     _onOpen() {
         this.connected = true;
         console.log('Multiplayer: connected');
+        // Send chosen name if the player entered one
+        const chosenName = this.game._chosenName;
+        if (chosenName) {
+            this._send({ type: 'set_name', name: chosenName });
+        }
     }
 
     _onClose() {
@@ -80,7 +85,11 @@ export class NetworkManager {
             case 'welcome':
                 this.myId = data.id;
                 this.myName = data.name;
-                this.game.addChatMessage(`Connected as ${data.name}`, 'system');
+                // Only show "Connected as" if no custom name pending
+                // (name_confirmed will show the real name)
+                if (!this.game._chosenName) {
+                    this.game.addChatMessage(`Connected as ${data.name}`, 'system');
+                }
                 // Add all existing players
                 for (const p of data.players) {
                     rpm.addPlayer(p.id, p.name, p);
@@ -101,6 +110,20 @@ export class NetworkManager {
                 this.game.addChatMessage(`${leaveName} has left.`, 'system');
                 this._updateStatusUI();
                 break;
+
+            case 'name_confirmed':
+                this.myName = data.name;
+                this.game.addChatMessage(`Connected as ${data.name}`, 'system');
+                break;
+
+            case 'player_rename': {
+                const rp = rpm.remotePlayers.get(data.id);
+                if (rp) {
+                    rp.name = data.name;
+                    if (rp.label) rp.label.textContent = data.name;
+                }
+                break;
+            }
 
             case 'player_update':
                 rpm.updatePlayerState(data.id, data);

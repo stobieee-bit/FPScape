@@ -231,8 +231,32 @@ class Game {
 
     _setupStartOverlay() {
         const overlay = document.getElementById('start-overlay');
-        overlay.addEventListener('click', () => {
+        const startBtn = document.getElementById('start-btn');
+        const nameInput = document.getElementById('player-name-input');
+
+        // Prevent overlay click from starting — only the button does
+        overlay.addEventListener('click', (e) => {
+            // If game already playing (re-focus after pointer unlock), just re-lock
+            if (this.state === 'playing') {
+                this.input.cursorMode = false;
+                this.input.requestLock();
+                overlay.classList.add('hidden');
+            }
+        });
+
+        // Prevent typing in the name field from propagating to game input
+        nameInput.addEventListener('keydown', (e) => {
+            e.stopPropagation();
+            if (e.key === 'Enter') startBtn.click();
+        });
+
+        startBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
             if (this.state === 'menu') {
+                // Get chosen name (strip non-alphanumeric, limit length)
+                const raw = nameInput.value.trim().replace(/[^a-zA-Z0-9_ -]/g, '');
+                this._chosenName = raw.length >= 1 ? raw.slice(0, 16) : '';
+
                 this.state = 'playing';
                 this.loop.start();
                 this.addChatMessage('Welcome to FPScape!', 'system');

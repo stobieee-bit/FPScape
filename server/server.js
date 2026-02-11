@@ -146,7 +146,20 @@ wss.on('connection', (ws) => {
             return;
         }
 
-        if (data.type === 'state') {
+        if (data.type === 'set_name') {
+            // Player chose a custom name — sanitize and update
+            let custom = String(data.name || '').replace(/[^a-zA-Z0-9_ -]/g, '').trim().slice(0, 16);
+            if (custom.length >= 1) {
+                state.name = custom;
+                // Notify this client of their confirmed name
+                ws.send(JSON.stringify({ type: 'name_confirmed', name: custom }));
+                // Notify others of the name change
+                broadcast({ type: 'player_rename', id: state.id, name: custom }, ws);
+                const ts2 = new Date().toLocaleTimeString();
+                console.log(`[${ts2}] Player ${id} set name to: ${custom}`);
+            }
+
+        } else if (data.type === 'state') {
             state.x = data.x ?? state.x;
             state.y = data.y ?? state.y;
             state.z = data.z ?? state.z;

@@ -273,7 +273,11 @@
         <div id="start-overlay">
             <div id="start-content">
                 <h1>FPScape</h1>
-                <p>Click to start</p>
+                <div id="name-input-row">
+                    <input type="text" id="player-name-input" maxlength="16"
+                           placeholder="Enter your name..." autocomplete="off" spellcheck="false">
+                </div>
+                <button id="start-btn">Play</button>
                 <div id="controls-hint">
                     <p>WASD - Move | Mouse - Look</p>
                     <p>Left Click - Interact | Right Click - Options</p>
@@ -286,9 +290,11 @@
 
     <script type="module" src="src/main.js"></script>
 
-    <!-- Dev live-reload: polls key files for size changes every 2s -->
+    <!-- Dev live-reload: only runs on localhost -->
     <script>
     (function liveReload() {
+        const h = location.hostname;
+        if (h !== 'localhost' && h !== '127.0.0.1') return; // skip on production
         const watchFiles = ['/', '/src/main.js', '/src/core/InputManager.js',
             '/src/ui/UIManager.js', '/style.css', '/src/config.js',
             '/src/systems/CombatSystem.js', '/src/systems/InteractionSystem.js'];
