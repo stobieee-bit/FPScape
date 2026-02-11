@@ -510,7 +510,7 @@ class Game {
                 } else if (data.version !== this._currentVersion && !this._versionNotified) {
                     // Version changed! Notify the player
                     this._versionNotified = true;
-                    this.addChatMessage('⚡ A new update is available! Press F5 to refresh.', 'system');
+                    this.addChatMessage('⚡ A new update is available! Click the banner above to refresh.', 'system');
                     this._showUpdateBanner();
                 }
             } catch {}
