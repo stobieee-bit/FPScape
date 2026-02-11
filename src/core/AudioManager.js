@@ -413,7 +413,10 @@ export class AudioManager {
     setMasterVolume(vol) {
         this._masterVolume = Math.max(0, Math.min(1, vol));
         if (this._masterGain) {
-            this._masterGain.gain.setTargetAtTime(this._masterVolume, this.ctx.currentTime, 0.02);
+            const t = this.ctx.currentTime;
+            this._masterGain.gain.cancelScheduledValues(t);
+            this._masterGain.gain.setValueAtTime(this._masterGain.gain.value, t);
+            this._masterGain.gain.linearRampToValueAtTime(this._masterVolume, t + 0.03);
         }
     }
 
@@ -421,7 +424,10 @@ export class AudioManager {
     setMusicVolume(vol) {
         this._musicVolume = Math.max(0, Math.min(1, vol));
         if (this._musicGain) {
-            this._musicGain.gain.setTargetAtTime(this._musicVolume, this.ctx.currentTime, 0.02);
+            const t = this.ctx.currentTime;
+            this._musicGain.gain.cancelScheduledValues(t);
+            this._musicGain.gain.setValueAtTime(this._musicGain.gain.value, t);
+            this._musicGain.gain.linearRampToValueAtTime(this._musicVolume, t + 0.03);
         }
     }
 
