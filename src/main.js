@@ -245,6 +245,10 @@ class Game {
             }
         });
 
+        // Pre-fill name from previous session
+        const savedName = localStorage.getItem('fpscape-name');
+        if (savedName) nameInput.value = savedName;
+
         // Prevent typing in the name field from propagating to game input
         nameInput.addEventListener('keydown', (e) => {
             e.stopPropagation();
@@ -258,6 +262,10 @@ class Game {
                 // Get chosen name (strip non-alphanumeric, limit length)
                 const raw = nameInput.value.trim().replace(/[^a-zA-Z0-9_ -]/g, '');
                 this._chosenName = raw.length >= 1 ? raw.slice(0, 16) : '';
+                // Remember name for next session
+                if (this._chosenName) {
+                    localStorage.setItem('fpscape-name', this._chosenName);
+                }
 
                 this.state = 'playing';
                 this.loop.start();
