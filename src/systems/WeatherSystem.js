@@ -77,7 +77,7 @@ export class WeatherSystem {
         this._rainGain = ctx.createGain();
         this._rainGain.gain.value = 0;
 
-        this._rainNode.connect(filter).connect(this._rainGain).connect(ctx.destination);
+        this._rainNode.connect(filter).connect(this._rainGain).connect(audio.dest);
         this._rainNode.start();
     }
 

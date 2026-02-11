@@ -93,7 +93,7 @@ export class MusicSystem {
         gain.gain.linearRampToValueAtTime(vol, t + 0.05);
         gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
 
-        osc.connect(gain).connect(ctx.destination);
+        osc.connect(gain).connect(audio.musicDest);
         osc.start(t);
         osc.stop(t + 0.45);
 
