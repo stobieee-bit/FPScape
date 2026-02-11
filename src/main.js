@@ -273,6 +273,8 @@ class Game {
                 this.audio.startMusic();
                 // Connect to multiplayer server
                 this.networkManager.connect();
+                // Start checking for updates
+                this._startVersionCheck();
 
                 // Switch overlay to resume mode for future appearances
                 menuSection.classList.add('hidden');
@@ -491,6 +493,43 @@ class Game {
         const dx = this.player.position.x - worldPos.x;
         const dz = this.player.position.z - worldPos.z;
         return Math.sqrt(dx * dx + dz * dz);
+    }
+
+    // ── Version check: poll for updates every 30s ──
+    _startVersionCheck() {
+        this._currentVersion = null;
+        this._versionNotified = false;
+
+        const check = async () => {
+            try {
+                const res = await fetch('/version.json?t=' + Date.now(), { cache: 'no-store' });
+                const data = await res.json();
+                if (this._currentVersion === null) {
+                    // First check — just record the version
+                    this._currentVersion = data.version;
+                } else if (data.version !== this._currentVersion && !this._versionNotified) {
+                    // Version changed! Notify the player
+                    this._versionNotified = true;
+                    this.addChatMessage('⚡ A new update is available! Press F5 to refresh.', 'system');
+                    this._showUpdateBanner();
+                }
+            } catch {}
+        };
+
+        // Check immediately, then every 30 seconds
+        check();
+        setInterval(check, 30000);
+    }
+
+    _showUpdateBanner() {
+        let banner = document.getElementById('update-banner');
+        if (!banner) {
+            banner = document.createElement('div');
+            banner.id = 'update-banner';
+            banner.innerHTML = '🔄 New update available — <a href="#" onclick="location.reload();return false;">click to refresh</a>';
+            document.getElementById('game-container').appendChild(banner);
+        }
+        banner.classList.remove('hidden');
     }
 }
 

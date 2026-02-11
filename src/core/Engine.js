@@ -141,75 +141,85 @@ export class Engine {
         const skinMat = new THREE.MeshStandardMaterial({ color: 0xD4A574, roughness: 0.8 });
         const skinDark = new THREE.MeshStandardMaterial({ color: 0xC49464, roughness: 0.85 });
 
-        // ── Forearm ──
+        // ── Forearm (tapered, angled into view) ──
         const forearm = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.035, 0.048, 0.40, 8),
+            new THREE.CylinderGeometry(0.030, 0.042, 0.38, 8),
             skinMat
         );
-        forearm.rotation.x = -Math.PI * 0.08;
-        forearm.rotation.z = Math.PI * 0.12;
-        forearm.position.set(0.24, -0.28, -0.30);
+        forearm.rotation.x = -Math.PI * 0.06;
+        forearm.rotation.z = Math.PI * 0.10;
+        forearm.position.set(0.25, -0.30, -0.32);
         this._vmGroup.add(forearm);
 
-        // ── Wrist ──
+        // ── Wrist (transition to hand) ──
         const wrist = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.033, 0.035, 0.06, 8),
+            new THREE.CylinderGeometry(0.028, 0.030, 0.05, 8),
             skinMat
         );
-        wrist.rotation.x = -Math.PI * 0.15;
-        wrist.rotation.z = Math.PI * 0.08;
-        wrist.position.set(0.21, -0.12, -0.48);
+        wrist.rotation.x = -Math.PI * 0.18;
+        wrist.rotation.z = Math.PI * 0.06;
+        wrist.position.set(0.22, -0.14, -0.48);
         this._vmGroup.add(wrist);
 
-        // ── Hand group (palm + fingers) ──
+        // ── Hand group (palm + curled fingers forming a grip) ──
         this._vmHand = new THREE.Group();
-        this._vmHand.position.set(0.20, -0.07, -0.55);
-        this._vmHand.rotation.x = -Math.PI * 0.20;
-        this._vmHand.rotation.z = Math.PI * 0.05;
+        this._vmHand.position.set(0.20, -0.08, -0.55);
+        this._vmHand.rotation.set(-Math.PI * 0.25, 0, Math.PI * 0.03);
 
-        // Palm
+        // Palm (smaller, flatter)
         const palm = new THREE.Mesh(
-            new THREE.BoxGeometry(0.08, 0.04, 0.09),
+            new THREE.BoxGeometry(0.06, 0.028, 0.065),
             skinMat
         );
-        palm.position.set(0, 0, 0);
         this._vmHand.add(palm);
 
-        // Thumb (angled out)
+        // Back of hand (slight bulge)
+        const handBack = new THREE.Mesh(
+            new THREE.SphereGeometry(0.030, 6, 4),
+            skinMat
+        );
+        handBack.scale.set(1, 0.5, 0.9);
+        handBack.position.set(0, 0.012, 0.015);
+        this._vmHand.add(handBack);
+
+        // Thumb (wraps around from the side)
         const thumb = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.012, 0.010, 0.06, 5),
+            new THREE.CylinderGeometry(0.009, 0.008, 0.045, 5),
             skinDark
         );
-        thumb.position.set(-0.05, 0.005, 0.01);
-        thumb.rotation.z = Math.PI * 0.35;
-        thumb.rotation.x = -Math.PI * 0.15;
+        thumb.position.set(-0.038, -0.005, -0.005);
+        thumb.rotation.set(-Math.PI * 0.2, 0, Math.PI * 0.4);
         this._vmHand.add(thumb);
+        // Thumb tip
+        const thumbTip = new THREE.Mesh(new THREE.SphereGeometry(0.009, 4, 3), skinDark);
+        thumbTip.position.set(-0.045, -0.015, -0.020);
+        this._vmHand.add(thumbTip);
 
-        // Fingers (4 curled around — visible when gripping)
-        const fingerPositions = [
-            { x: -0.025, z: -0.045 },
-            { x: -0.008, z: -0.048 },
-            { x:  0.009, z: -0.048 },
-            { x:  0.026, z: -0.045 },
+        // ── Fingers (curled under to form grip) ──
+        const fingerSpread = [
+            { x: -0.018, curl: 0.55 },
+            { x: -0.006, curl: 0.60 },
+            { x:  0.006, curl: 0.60 },
+            { x:  0.018, curl: 0.55 },
         ];
-        for (const fp of fingerPositions) {
-            const finger = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.010, 0.009, 0.055, 4),
+        for (const f of fingerSpread) {
+            // Proximal segment (attached to palm)
+            const seg1 = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.008, 0.007, 0.030, 4),
                 skinDark
             );
-            finger.position.set(fp.x, -0.015, fp.z);
-            finger.rotation.x = Math.PI * 0.3;
-            this._vmHand.add(finger);
-        }
+            seg1.position.set(f.x, -0.010, -0.040);
+            seg1.rotation.x = f.curl;
+            this._vmHand.add(seg1);
 
-        // Knuckles (small bumps on top of hand)
-        for (const fp of fingerPositions) {
-            const knuckle = new THREE.Mesh(
-                new THREE.SphereGeometry(0.012, 4, 3),
-                skinMat
+            // Distal segment (curled further under)
+            const seg2 = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.007, 0.006, 0.025, 4),
+                skinDark
             );
-            knuckle.position.set(fp.x, 0.015, fp.z + 0.01);
-            this._vmHand.add(knuckle);
+            seg2.position.set(f.x, -0.025, -0.050);
+            seg2.rotation.x = f.curl + 0.4;
+            this._vmHand.add(seg2);
         }
 
         this._vmGroup.add(this._vmHand);
