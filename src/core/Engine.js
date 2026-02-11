@@ -138,18 +138,81 @@ export class Engine {
             this._vmGroup.remove(c);
         }
 
-        // Arm (skin-colored cylinder)
         const skinMat = new THREE.MeshStandardMaterial({ color: 0xD4A574, roughness: 0.8 });
-        const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.05, 0.45, 6), skinMat);
-        arm.rotation.x = -Math.PI * 0.1;
-        arm.rotation.z = Math.PI * 0.15;
-        arm.position.set(0.22, -0.25, -0.35);
-        this._vmGroup.add(arm);
+        const skinDark = new THREE.MeshStandardMaterial({ color: 0xC49464, roughness: 0.85 });
 
-        // Hand (sphere)
-        const hand = new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 4), skinMat);
-        hand.position.set(0.2, -0.08, -0.55);
-        this._vmGroup.add(hand);
+        // ── Forearm ──
+        const forearm = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.035, 0.048, 0.40, 8),
+            skinMat
+        );
+        forearm.rotation.x = -Math.PI * 0.08;
+        forearm.rotation.z = Math.PI * 0.12;
+        forearm.position.set(0.24, -0.28, -0.30);
+        this._vmGroup.add(forearm);
+
+        // ── Wrist ──
+        const wrist = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.033, 0.035, 0.06, 8),
+            skinMat
+        );
+        wrist.rotation.x = -Math.PI * 0.15;
+        wrist.rotation.z = Math.PI * 0.08;
+        wrist.position.set(0.21, -0.12, -0.48);
+        this._vmGroup.add(wrist);
+
+        // ── Hand group (palm + fingers) ──
+        this._vmHand = new THREE.Group();
+        this._vmHand.position.set(0.20, -0.07, -0.55);
+        this._vmHand.rotation.x = -Math.PI * 0.20;
+        this._vmHand.rotation.z = Math.PI * 0.05;
+
+        // Palm
+        const palm = new THREE.Mesh(
+            new THREE.BoxGeometry(0.08, 0.04, 0.09),
+            skinMat
+        );
+        palm.position.set(0, 0, 0);
+        this._vmHand.add(palm);
+
+        // Thumb (angled out)
+        const thumb = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.012, 0.010, 0.06, 5),
+            skinDark
+        );
+        thumb.position.set(-0.05, 0.005, 0.01);
+        thumb.rotation.z = Math.PI * 0.35;
+        thumb.rotation.x = -Math.PI * 0.15;
+        this._vmHand.add(thumb);
+
+        // Fingers (4 curled around — visible when gripping)
+        const fingerPositions = [
+            { x: -0.025, z: -0.045 },
+            { x: -0.008, z: -0.048 },
+            { x:  0.009, z: -0.048 },
+            { x:  0.026, z: -0.045 },
+        ];
+        for (const fp of fingerPositions) {
+            const finger = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.010, 0.009, 0.055, 4),
+                skinDark
+            );
+            finger.position.set(fp.x, -0.015, fp.z);
+            finger.rotation.x = Math.PI * 0.3;
+            this._vmHand.add(finger);
+        }
+
+        // Knuckles (small bumps on top of hand)
+        for (const fp of fingerPositions) {
+            const knuckle = new THREE.Mesh(
+                new THREE.SphereGeometry(0.012, 4, 3),
+                skinMat
+            );
+            knuckle.position.set(fp.x, 0.015, fp.z + 0.01);
+            this._vmHand.add(knuckle);
+        }
+
+        this._vmGroup.add(this._vmHand);
 
         // Default weapon — fist (no weapon mesh)
         this._vmWeapon = null;
@@ -169,89 +232,289 @@ export class Engine {
         if (!item) return;
 
         const g = new THREE.Group();
-        const metalColor = itemId.startsWith('steel') ? 0xAAAAAA :
-                           itemId.startsWith('iron') ? 0x888888 : 0xCD7F32;
+        const metalColor = itemId.startsWith('steel') ? 0xB8B8C0 :
+                           itemId.startsWith('iron') ? 0x7A7A80 : 0xCD7F32;
+        const metalDark = itemId.startsWith('steel') ? 0x909098 :
+                          itemId.startsWith('iron') ? 0x5A5A60 : 0xA06025;
+        const metalMat = new THREE.MeshStandardMaterial({ color: metalColor, metalness: 0.75, roughness: 0.25 });
+        const metalDarkMat = new THREE.MeshStandardMaterial({ color: metalDark, metalness: 0.6, roughness: 0.35 });
+        const woodMat = new THREE.MeshStandardMaterial({ color: 0x5C3A1E, roughness: 0.9 });
+        const leatherMat = new THREE.MeshStandardMaterial({ color: 0x4A3520, roughness: 0.95 });
 
         if (itemId.includes('sword')) {
-            // Blade
-            const blade = new THREE.Mesh(
-                new THREE.BoxGeometry(0.03, 0.5, 0.06),
-                new THREE.MeshStandardMaterial({ color: metalColor, metalness: 0.7, roughness: 0.3 })
-            );
-            blade.position.y = 0.25;
+            // ── Blade with taper ──
+            const bladeShape = new THREE.Shape();
+            bladeShape.moveTo(-0.018, 0);
+            bladeShape.lineTo(-0.016, 0.42);
+            bladeShape.lineTo(0, 0.50);
+            bladeShape.lineTo(0.016, 0.42);
+            bladeShape.lineTo(0.018, 0);
+            bladeShape.lineTo(-0.018, 0);
+            const bladeGeo = new THREE.ExtrudeGeometry(bladeShape, { depth: 0.012, bevelEnabled: true, bevelThickness: 0.003, bevelSize: 0.002, bevelSegments: 1 });
+            const blade = new THREE.Mesh(bladeGeo, metalMat);
+            blade.position.set(0, 0.06, -0.006);
             g.add(blade);
-            // Handle
-            const handle = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.02, 0.02, 0.12, 6),
-                new THREE.MeshStandardMaterial({ color: 0x5C3A1E, roughness: 0.9 })
+
+            // Fuller (groove down center of blade)
+            const fuller = new THREE.Mesh(
+                new THREE.BoxGeometry(0.006, 0.30, 0.018),
+                metalDarkMat
             );
-            g.add(handle);
-            // Crossguard
+            fuller.position.set(0, 0.22, 0);
+            g.add(fuller);
+
+            // Crossguard (curved, wider)
             const guard = new THREE.Mesh(
-                new THREE.BoxGeometry(0.1, 0.02, 0.02),
-                new THREE.MeshStandardMaterial({ color: metalColor, metalness: 0.6, roughness: 0.4 })
+                new THREE.BoxGeometry(0.12, 0.018, 0.025),
+                metalDarkMat
             );
             guard.position.y = 0.06;
             g.add(guard);
+            // Guard tips (small spheres)
+            const guardTipL = new THREE.Mesh(new THREE.SphereGeometry(0.012, 5, 3), metalDarkMat);
+            guardTipL.position.set(-0.06, 0.06, 0);
+            g.add(guardTipL);
+            const guardTipR = new THREE.Mesh(new THREE.SphereGeometry(0.012, 5, 3), metalDarkMat);
+            guardTipR.position.set(0.06, 0.06, 0);
+            g.add(guardTipR);
+
+            // Grip (wrapped leather)
+            const grip = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.018, 0.016, 0.11, 8),
+                leatherMat
+            );
+            g.add(grip);
+            // Leather wrap lines
+            for (let i = 0; i < 4; i++) {
+                const wrap = new THREE.Mesh(
+                    new THREE.TorusGeometry(0.018, 0.003, 4, 8),
+                    woodMat
+                );
+                wrap.position.y = -0.04 + i * 0.025;
+                wrap.rotation.x = Math.PI / 2;
+                g.add(wrap);
+            }
+
+            // Pommel
+            const pommel = new THREE.Mesh(
+                new THREE.SphereGeometry(0.02, 6, 4),
+                metalDarkMat
+            );
+            pommel.position.y = -0.065;
+            g.add(pommel);
+
         } else if (itemId.includes('dagger')) {
-            const blade = new THREE.Mesh(
-                new THREE.BoxGeometry(0.02, 0.25, 0.04),
-                new THREE.MeshStandardMaterial({ color: metalColor, metalness: 0.7, roughness: 0.3 })
+            // ── Short tapered blade ──
+            const dShape = new THREE.Shape();
+            dShape.moveTo(-0.014, 0);
+            dShape.lineTo(-0.010, 0.18);
+            dShape.lineTo(0, 0.23);
+            dShape.lineTo(0.010, 0.18);
+            dShape.lineTo(0.014, 0);
+            dShape.lineTo(-0.014, 0);
+            const dGeo = new THREE.ExtrudeGeometry(dShape, { depth: 0.008, bevelEnabled: true, bevelThickness: 0.002, bevelSize: 0.001, bevelSegments: 1 });
+            const dBlade = new THREE.Mesh(dGeo, metalMat);
+            dBlade.position.set(0, 0.04, -0.004);
+            g.add(dBlade);
+
+            // Small crossguard
+            const dGuard = new THREE.Mesh(
+                new THREE.BoxGeometry(0.07, 0.012, 0.018),
+                metalDarkMat
             );
-            blade.position.y = 0.13;
-            g.add(blade);
-            const handle = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.015, 0.015, 0.1, 6),
-                new THREE.MeshStandardMaterial({ color: 0x5C3A1E, roughness: 0.9 })
+            dGuard.position.y = 0.04;
+            g.add(dGuard);
+
+            // Grip
+            const dGrip = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.014, 0.013, 0.08, 6),
+                leatherMat
             );
-            g.add(handle);
+            g.add(dGrip);
+
+            // Pommel
+            const dPom = new THREE.Mesh(new THREE.SphereGeometry(0.015, 5, 3), metalDarkMat);
+            dPom.position.y = -0.045;
+            g.add(dPom);
+
         } else if (itemId.includes('mace')) {
+            // ── Shaft with grip ──
             const shaft = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.015, 0.015, 0.4, 6),
-                new THREE.MeshStandardMaterial({ color: 0x5C3A1E, roughness: 0.9 })
+                new THREE.CylinderGeometry(0.012, 0.014, 0.38, 6),
+                woodMat
             );
-            shaft.position.y = 0.1;
+            shaft.position.y = 0.10;
             g.add(shaft);
-            const head = new THREE.Mesh(
-                new THREE.SphereGeometry(0.06, 6, 4),
-                new THREE.MeshStandardMaterial({ color: metalColor, metalness: 0.6, roughness: 0.4 })
+
+            // Leather grip section
+            const mGrip = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.016, 0.016, 0.10, 6),
+                leatherMat
             );
-            head.position.y = 0.32;
-            g.add(head);
+            mGrip.position.y = -0.02;
+            g.add(mGrip);
+
+            // Flanged head (sphere + protruding flanges)
+            const mHead = new THREE.Mesh(
+                new THREE.SphereGeometry(0.045, 8, 5),
+                metalMat
+            );
+            mHead.position.y = 0.32;
+            g.add(mHead);
+
+            // Flanges (4 ridges around the head)
+            for (let i = 0; i < 4; i++) {
+                const flange = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.008, 0.07, 0.035),
+                    metalDarkMat
+                );
+                flange.position.y = 0.32;
+                flange.rotation.y = (i / 4) * Math.PI * 2;
+                flange.position.x = Math.sin(flange.rotation.y) * 0.04;
+                flange.position.z = Math.cos(flange.rotation.y) * 0.04;
+                g.add(flange);
+            }
+
+            // Crown ring at top of head
+            const crown = new THREE.Mesh(
+                new THREE.TorusGeometry(0.045, 0.006, 4, 8),
+                metalDarkMat
+            );
+            crown.position.y = 0.35;
+            crown.rotation.x = Math.PI / 2;
+            g.add(crown);
+
+            // Pommel cap
+            const mPom = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.012, 0.02, 6), metalDarkMat);
+            mPom.position.y = -0.08;
+            g.add(mPom);
+
         } else if (itemId.includes('staff') || itemId.includes('wand')) {
-            const shaft = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.015, 0.02, 0.6, 6),
-                new THREE.MeshStandardMaterial({ color: 0x5C3A1E, roughness: 0.9 })
+            // ── Twisted wooden shaft ──
+            const sShaft = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.012, 0.018, 0.60, 8),
+                woodMat
             );
-            shaft.position.y = 0.15;
-            g.add(shaft);
+            sShaft.position.y = 0.15;
+            g.add(sShaft);
+
+            // Wood grain rings
+            for (let i = 0; i < 5; i++) {
+                const ring = new THREE.Mesh(
+                    new THREE.TorusGeometry(0.014 + i * 0.0005, 0.003, 4, 8),
+                    new THREE.MeshStandardMaterial({ color: 0x4A2E15, roughness: 0.95 })
+                );
+                ring.position.y = -0.05 + i * 0.12;
+                ring.rotation.x = Math.PI / 2;
+                g.add(ring);
+            }
+
+            // Orb cradle (3 prongs holding the orb)
+            for (let i = 0; i < 3; i++) {
+                const prong = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.005, 0.008, 0.08, 4),
+                    woodMat
+                );
+                const angle = (i / 3) * Math.PI * 2;
+                prong.position.set(
+                    Math.sin(angle) * 0.015,
+                    0.43,
+                    Math.cos(angle) * 0.015
+                );
+                prong.rotation.z = Math.sin(angle) * 0.3;
+                prong.rotation.x = Math.cos(angle) * 0.3;
+                g.add(prong);
+            }
+
+            // Glowing orb
             const orb = new THREE.Mesh(
-                new THREE.SphereGeometry(0.04, 8, 6),
-                new THREE.MeshStandardMaterial({ color: 0x4488FF, emissive: 0x2244AA, roughness: 0.2 })
+                new THREE.SphereGeometry(0.035, 10, 8),
+                new THREE.MeshStandardMaterial({
+                    color: 0x66AAFF, emissive: 0x3366CC,
+                    emissiveIntensity: 0.6, roughness: 0.1, metalness: 0.1
+                })
             );
             orb.position.y = 0.46;
             g.add(orb);
-        } else if (itemId.includes('bow')) {
-            const shaft = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.01, 0.01, 0.5, 4),
-                new THREE.MeshStandardMaterial({ color: 0x8B5E3C, roughness: 0.8 })
+
+            // Orb glow (larger transparent sphere)
+            const glow = new THREE.Mesh(
+                new THREE.SphereGeometry(0.05, 8, 6),
+                new THREE.MeshBasicMaterial({ color: 0x4488FF, transparent: true, opacity: 0.15 })
             );
-            shaft.rotation.z = 0.15;
-            shaft.position.y = 0.1;
-            g.add(shaft);
+            glow.position.y = 0.46;
+            g.add(glow);
+
+        } else if (itemId.includes('bow')) {
+            // ── Curved bow limbs ──
+            const bowMat = new THREE.MeshStandardMaterial({ color: 0x8B5E3C, roughness: 0.8 });
+
+            // Upper limb
+            const upperLimb = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.008, 0.012, 0.28, 5),
+                bowMat
+            );
+            upperLimb.position.set(0, 0.18, 0);
+            upperLimb.rotation.z = 0.12;
+            g.add(upperLimb);
+
+            // Lower limb
+            const lowerLimb = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.012, 0.008, 0.28, 5),
+                bowMat
+            );
+            lowerLimb.position.set(0, -0.10, 0);
+            lowerLimb.rotation.z = -0.12;
+            g.add(lowerLimb);
+
+            // Grip (center, wrapped)
+            const bGrip = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.016, 0.016, 0.06, 6),
+                leatherMat
+            );
+            bGrip.position.y = 0.04;
+            g.add(bGrip);
+
+            // Bow tips (nocks)
+            const nockTop = new THREE.Mesh(new THREE.SphereGeometry(0.008, 4, 3), bowMat);
+            nockTop.position.set(0.015, 0.32, 0);
+            g.add(nockTop);
+            const nockBot = new THREE.Mesh(new THREE.SphereGeometry(0.008, 4, 3), bowMat);
+            nockBot.position.set(-0.015, -0.24, 0);
+            g.add(nockBot);
+
+            // Bowstring
+            const stringGeo = new THREE.BufferGeometry();
+            const stringVerts = new Float32Array([
+                0.015, 0.32, 0,    // top nock
+                -0.03, 0.04, 0.01, // pulled center
+                -0.015, -0.24, 0   // bottom nock
+            ]);
+            stringGeo.setAttribute('position', new THREE.BufferAttribute(stringVerts, 3));
+            const bowstring = new THREE.Line(stringGeo,
+                new THREE.LineBasicMaterial({ color: 0xCCBB99, linewidth: 1 })
+            );
+            g.add(bowstring);
+
         } else {
-            // Generic weapon — simple bar
+            // ── Generic weapon — iron bar with grip ──
             const bar = new THREE.Mesh(
-                new THREE.BoxGeometry(0.03, 0.4, 0.03),
-                new THREE.MeshStandardMaterial({ color: metalColor, metalness: 0.5, roughness: 0.5 })
+                new THREE.BoxGeometry(0.025, 0.38, 0.025),
+                metalMat
             );
             bar.position.y = 0.2;
             g.add(bar);
+            const gGrip = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.016, 0.016, 0.1, 6),
+                leatherMat
+            );
+            gGrip.position.y = 0.01;
+            g.add(gGrip);
         }
 
-        g.position.set(0.2, -0.1, -0.55);
-        g.rotation.x = -Math.PI * 0.15;
-        g.rotation.z = Math.PI * 0.1;
+        g.position.set(0.20, -0.08, -0.55);
+        g.rotation.x = -Math.PI * 0.18;
+        g.rotation.z = Math.PI * 0.08;
         this._vmGroup.add(g);
         this._vmWeapon = g;
     }
