@@ -233,10 +233,11 @@ class Game {
         const overlay = document.getElementById('start-overlay');
         const startBtn = document.getElementById('start-btn');
         const nameInput = document.getElementById('player-name-input');
+        const menuSection = document.getElementById('menu-section');
+        const resumeText = document.getElementById('resume-text');
 
-        // Prevent overlay click from starting — only the button does
+        // When overlay is showing and game is already playing, click anywhere to resume
         overlay.addEventListener('click', (e) => {
-            // If game already playing (re-focus after pointer unlock), just re-lock
             if (this.state === 'playing') {
                 this.input.cursorMode = false;
                 this.input.requestLock();
@@ -249,7 +250,8 @@ class Game {
             e.stopPropagation();
             if (e.key === 'Enter') startBtn.click();
         });
-
+        // Stop clicks on the input/button from bubbling to the overlay resume handler
+        nameInput.addEventListener('click', (e) => e.stopPropagation());
         startBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             if (this.state === 'menu') {
@@ -271,6 +273,11 @@ class Game {
                 this.audio.startMusic();
                 // Connect to multiplayer server
                 this.networkManager.connect();
+
+                // Switch overlay to resume mode for future appearances
+                menuSection.classList.add('hidden');
+                resumeText.classList.remove('hidden');
+                overlay.classList.remove('menu-mode');
             }
             this.input.cursorMode = false;
             this.input.requestLock();

@@ -270,20 +270,25 @@
         <div id="wilderness-warning" class="hidden"></div>
 
         <!-- Click to start overlay -->
-        <div id="start-overlay">
+        <div id="start-overlay" class="menu-mode">
             <div id="start-content">
                 <h1>FPScape</h1>
-                <div id="name-input-row">
-                    <input type="text" id="player-name-input" maxlength="16"
-                           placeholder="Enter your name..." autocomplete="off" spellcheck="false">
+                <!-- Menu mode: name entry + Play -->
+                <div id="menu-section">
+                    <div id="name-input-row">
+                        <input type="text" id="player-name-input" maxlength="16"
+                               placeholder="Enter your name..." autocomplete="off" spellcheck="false">
+                    </div>
+                    <button id="start-btn">Play</button>
+                    <div id="controls-hint">
+                        <p>WASD - Move | Mouse - Look</p>
+                        <p>Left Click - Interact | Right Click - Options</p>
+                        <p>Shift - Run | M - World Map | F - Special Attack</p>
+                        <p>1-7 - Panel tabs | ESC - Pause</p>
+                    </div>
                 </div>
-                <button id="start-btn">Play</button>
-                <div id="controls-hint">
-                    <p>WASD - Move | Mouse - Look</p>
-                    <p>Left Click - Interact | Right Click - Options</p>
-                    <p>Shift - Run | M - World Map | F - Special Attack</p>
-                    <p>1-7 - Panel tabs | ESC - Pause</p>
-                </div>
+                <!-- Resume mode: just click to resume -->
+                <p id="resume-text" class="hidden">Click to resume</p>
             </div>
         </div>
     </div>
