@@ -101,6 +101,40 @@ export class ParticleSystem {
         }
     }
 
+    // Create death burst (bigger soul-like particles when monster dies)
+    createDeathBurst(position) {
+        const count = 24;
+        const colors = [0xFFFFFF, 0xCCCCCC, 0xFFEEAA, 0xAABBCC, 0xDDDDDD];
+        for (let i = 0; i < count; i++) {
+            const geo = new THREE.SphereGeometry(0.06, 3, 2);
+            const mat = new THREE.MeshBasicMaterial({
+                color: colors[i % colors.length],
+                transparent: true,
+                opacity: 1,
+            });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.copy(position);
+            mesh.position.y += 0.5 + Math.random() * 0.5;
+
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 1 + Math.random() * 2.5;
+            const vy = 2 + Math.random() * 3;
+
+            this.scene.add(mesh);
+            if (!this._hitParticles) this._hitParticles = [];
+            this._hitParticles.push({
+                mesh,
+                velocity: new THREE.Vector3(
+                    Math.cos(angle) * speed,
+                    vy,
+                    Math.sin(angle) * speed
+                ),
+                life: 0.8 + Math.random() * 0.4,
+                maxLife: 0.8 + Math.random() * 0.4,
+            });
+        }
+    }
+
     // Create sprint dust at player feet
     createSprintDust(position) {
         const count = 3 + Math.floor(Math.random() * 3);

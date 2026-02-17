@@ -141,12 +141,48 @@ export class InteractionSystem {
             const itemName = itemDef.name;
             this.game.addChatMessage(`You pick up: ${itemName}${entity.qty > 1 ? ' x' + entity.qty : ''}.`);
             this.game.audio.playPickup();
-            this.game.environment.removeGroundItem(mesh);
+            this._animatePickup(mesh);
             // Loot notification popup
             this._showLootNotification(itemDef.icon, itemName, entity.qty);
         } else {
             this.game.addChatMessage("Your inventory is full!", 'system');
         }
+    }
+
+    _animatePickup(mesh) {
+        // Prevent double-pickup: remove from tracking immediately
+        mesh.userData.interactable = false;
+        const env = this.game.environment;
+        const idx = env.groundItems.findIndex(g => g.mesh === mesh);
+        if (idx >= 0) env.groundItems.splice(idx, 1);
+        const iIdx = env.interactables.indexOf(mesh);
+        if (iIdx >= 0) env.interactables.splice(iIdx, 1);
+
+        // Animate mesh flying toward camera
+        const startPos = mesh.position.clone();
+        const startTime = performance.now();
+        const duration = 300; // ms
+        if (mesh.material) mesh.material.transparent = true;
+
+        const animate = () => {
+            const elapsed = performance.now() - startTime;
+            const t = Math.min(1, elapsed / duration);
+            const eased = t * t; // ease-in
+
+            const camPos = this.game.engine.camera.position;
+            mesh.position.lerpVectors(startPos, camPos, eased);
+            mesh.scale.setScalar(1 - t * 0.7);
+            if (mesh.material) mesh.material.opacity = 1 - t;
+
+            if (t < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                env.scene.remove(mesh);
+                if (mesh.geometry) mesh.geometry.dispose();
+                if (mesh.material) mesh.material.dispose();
+            }
+        };
+        requestAnimationFrame(animate);
     }
 
     _showLootNotification(icon, name, qty) {

@@ -116,6 +116,11 @@ export class Monster {
     }
 
     updateMovement(dt) {
+        // Run death animation even when not alive
+        if (this._dying) {
+            this._updateDeathAnimation(dt);
+            return;
+        }
         if (!this.alive) return;
 
         // Respawn fade-in
@@ -244,12 +249,63 @@ export class Monster {
         this.state = 'dead';
         this.inCombat = false;
         this.combatTarget = null;
-        this.mesh.visible = false;
         this.mesh.userData.interactable = false;
         this.respawnTimer = this.respawnTime;
+
+        // Start death animation instead of instantly hiding
+        this._dying = true;
+        this._deathTime = 0;
+        this._deathOriginY = this.mesh.position.y;
+        // Enable transparency on all materials for fade-out
+        this.mesh.traverse(c => {
+            if (c.material) {
+                c.material.transparent = true;
+                c.material.opacity = 1;
+            }
+        });
+    }
+
+    _updateDeathAnimation(dt) {
+        this._deathTime += dt;
+        const t = this._deathTime;
+        const DURATION = 0.8;
+
+        if (t < 0.2) {
+            // Phase 1: Dramatic squash
+            const p = t / 0.2; // 0→1
+            this.mesh.scale.y = 1 - p * 0.4;       // 1 → 0.6
+            this.mesh.scale.x = 1 + p * 0.3;       // 1 → 1.3
+            this.mesh.scale.z = 1 + p * 0.3;
+        } else if (t < DURATION) {
+            // Phase 2: Sink + fade + spin
+            const p = (t - 0.2) / (DURATION - 0.2); // 0→1
+            this.mesh.scale.y = 0.6;
+            this.mesh.scale.x = 1.3 - p * 0.3;     // 1.3 → 1.0
+            this.mesh.scale.z = 1.3 - p * 0.3;
+            this.mesh.position.y = this._deathOriginY - p * 1.0;
+            this.mesh.rotation.y += dt * 3;
+            const opacity = 1 - p;
+            this.mesh.traverse(c => { if (c.material) c.material.opacity = opacity; });
+        } else {
+            // Finalize: hide mesh, restore transforms for respawn
+            this.mesh.visible = false;
+            this.mesh.scale.set(1, 1, 1);
+            this.mesh.position.y = this._deathOriginY;
+            this.mesh.traverse(c => {
+                if (c.material) {
+                    c.material.transparent = false;
+                    c.material.opacity = 1;
+                }
+            });
+            this._dying = false;
+        }
     }
 
     respawn() {
+        // Cancel any in-progress death animation
+        this._dying = false;
+        this.mesh.scale.set(1, 1, 1);
+
         this.alive = true;
         this.hp = this.maxHp;
         this.state = 'idle';

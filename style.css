@@ -145,6 +145,7 @@ body { overflow: hidden; background: #000; font-family: 'Segoe UI', Tahoma, Gene
 .chat-msg.damage { color: #FF4444; }
 .chat-msg.level-up { color: #FFD700; font-weight: bold; }
 .chat-msg.system { color: #6699FF; }
+.chat-msg.loot { color: #FF8844; font-weight: bold; }
 .chat-timestamp { color: #5C4A36; font-size: 10px; margin-right: 4px; }
 
 /* Hitsplats - OSRS style */

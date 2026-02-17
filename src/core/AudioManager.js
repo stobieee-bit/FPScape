@@ -146,6 +146,43 @@ export class AudioManager {
         osc.stop(t + 0.6);
     }
 
+    // Monster death thud: descending sine + noise crunch
+    playMonsterDeath() {
+        this._init();
+        const ctx = this.ctx;
+        const t = ctx.currentTime;
+
+        // Low thud
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(120, t);
+        osc.frequency.exponentialRampToValueAtTime(40, t + 0.2);
+
+        // Noise burst (crunch)
+        const noise = ctx.createBufferSource();
+        const buffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.15), ctx.sampleRate);
+        const nData = buffer.getChannelData(0);
+        for (let i = 0; i < nData.length; i++) {
+            nData[i] = (Math.random() * 2 - 1) * (1 - i / nData.length);
+        }
+        noise.buffer = buffer;
+
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 600;
+
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.2, t);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.25);
+
+        osc.connect(gain).connect(this.dest);
+        noise.connect(filter).connect(gain);
+        osc.start(t);
+        noise.start(t);
+        osc.stop(t + 0.25);
+        noise.stop(t + 0.15);
+    }
+
     // Miss sound: whoosh
     playMiss() {
         this._init();

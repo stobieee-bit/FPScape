@@ -630,19 +630,33 @@ export class CombatSystem {
             this._kbdFireBreathTick = 0;
         }
 
-        // Loot drops
-        const loot = monster.generateLoot();
-        for (const drop of loot) {
-            this.game.environment.spawnGroundItem(drop.item, drop.qty, monster.position);
-            const itemName = CONFIG.ITEMS[drop.item].name;
-            this.game.addChatMessage(`The ${monster.name} drops: ${itemName}${drop.qty > 1 ? ' x' + drop.qty : ''}.`);
+        // Death effects
+        this.game.particleSystem.createDeathBurst(monster.position);
+        this.game.audio.playMonsterDeath();
 
-            // Loot beam on rare drops (chance <= 0.15)
-            const lootEntry = monster.lootTable.find(e => e.item === drop.item);
-            if (lootEntry && lootEntry.chance <= 0.15) {
-                this.game.environment.spawnLootBeam(monster.position);
+        // Generate loot now (before respawn recycles the monster), but delay spawning
+        const deathPos = monster.position.clone();
+        const loot = monster.generateLoot();
+        const monsterName = monster.name;
+        const monsterLootTable = monster.lootTable;
+
+        setTimeout(() => {
+            for (const drop of loot) {
+                this.game.environment.spawnGroundItem(drop.item, drop.qty, deathPos);
+                const itemDef = CONFIG.ITEMS[drop.item];
+                const itemName = itemDef.name;
+                this.game.addChatMessage(
+                    `Loot: ${itemDef.icon || ''} ${itemName}${drop.qty > 1 ? ' x' + drop.qty : ''}`,
+                    'loot'
+                );
+
+                // Loot beam on rare drops (chance <= 0.15)
+                const lootEntry = monsterLootTable.find(e => e.item === drop.item);
+                if (lootEntry && lootEntry.chance <= 0.15) {
+                    this.game.environment.spawnLootBeam(deathPos);
+                }
             }
-        }
+        }, 800);
     }
 
     _onPlayerDeath() {
@@ -761,13 +775,35 @@ export class CombatSystem {
         const screenPos = pos.project(camera);
         if (screenPos.z > 1) return;
         const x = (screenPos.x * 0.5 + 0.5) * window.innerWidth;
-        const y = (-screenPos.y * 0.5 + 0.5) * window.innerHeight;
+        let y = (-screenPos.y * 0.5 + 0.5) * window.innerHeight;
+
+        // Stack offset for multiple simultaneous hitsplats on same monster
+        if (!this._hitsplatOffsets) this._hitsplatOffsets = new Map();
+        let offsetData = this._hitsplatOffsets.get(mesh);
+        if (!offsetData) {
+            offsetData = { count: 0 };
+            this._hitsplatOffsets.set(mesh, offsetData);
+        }
+        y += offsetData.count * 22;
+        offsetData.count++;
+        clearTimeout(offsetData.timer);
+        offsetData.timer = setTimeout(() => this._hitsplatOffsets.delete(mesh), 1600);
+
         this._createHitsplatElement(x, y, damage, isMiss);
     }
 
     _showPlayerHitsplat(damage, isMiss, type) {
         const x = window.innerWidth / 2 + (Math.random() - 0.5) * 40;
-        this._createHitsplatElement(x, 80, damage, isMiss, type);
+        let y = 80;
+
+        // Stack offset for multiple hits on player
+        if (!this._playerSplatCount) this._playerSplatCount = 0;
+        y += this._playerSplatCount * 22;
+        this._playerSplatCount++;
+        clearTimeout(this._playerSplatResetTimer);
+        this._playerSplatResetTimer = setTimeout(() => { this._playerSplatCount = 0; }, 1600);
+
+        this._createHitsplatElement(x, y, damage, isMiss, type);
     }
 
     _createHitsplatElement(x, y, damage, isMiss, type) {
