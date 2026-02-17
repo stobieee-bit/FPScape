@@ -318,14 +318,19 @@ export class InteractionSystem {
 
     _doSmelt(barId, recipe) {
         const inv = this.game.inventorySystem;
-        if (inv.isFull() && !inv.hasItem(barId)) {
-            this.game.addChatMessage("Your inventory is full!", 'system');
-            return;
-        }
+        // Remove ores first (frees slots for the bar)
         for (const [oreId, qty] of Object.entries(recipe.ores)) {
             inv.removeItem(oreId, qty);
         }
-        inv.addItem(barId, 1);
+        // Try to add the bar
+        if (!inv.addItem(barId, 1)) {
+            // Safety: give ores back if somehow still full
+            for (const [oreId, qty] of Object.entries(recipe.ores)) {
+                inv.addItem(oreId, qty);
+            }
+            this.game.addChatMessage("Your inventory is full!", 'system');
+            return;
+        }
         this.game.skillSystem.addXP('smithing', recipe.xp);
         this.game.audio.playPickup();
         this.game.addChatMessage(`You smelt a ${CONFIG.ITEMS[barId].name}.`);
@@ -425,12 +430,15 @@ export class InteractionSystem {
 
     _doSmith(itemId, recipe, activeBar) {
         const inv = this.game.inventorySystem;
-        if (inv.isFull()) {
+        // Remove bars first (frees slots for the product)
+        inv.removeItem(recipe.bar, recipe.qty);
+        // Try to add the smithed item
+        if (!inv.addItem(itemId, 1)) {
+            // Safety: give bars back if somehow still full
+            inv.addItem(recipe.bar, recipe.qty);
             this.game.addChatMessage("Your inventory is full!", 'system');
             return;
         }
-        inv.removeItem(recipe.bar, recipe.qty);
-        inv.addItem(itemId, 1);
         this.game.skillSystem.addXP('smithing', recipe.xp);
         this.game.audio.playPickup();
         this.game.addChatMessage(`You smith a ${CONFIG.ITEMS[itemId].name}.`);
@@ -732,14 +740,17 @@ export class InteractionSystem {
             return;
         }
 
-        if (inv.isFull() && !inv.hasItem(bestPotionId)) {
+        // Remove ingredients first (frees slots for the potion)
+        inv.removeItem('herb', bestPotion.herb);
+        inv.removeItem('vial', bestPotion.vial);
+        // Try to add the potion
+        if (!inv.addItem(bestPotionId, 1)) {
+            // Safety: give ingredients back if somehow still full
+            inv.addItem('herb', bestPotion.herb);
+            inv.addItem('vial', bestPotion.vial);
             this.game.addChatMessage("Your inventory is full!", 'system');
             return;
         }
-
-        inv.removeItem('herb', bestPotion.herb);
-        inv.removeItem('vial', bestPotion.vial);
-        inv.addItem(bestPotionId, 1);
         this.game.skillSystem.addXP('herblore', bestPotion.xp);
         this.game.addChatMessage(`You brew a ${bestPotion.name}.`, 'level-up');
     }

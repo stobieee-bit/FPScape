@@ -332,7 +332,7 @@ class Game {
 
         // Monster AI updates always run (smooth movement)
         for (const monster of this.environment.monsters) {
-            if (monster.alive) {
+            if (monster.alive || monster._dying) {
                 monster.updateMovement(dt);
             }
         }
