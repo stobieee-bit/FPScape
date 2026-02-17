@@ -119,10 +119,8 @@ class Game {
         this._setupStartOverlay();
         this._setupLoop();
 
-        // Try to load saved game
-        if (this.saveSystem.hasSave()) {
-            this.saveSystem.load();
-        }
+        // Save loading is deferred to after the player chooses their name
+        // (see _setupStartOverlay → Play button handler)
     }
 
     _setupInputCallbacks() {
@@ -265,6 +263,12 @@ class Game {
                 // Remember name for next session
                 if (this._chosenName) {
                     localStorage.setItem('fpscape-name', this._chosenName);
+                }
+
+                // Set save key to this player's name and load their save
+                this.saveSystem.setPlayerName(this._chosenName);
+                if (this.saveSystem.hasSave()) {
+                    this.saveSystem.load();
                 }
 
                 this.state = 'playing';

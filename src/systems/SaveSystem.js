@@ -3,9 +3,28 @@ import { CONFIG } from '../config.js';
 export class SaveSystem {
     constructor(game) {
         this.game = game;
-        this.SAVE_KEY = 'fpscape_save';
+        this.SAVE_KEY = 'fpscape_save'; // default fallback
         this.autoSaveInterval = 60; // seconds
         this.autoSaveTimer = 0;
+    }
+
+    /** Set save key based on player name so each name gets its own save */
+    setPlayerName(name) {
+        const oldKey = 'fpscape_save';
+        if (name) {
+            this.SAVE_KEY = 'fpscape_save_' + name.toLowerCase().replace(/[^a-z0-9_-]/g, '');
+        } else {
+            this.SAVE_KEY = oldKey;
+        }
+
+        // Migrate legacy save (from before per-name saves) to the new key
+        if (this.SAVE_KEY !== oldKey) {
+            const legacy = localStorage.getItem(oldKey);
+            if (legacy && !localStorage.getItem(this.SAVE_KEY)) {
+                localStorage.setItem(this.SAVE_KEY, legacy);
+                localStorage.removeItem(oldKey);
+            }
+        }
     }
 
     update(dt) {
