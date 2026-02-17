@@ -443,6 +443,29 @@ export const CONFIG = {
         ],
     },
 
+    SHOPS: {
+        tavern: {
+            name: "Blue Moon Inn - Food & Drink",
+            stock: [
+                { item: 'cooked_chicken', price: 8, qty: 10 },
+                { item: 'cooked_beef', price: 12, qty: 10 },
+                { item: 'cooked_trout', price: 25, qty: 5 },
+                { item: 'cooked_lobster', price: 50, qty: 3 },
+                { item: 'stamina_potion', price: 30, qty: 5 },
+            ],
+        },
+        merchant: {
+            name: "Wandering Merchant's Wares",
+            stock: [
+                { item: 'herb', price: 12, qty: 20 },
+                { item: 'vial', price: 8, qty: 30 },
+                { item: 'rune_essence', price: 5, qty: 50 },
+                { item: 'feather', price: 3, qty: 50 },
+                { item: 'antipoison', price: 40, qty: 3 },
+            ],
+        },
+    },
+
     ACHIEVEMENTS: [
         { id: 'first_kill',     name: 'First Blood',        desc: 'Defeat your first monster', icon: '⚔️' },
         { id: 'level_10',       name: 'Getting Stronger',   desc: 'Reach level 10 in any combat skill', icon: '💪' },
@@ -639,6 +662,62 @@ export const CONFIG = {
                 default: [{ text: "I sell rune platebodies to worthy adventurers." }],
             },
         },
+        fishing_tutor: {
+            name: 'Fishing Tutor', x: 23, z: 18,
+            quest: null,
+            dialogues: {
+                default: [
+                    { text: "Ahoy! I'm the Fishing Tutor. Looking to catch some fish?" },
+                    { text: "At level 1 you can net shrimps from the fishing spots in the pond." },
+                    { text: "At level 20 you can catch trout — they heal more and give better XP!" },
+                    { text: "At level 40 you can fish lobsters. Those are a real prize!",
+                      options: [
+                        { label: "Thanks for the tips!", next: undefined },
+                      ]
+                    },
+                ],
+            },
+        },
+        bartender: {
+            name: 'Bartender', x: 18, z: -10,
+            quest: null, shop: 'tavern',
+            dialogues: {
+                default: [
+                    { text: "Welcome to the Blue Moon Inn! What can I get for you?",
+                      options: [
+                        { label: "I'd like to see the menu.", action: 'open_shop' },
+                        { label: "Just browsing, thanks.", next: undefined },
+                      ]
+                    },
+                ],
+            },
+        },
+        merchant: {
+            name: 'Wandering Merchant', x: 5, z: -2,
+            quest: null, shop: 'merchant',
+            wander: true,
+            wanderWaypoints: [
+                { x: 5, z: -2 },
+                { x: 10, z: -5 },
+                { x: 0, z: -15 },
+                { x: -8, z: -3 },
+                { x: 5, z: 5 },
+            ],
+            wanderSpeed: 1.5,
+            wanderPause: 8,
+            dialogues: {
+                default: [
+                    { text: "Greetings, adventurer! I travel far and wide to bring you exotic wares.",
+                      options: [
+                        { label: "Show me your wares.", action: 'open_shop' },
+                        { label: "Where do you travel from?", next: 1 },
+                        { label: "Goodbye.", next: undefined },
+                      ]
+                    },
+                    { text: "I've journeyed across many lands — from Varrock to Falador. These herbs are the finest you'll find this side of the Wilderness!" },
+                ],
+            },
+        },
     },
 
     QUESTS: {
@@ -737,6 +816,7 @@ export const CONFIG = {
             { type: 'anvil', x: -14, z: -10 },
             { type: 'church', x: 15, z: -15 },
             { type: 'shop', x: 10, z: -5 },
+            { type: 'tavern', x: 18, z: -12 },
         ],
     },
 };

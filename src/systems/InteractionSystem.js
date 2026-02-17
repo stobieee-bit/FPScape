@@ -219,10 +219,17 @@ export class InteractionSystem {
         this.game.addChatMessage(`You cast your net into the water, fishing for ${fishConfig.name.toLowerCase()}.`);
     }
 
+    _getNPCPosition(npcId, npcConfig) {
+        const npcEntry = this.game.environment.npcs.find(n => n.id === npcId);
+        if (npcEntry) return { x: npcEntry.mesh.position.x, z: npcEntry.mesh.position.z };
+        return { x: npcConfig.x, z: npcConfig.z };
+    }
+
     _handleNPCClick(npcId) {
         const npcConfig = CONFIG.NPCS[npcId];
         if (!npcConfig) return;
-        const dist = this.game.distanceToPlayer({ x: npcConfig.x, z: npcConfig.z });
+        const npcPos = this._getNPCPosition(npcId, npcConfig);
+        const dist = this.game.distanceToPlayer(npcPos);
         if (dist > CONFIG.PLAYER.interactionRange) { this.game.addChatMessage("You're too far away.", 'system'); return; }
         this.game.player.stopActions();
         this.game.questSystem.openDialogue(npcId);
@@ -640,7 +647,8 @@ export class InteractionSystem {
 
         const npcConfig = CONFIG.NPCS[npcId];
         if (!npcConfig) return;
-        const dist = this.game.distanceToPlayer({ x: npcConfig.x, z: npcConfig.z });
+        const npcPos = this._getNPCPosition(npcId, npcConfig);
+        const dist = this.game.distanceToPlayer(npcPos);
         if (dist > CONFIG.PLAYER.interactionRange) {
             this.game.addChatMessage("You're too far away.", 'system');
             return;

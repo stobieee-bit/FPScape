@@ -678,15 +678,51 @@ export class Environment {
             if (item.timer <= 0) this.removeGroundItem(item.mesh);
         }
 
-        // NPC idle animations (gentle bob + slow turn)
+        // NPC animations (idle bob or waypoint wandering)
         for (let n = 0; n < this.npcs.length; n++) {
             const npc = this.npcs[n];
             if (!npc._baseY) npc._baseY = npc.mesh.position.y;
             if (!npc._phase) npc._phase = n * 1.7;
-            // Gentle float bob
-            npc.mesh.position.y = npc._baseY + Math.sin(time * 1.2 + npc._phase) * 0.04;
-            // Slow idle turn (swivel +-15 degrees)
-            npc.mesh.rotation.y = Math.sin(time * 0.4 + npc._phase) * 0.26;
+
+            const cfg = npc.config;
+            if (cfg.wander && cfg.wanderWaypoints) {
+                // Waypoint-based wandering
+                if (npc._wpIndex === undefined) npc._wpIndex = 0;
+                if (npc._wpPause === undefined) npc._wpPause = 0;
+                if (!npc._walking) npc._walking = false;
+
+                const target = cfg.wanderWaypoints[npc._wpIndex];
+                const dx = target.x - npc.mesh.position.x;
+                const dz = target.z - npc.mesh.position.z;
+                const dist = Math.sqrt(dx * dx + dz * dz);
+
+                if (npc._walking) {
+                    if (dist < 0.5) {
+                        npc._walking = false;
+                        npc._wpPause = cfg.wanderPause || 8;
+                    } else {
+                        const spd = (cfg.wanderSpeed || 1.5) * dt;
+                        npc.mesh.position.x += (dx / dist) * spd;
+                        npc.mesh.position.z += (dz / dist) * spd;
+                        npc.mesh.position.y = this.terrain.getHeightAt(npc.mesh.position.x, npc.mesh.position.z);
+                        npc._baseY = npc.mesh.position.y;
+                        npc.mesh.rotation.y = Math.atan2(dx, dz) + Math.PI;
+                    }
+                } else {
+                    npc._wpPause -= dt;
+                    if (npc._wpPause <= 0) {
+                        npc._wpIndex = (npc._wpIndex + 1) % cfg.wanderWaypoints.length;
+                        npc._walking = true;
+                    }
+                    // Idle bob while paused
+                    npc.mesh.position.y = npc._baseY + Math.sin(time * 1.2 + npc._phase) * 0.04;
+                    npc.mesh.rotation.y = Math.sin(time * 0.4 + npc._phase) * 0.26;
+                }
+            } else {
+                // Static NPC: gentle float bob + slow idle turn
+                npc.mesh.position.y = npc._baseY + Math.sin(time * 1.2 + npc._phase) * 0.04;
+                npc.mesh.rotation.y = Math.sin(time * 0.4 + npc._phase) * 0.26;
+            }
         }
 
         // Loot beam animations

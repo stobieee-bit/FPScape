@@ -93,6 +93,17 @@ export class Minimap {
                     ctx.fillRect(-3, -3, 6, 6);
                     ctx.restore();
                     break;
+                case 'tavern':
+                    // Warm orange circle (tavern/inn)
+                    ctx.fillStyle = '#CC7722';
+                    ctx.beginPath();
+                    ctx.arc(dx, dz, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#FFAA44';
+                    ctx.beginPath();
+                    ctx.arc(dx, dz, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                    break;
                 case 'bank':
                     // Gold $ symbol area
                     ctx.fillStyle = '#FFD700';

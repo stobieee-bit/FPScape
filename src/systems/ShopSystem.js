@@ -13,9 +13,10 @@ export class ShopSystem {
         this._shopName = document.getElementById('shop-name');
     }
 
-    open() {
+    open(shopConfig) {
         this.isOpen = true;
-        this._shopName.textContent = CONFIG.SHOP.name;
+        this._currentShop = shopConfig || CONFIG.SHOP;
+        this._shopName.textContent = this._currentShop.name;
         this._overlay.classList.remove('hidden');
         this._render();
         this.game.input.cursorMode = true;
@@ -29,7 +30,8 @@ export class ShopSystem {
 
     _render() {
         this._grid.innerHTML = '';
-        for (const stock of CONFIG.SHOP.stock) {
+        const shop = this._currentShop || CONFIG.SHOP;
+        for (const stock of shop.stock) {
             const item = CONFIG.ITEMS[stock.item];
             const el = document.createElement('div');
             el.className = 'shop-item';
@@ -75,8 +77,9 @@ export class ShopSystem {
     }
 
     getSellPrice(itemId) {
-        // Shop stock items: 60% of buy price
-        const stock = CONFIG.SHOP.stock.find(s => s.item === itemId);
+        // Shop stock items: 60% of buy price (check current shop first, then general)
+        const currentStock = this._currentShop?.stock || CONFIG.SHOP.stock;
+        const stock = currentStock.find(s => s.item === itemId) || CONFIG.SHOP.stock.find(s => s.item === itemId);
         if (stock) return Math.max(1, Math.floor(stock.price * 0.6));
 
         // General sell values by item type

@@ -146,7 +146,11 @@ export class QuestSystem {
             }
         } else if (action === 'open_shop') {
             this.closeDialogue();
-            this.game.shopSystem.open();
+            const npcId = this.activeDialogue?.npcId;
+            const npcCfg = npcId && CONFIG.NPCS[npcId];
+            const shopKey = npcCfg?.shop;
+            const shopConfig = (typeof shopKey === 'string' && CONFIG.SHOPS?.[shopKey]) ? CONFIG.SHOPS[shopKey] : CONFIG.SHOP;
+            this.game.shopSystem.open(shopConfig);
         } else if (action === 'open_bank') {
             this.closeDialogue();
             this.game.bankSystem.open();
