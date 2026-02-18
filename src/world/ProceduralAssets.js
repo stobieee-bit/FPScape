@@ -170,7 +170,7 @@ export class ProceduralAssets {
         const depleted = new THREE.Mesh(new THREE.DodecahedronGeometry(0.6, 0), this.materials.depletedRock);
         depleted.position.y = 0.3; depleted.scale.y = 0.5; depleted.visible = false; depleted.name = 'depleted'; group.add(depleted);
 
-        const names = { copper: 'Copper rock', tin: 'Tin rock', iron: 'Iron rock', coal: 'Coal rock' };
+        const names = { copper: 'Copper rock', tin: 'Tin rock', iron: 'Iron rock', coal: 'Coal rock', mithril: 'Mithril rock', adamant: 'Adamantite rock', runite: 'Runite rock' };
         group.userData = { type: 'rock', subType: type, interactable: true, name: names[type] || 'Rock' };
         return group;
     }
