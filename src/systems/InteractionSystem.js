@@ -528,30 +528,34 @@ export class InteractionSystem {
         }
 
         // Find highest-level rune the player can craft
-        const runes = CONFIG.RUNECRAFTING;
-        let bestRune = null;
-        for (const rune of runes) {
-            if (rcLevel >= rune.level) bestRune = rune;
+        let bestRuneId = null;
+        let bestRuneData = null;
+        for (const [runeId, runeData] of Object.entries(CONFIG.RUNECRAFTING)) {
+            if (rcLevel >= runeData.level) {
+                bestRuneId = runeId;
+                bestRuneData = runeData;
+            }
         }
 
-        if (!bestRune) {
+        if (!bestRuneData) {
             this.game.addChatMessage("You don't have a high enough Runecrafting level.", 'system');
             return;
         }
 
         // Calculate multiplier (more runes per essence at higher levels)
         let multiplier = 1;
-        if (bestRune.multiplierLevel && rcLevel >= bestRune.multiplierLevel) {
-            multiplier = Math.floor(rcLevel / bestRune.multiplierLevel);
+        if (bestRuneData.multiplierLevel && rcLevel >= bestRuneData.multiplierLevel) {
+            multiplier = Math.floor(rcLevel / bestRuneData.multiplierLevel);
             if (multiplier < 1) multiplier = 1;
         }
 
         inv.removeItem('rune_essence', essenceCount);
         const runesProduced = essenceCount * multiplier;
-        inv.addItem(bestRune.runeId, runesProduced);
-        this.game.skillSystem.addXP('runecrafting', bestRune.xp * essenceCount);
-        const runeName = CONFIG.ITEMS[bestRune.runeId].name;
+        inv.addItem(bestRuneId, runesProduced);
+        this.game.skillSystem.addXP('runecrafting', bestRuneData.xp * essenceCount);
+        const runeName = CONFIG.ITEMS[bestRuneId].name;
         this.game.addChatMessage(`You craft ${runesProduced} ${runeName}${runesProduced > 1 ? 's' : ''}.`);
+        if (this.game.achievementSystem) this.game.achievementSystem.unlock('craft_runes');
     }
 
     _handleChurchClick() {
@@ -596,7 +600,7 @@ export class InteractionSystem {
             const slot = inv.getSlot(i);
             if (slot) {
                 const item = CONFIG.ITEMS[slot.itemId];
-                if (item && item.type === 'logs') { logsSlot = slot; break; }
+                if (item && item.fmLevel !== undefined) { logsSlot = slot; break; }
             }
         }
 
@@ -606,14 +610,15 @@ export class InteractionSystem {
         }
 
         const logItem = CONFIG.ITEMS[logsSlot.itemId];
-        if (fmLevel < (logItem.firemakingLevel || 1)) {
-            this.game.addChatMessage(`You need level ${logItem.firemakingLevel} Firemaking to burn those logs.`, 'system');
+        if (fmLevel < (logItem.fmLevel || 1)) {
+            this.game.addChatMessage(`You need level ${logItem.fmLevel} Firemaking to burn those logs.`, 'system');
             return;
         }
 
         inv.removeItem(logsSlot.itemId, 1);
-        this.game.skillSystem.addXP('firemaking', logItem.firemakingXP || 40);
+        this.game.skillSystem.addXP('firemaking', logItem.fmXP || 40);
         this.game.addChatMessage(`You light the ${logItem.name.toLowerCase()} and a fire springs to life.`);
+        if (this.game.achievementSystem) this.game.achievementSystem.unlock('first_fire');
 
         // Spawn a temporary fire mesh at the player position
         const fireGeo = new THREE.ConeGeometry(0.3, 0.8, 6);

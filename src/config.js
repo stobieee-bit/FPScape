@@ -262,6 +262,7 @@ export const CONFIG = {
         coins:          { name: 'Coins',           stackable: true,  icon: '🪙' },
         cowhide:        { name: 'Cowhide',         stackable: false, icon: '🟤' },
         wool:           { name: 'Wool',            stackable: false, icon: '🐑' },
+        tinderbox:      { name: 'Tinderbox',       stackable: false, icon: '🔥' },
         // Runes
         air_rune:       { name: 'Air rune',        stackable: true,  icon: '💨' },
         fire_rune:      { name: 'Fire rune',       stackable: true,  icon: '🔥' },
@@ -440,6 +441,7 @@ export const CONFIG = {
             { item: 'staff_of_air', price: 200, qty: 1 },
             { item: 'rune_essence', price: 3, qty: 50 },
             { item: 'vial', price: 5, qty: 50 },
+            { item: 'tinderbox', price: 1, qty: 10 },
         ],
     },
 

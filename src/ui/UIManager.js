@@ -657,6 +657,18 @@ export class UIManager {
             menu.appendChild(opt);
         }
 
+        // Light logs (firemaking — requires tinderbox)
+        if (itemDef.fmLevel !== undefined && this.game.inventorySystem.hasItem('tinderbox')) {
+            const fmOpt = document.createElement('div');
+            fmOpt.className = 'inv-context-option';
+            fmOpt.textContent = `Light ${itemDef.name}`;
+            fmOpt.addEventListener('click', () => {
+                this.game.interactionSystem._handleFiremaking();
+                menu.remove();
+            });
+            menu.appendChild(fmOpt);
+        }
+
         // Sell to shop (show price)
         if (item.itemId !== 'coins') {
             const sellPrice = this.game.shopSystem.getSellPrice(item.itemId);
