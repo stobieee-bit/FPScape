@@ -71,6 +71,9 @@ export class Environment {
             const y = this.terrain.getHeightAt(data.x, data.z);
             building.position.set(data.x, y, data.z);
 
+            // Rotate castle so the door faces south (toward spawn)
+            if (data.type === 'castle') building.rotation.y = Math.PI;
+
             this.scene.add(building);
 
             if (data.type === 'furnace') {
