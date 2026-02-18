@@ -88,43 +88,52 @@ export class CombatSystem {
             }
         }
 
-        if (!player.inCombat || !player.combatTarget) return;
+        // Player attacking monster
+        if (player.inCombat && player.combatTarget) {
+            const monster = player.combatTarget;
 
-        const monster = player.combatTarget;
+            if (!monster.alive) {
+                player.inCombat = false;
+                player.combatTarget = null;
+            } else {
+                // Keep monster tracking the player's current position
+                monster.combatTarget = this.game.engine.camera.position;
 
-        if (!monster.alive) {
-            player.inCombat = false;
-            player.combatTarget = null;
-            return;
+                // Check distance based on attack style
+                const dist = this.game.distanceToPlayer(monster.position);
+                const maxRange = this._getMaxRange(player);
+                if (dist > maxRange + 1) {
+                    this.game.addChatMessage("Your target is too far away.", 'system');
+                    player.inCombat = false;
+                    player.combatTarget = null;
+                    monster.stopCombat();
+                } else {
+                    // KBD phase logic
+                    const monsterType = monster.config?.type || monster.mesh?.userData?.subType;
+                    if (monsterType === 'kbd' || monster.name === 'King Black Dragon') {
+                        this._updateKBDPhase(monster, player);
+                    }
+
+                    // Player attack
+                    player.attackTimer++;
+                    if (player.attackTimer >= CONFIG.COMBAT.playerAttackSpeed) {
+                        player.attackTimer = 0;
+                        this._playerAttack(player, monster);
+                        this.game.engine.triggerSwing();
+                    }
+                }
+            }
         }
 
-        // Check distance based on attack style
-        const dist = this.game.distanceToPlayer(monster.position);
-        const maxRange = this._getMaxRange(player);
-        if (dist > maxRange + 1) {
-            this.game.addChatMessage("Your target is too far away.", 'system');
-            player.inCombat = false;
-            player.combatTarget = null;
-            monster.stopCombat();
-            return;
-        }
+        // Monster attacks — process ALL monsters in combat (handles aggro + retaliation)
+        const monsters = this.game.environment?.monsters || [];
+        for (const monster of monsters) {
+            if (!monster.inCombat || !monster.alive) continue;
 
-        // KBD phase logic
-        const monsterType = monster.config?.type || monster.mesh?.userData?.subType;
-        if (monsterType === 'kbd' || monster.name === 'King Black Dragon') {
-            this._updateKBDPhase(monster, player);
-        }
+            // Keep monster tracking the player
+            monster.combatTarget = this.game.engine.camera.position;
 
-        // Player attack
-        player.attackTimer++;
-        if (player.attackTimer >= CONFIG.COMBAT.playerAttackSpeed) {
-            player.attackTimer = 0;
-            this._playerAttack(player, monster);
-            this.game.engine.triggerSwing();
-        }
-
-        // Monster attack back
-        if (monster.inCombat) {
+            const monsterType = monster.config?.type || monster.mesh?.userData?.subType;
             monster.attackTimer++;
             const effectiveSpeed = (monsterType === 'kbd' || monster.name === 'King Black Dragon') && this._kbdPhase === 3
                 ? (CONFIG.MONSTERS.kbd.phase3AttackSpeed || 2)
@@ -543,7 +552,7 @@ export class CombatSystem {
             player.inCombat = true;
             player.combatTarget = monster;
             player.attackTimer = 0;
-            monster.startCombat();
+            monster.startCombat(this.game.engine.camera.position);
             this.game.addChatMessage(`Auto-retaliate: You attack the ${monster.name}.`, 'system');
         }
 
@@ -832,7 +841,7 @@ export class CombatSystem {
         player.inCombat = true;
         player.combatTarget = monster;
         player.attackTimer = 0;
-        monster.startCombat();
+        monster.startCombat(this.game.engine.camera.position);
         this.game.addChatMessage(`You attack the ${monster.name}.`);
     }
 }

@@ -74,6 +74,29 @@ export class Terrain {
         this.scene.add(this.mesh);
     }
 
+    flattenArea(cx, cz, halfW, halfD, targetY) {
+        const { size, segments } = CONFIG.WORLD;
+        const halfSize = size / 2;
+        const positions = this.mesh.geometry.attributes.position.array;
+        const stride = segments + 1;
+
+        for (let iz = 0; iz <= segments; iz++) {
+            for (let ix = 0; ix <= segments; ix++) {
+                const idx = iz * stride + ix;
+                const wx = positions[idx * 3];
+                const wz = positions[idx * 3 + 2];
+
+                if (wx >= cx - halfW && wx <= cx + halfW && wz >= cz - halfD && wz <= cz + halfD) {
+                    positions[idx * 3 + 1] = targetY;
+                    this._heightData[idx] = targetY;
+                }
+            }
+        }
+
+        this.mesh.geometry.attributes.position.needsUpdate = true;
+        this.mesh.geometry.computeVertexNormals();
+    }
+
     getHeightAt(x, z) {
         // Bilinear interpolation of terrain height
         const { size, segments } = CONFIG.WORLD;

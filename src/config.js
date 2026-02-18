@@ -679,7 +679,7 @@ export const CONFIG = {
             },
         },
         bartender: {
-            name: 'Bartender', x: 18, z: -10,
+            name: 'Bartender', x: 25, z: -3,
             quest: null, shop: 'tavern',
             dialogues: {
                 default: [
@@ -816,7 +816,7 @@ export const CONFIG = {
             { type: 'anvil', x: -14, z: -10 },
             { type: 'church', x: 15, z: -15 },
             { type: 'shop', x: 10, z: -5 },
-            { type: 'tavern', x: 18, z: -12 },
+            { type: 'tavern', x: 25, z: -5 },
         ],
     },
 };

@@ -49,8 +49,25 @@ export class Environment {
     }
 
     _placeBuildings() {
+        // Footprint sizes for terrain flattening (halfWidth, halfDepth)
+        const footprints = {
+            castle: [7, 6],
+            tavern: [5, 4.5],
+            church: [3.5, 4.5],
+            house: [3, 3],
+            shop: [3, 3],
+        };
+
         for (const data of CONFIG.WORLD_OBJECTS.buildings) {
             const building = this.assets.createBuilding(data.type);
+
+            // Flatten terrain under large buildings first
+            const fp = footprints[data.type];
+            if (fp) {
+                const baseY = this.terrain.getHeightAt(data.x, data.z);
+                this.terrain.flattenArea(data.x, data.z, fp[0], fp[1], baseY);
+            }
+
             const y = this.terrain.getHeightAt(data.x, data.z);
             building.position.set(data.x, y, data.z);
 

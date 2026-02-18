@@ -73,6 +73,7 @@ export class Monster {
                     if (dist < this.aggroRange) {
                         this.state = 'combat';
                         this.inCombat = true;
+                        this.combatTarget = playerPos;
                     }
                 }
                 break;
@@ -95,6 +96,7 @@ export class Monster {
                     if (dist < this.aggroRange) {
                         this.state = 'combat';
                         this.inCombat = true;
+                        this.combatTarget = playerPos;
                     }
                 }
                 break;
@@ -323,10 +325,11 @@ export class Monster {
         this.mesh.traverse(c => { if (c.material) { c.material.transparent = true; c.material.opacity = 0; } });
     }
 
-    startCombat() {
+    startCombat(playerPos) {
         this.state = 'combat';
         this.inCombat = true;
         this.wanderTarget = null;
+        if (playerPos) this.combatTarget = playerPos;
     }
 
     stopCombat() {
