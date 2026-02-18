@@ -637,6 +637,13 @@ export class Environment {
             raw_lobster: 0xFF4400, cooked_lobster: 0xCC3300,
             herb: 0x22AA44, vial: 0x66BBFF,
             attack_potion: 0xFF4444, strength_potion: 0x44FF44, defence_potion: 0x4444FF,
+            mithril_ore: 0x1A237E, adamantite_ore: 0x2E7D32, runite_ore: 0x00ACC1,
+            mithril_bar: 0x1A237E, adamant_bar: 0x2E7D32, rune_bar: 0x00ACC1,
+            steel_bar: 0x888888, steel_arrow: 0x888888, oak_shortbow: 0x6B4226,
+            mithril_sword: 0x1A237E, mithril_platebody: 0x1A237E, mithril_dagger: 0x1A237E,
+            adamant_sword: 0x2E7D32, adamant_platebody: 0x2E7D32,
+            rune_sword: 0x00ACC1, rune_platebody: 0x00ACC1, rune_dagger: 0x00ACC1,
+            knife: 0xCCCCCC, tinderbox: 0xCC6600,
         };
         const color = colors[itemId] || 0xFFFFFF;
         const geo = new THREE.BoxGeometry(0.25, 0.25, 0.25);

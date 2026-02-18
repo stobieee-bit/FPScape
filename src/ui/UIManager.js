@@ -669,6 +669,18 @@ export class UIManager {
             menu.appendChild(fmOpt);
         }
 
+        // Fletch logs (fletching — requires knife)
+        if (['logs', 'oak_logs', 'willow_logs'].includes(item.itemId) && this.game.inventorySystem.hasItem('knife')) {
+            const flOpt = document.createElement('div');
+            flOpt.className = 'inv-context-option';
+            flOpt.textContent = `Fletch ${itemDef.name}`;
+            flOpt.addEventListener('click', () => {
+                this.game.interactionSystem._handleFletching(item.itemId);
+                menu.remove();
+            });
+            menu.appendChild(flOpt);
+        }
+
         // Sell to shop (show price)
         if (item.itemId !== 'coins') {
             const sellPrice = this.game.shopSystem.getSellPrice(item.itemId);

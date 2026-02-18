@@ -120,7 +120,7 @@ export class Minimap {
 
         // Draw resource nodes (colored by subtype)
         const treeColors = { normal: '#1B8A2F', oak: '#228B22', willow: '#2E8B57' };
-        const rockColors = { copper: '#CD7F32', tin: '#C0C0C0', iron: '#A0522D', coal: '#444444' };
+        const rockColors = { copper: '#CD7F32', tin: '#C0C0C0', iron: '#A0522D', coal: '#444444', mithril: '#1A237E', adamant: '#2E7D32', runite: '#00ACC1' };
         for (const node of this.game.environment.resourceNodes) {
             if (node.depleted) continue;
 

@@ -412,7 +412,7 @@ export class CombatSystem {
 
     _playerRangedAttack(player, monster) {
         // Check for arrows
-        const arrowTypes = ['iron_arrow', 'bronze_arrow'];
+        const arrowTypes = ['steel_arrow', 'iron_arrow', 'bronze_arrow'];
         let arrowId = null;
         for (const at of arrowTypes) {
             if (this.game.inventorySystem.hasItem(at)) { arrowId = at; break; }

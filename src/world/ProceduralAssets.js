@@ -15,6 +15,9 @@ export class ProceduralAssets {
             tinOre: new THREE.MeshStandardMaterial({ color: 0xC0C0C0, roughness: 0.7, metalness: 0.4 }),
             ironOre: new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.7, metalness: 0.3 }),
             coalOre: new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8, metalness: 0.1 }),
+            mithrilOre: new THREE.MeshStandardMaterial({ color: 0x1A237E, roughness: 0.6, metalness: 0.5 }),
+            adamantOre: new THREE.MeshStandardMaterial({ color: 0x2E7D32, roughness: 0.6, metalness: 0.5 }),
+            runiteOre: new THREE.MeshStandardMaterial({ color: 0x00ACC1, roughness: 0.5, metalness: 0.6 }),
             chickenBody: new THREE.MeshStandardMaterial({ color: 0xF5F5DC, roughness: 0.8 }),
             chickenBeak: new THREE.MeshStandardMaterial({ color: 0xFF8C00, roughness: 0.7 }),
             chickenComb: new THREE.MeshStandardMaterial({ color: 0xFF2222, roughness: 0.7 }),
@@ -131,7 +134,8 @@ export class ProceduralAssets {
         rock.position.y = 0.5; rock.castShadow = true; rock.scale.y = 0.7;
         rock.name = 'mainRock'; group.add(rock);
 
-        const oreMat = this.materials[type + 'Ore'] || this.materials.copperOre;
+        const oreNames = { copper: 'copperOre', tin: 'tinOre', iron: 'ironOre', coal: 'coalOre', mithril: 'mithrilOre', adamant: 'adamantOre', runite: 'runiteOre' };
+        const oreMat = this.materials[oreNames[type]] || this.materials[type + 'Ore'] || this.materials.copperOre;
         for (let i = 0; i < 4; i++) {
             const vein = new THREE.Mesh(new THREE.SphereGeometry(0.12, 4, 3), oreMat);
             const a = (i / 4) * Math.PI * 2 + Math.random() * 0.5;

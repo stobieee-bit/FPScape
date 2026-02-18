@@ -636,6 +636,70 @@ export class InteractionSystem {
         }, 60000);
     }
 
+    // ── Fletching: Craft arrows/bows from logs ──
+    _handleFletching(logId) {
+        const player = this.game.player;
+        const inv = this.game.inventorySystem;
+        const fletchLevel = player.skills.fletching?.level || 1;
+
+        // Find all recipes that use this log type and the player can make
+        const candidates = [];
+        for (const [productId, recipe] of Object.entries(CONFIG.FLETCHING)) {
+            if (recipe.logs === logId && fletchLevel >= recipe.level) {
+                candidates.push({ productId, recipe });
+            }
+        }
+
+        if (candidates.length === 0) {
+            this.game.addChatMessage("You don't have the Fletching level to make anything with those logs.", 'system');
+            return;
+        }
+
+        // Prefer the highest-level arrow recipe, then bows
+        const arrowRecipes = candidates.filter(c => c.recipe.feathers > 0);
+        const bowRecipes = candidates.filter(c => c.recipe.feathers === 0);
+
+        // Try arrows first (higher priority), then bows
+        const ordered = [...arrowRecipes.reverse(), ...bowRecipes.reverse()];
+
+        for (const { productId, recipe } of ordered) {
+            if (this._doFletch(productId, recipe)) return;
+        }
+
+        this.game.addChatMessage("You don't have the required materials.", 'system');
+    }
+
+    _doFletch(productId, recipe) {
+        const inv = this.game.inventorySystem;
+
+        // Check logs
+        if (!inv.hasItem(recipe.logs)) return false;
+
+        // Check feathers if needed
+        if (recipe.feathers > 0 && !inv.hasItem('feather', recipe.feathers)) {
+            this.game.addChatMessage(`You need ${recipe.feathers} feathers to fletch ${recipe.name.toLowerCase()}.`, 'system');
+            return false;
+        }
+
+        // Consume ingredients
+        inv.removeItem(recipe.logs, 1);
+        if (recipe.feathers > 0) inv.removeItem('feather', recipe.feathers);
+
+        // Produce output
+        const added = inv.addItem(productId, recipe.qty);
+        if (!added) {
+            // Rollback — inventory full
+            inv.addItem(recipe.logs, 1);
+            if (recipe.feathers > 0) inv.addItem('feather', recipe.feathers);
+            this.game.addChatMessage("Your inventory is full.", 'system');
+            return false;
+        }
+
+        this.game.skillSystem.addXP('fletching', recipe.xp * recipe.qty);
+        this.game.addChatMessage(`You fletch ${recipe.qty > 1 ? recipe.qty + ' ' : ''}${recipe.name.toLowerCase()}.`);
+        return true;
+    }
+
     // ── Thieving: Pickpocket NPC ──
     handleThieving(npcId) {
         const player = this.game.player;

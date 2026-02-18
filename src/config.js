@@ -71,6 +71,7 @@ export const CONFIG = {
         slayer:      { name: 'Slayer',      icon: '💀', color: '#666666' },
         thieving:    { name: 'Thieving',    icon: '🤏', color: '#CC66CC' },
         herblore:    { name: 'Herblore',    icon: '🌿', color: '#00AA44' },
+        fletching:   { name: 'Fletching',  icon: '🪶', color: '#00AA44' },
     },
 
     TREES: {
@@ -83,7 +84,10 @@ export const CONFIG = {
         copper: { name: 'Copper rock', hp: 6, respawnTime: 4, requiredLevel: 1, xpPerHarvest: 17, yieldItem: 'copper_ore', successChance: 0.6 },
         tin:    { name: 'Tin rock', hp: 6, respawnTime: 4, requiredLevel: 1, xpPerHarvest: 17, yieldItem: 'tin_ore', successChance: 0.6 },
         iron:   { name: 'Iron rock', hp: 10, respawnTime: 10, requiredLevel: 15, xpPerHarvest: 35, yieldItem: 'iron_ore', successChance: 0.35 },
-        coal:   { name: 'Coal rock', hp: 12, respawnTime: 30, requiredLevel: 30, xpPerHarvest: 50, yieldItem: 'coal', successChance: 0.3 },
+        coal:    { name: 'Coal rock', hp: 12, respawnTime: 30, requiredLevel: 30, xpPerHarvest: 50, yieldItem: 'coal', successChance: 0.3 },
+        mithril: { name: 'Mithril rock', hp: 15, respawnTime: 60, requiredLevel: 55, xpPerHarvest: 80, yieldItem: 'mithril_ore', successChance: 0.25 },
+        adamant: { name: 'Adamant rock', hp: 20, respawnTime: 120, requiredLevel: 70, xpPerHarvest: 95, yieldItem: 'adamantite_ore', successChance: 0.2 },
+        runite:  { name: 'Runite rock', hp: 25, respawnTime: 300, requiredLevel: 85, xpPerHarvest: 125, yieldItem: 'runite_ore', successChance: 0.15 },
     },
 
     MONSTERS: {
@@ -183,6 +187,7 @@ export const CONFIG = {
                 { item: 'coins', qty: 50, chance: 0.7 },
                 { item: 'fire_rune', qty: 10, chance: 0.5 },
                 { item: 'steel_sword', qty: 1, chance: 0.1 },
+                { item: 'adamant_sword', qty: 1, chance: 0.08 },
                 { item: 'rune_essence', qty: 5, chance: 0.2 },
                 { item: 'herb', qty: 2, chance: 0.35 },
             ],
@@ -203,6 +208,8 @@ export const CONFIG = {
                 { item: 'coins', qty: 200, chance: 1.0 },
                 { item: 'dragon_bones', qty: 1, chance: 1.0 },
                 { item: 'steel_sword', qty: 1, chance: 0.3 },
+                { item: 'rune_sword', qty: 1, chance: 0.15 },
+                { item: 'rune_platebody', qty: 1, chance: 0.05 },
                 { item: 'rune_essence', qty: 10, chance: 0.5 },
                 { item: 'herb', qty: 3, chance: 0.5 },
             ],
@@ -216,6 +223,7 @@ export const CONFIG = {
             lootTable: [
                 { item: 'bones', qty: 1, chance: 1.0 },
                 { item: 'coins', qty: 15, chance: 0.6 },
+                { item: 'mithril_dagger', qty: 1, chance: 0.05 },
             ],
             respawnTime: 30,
             xpReward: { attack: 10, strength: 10, defence: 10, hitpoints: 4 },
@@ -231,9 +239,15 @@ export const CONFIG = {
         tin_ore:        { name: 'Tin ore',         stackable: false, icon: '🪨' },
         iron_ore:       { name: 'Iron ore',        stackable: false, icon: '🪨' },
         coal:           { name: 'Coal',            stackable: false, icon: '⬛' },
+        mithril_ore:    { name: 'Mithril ore',     stackable: false, icon: '🪨' },
+        adamantite_ore: { name: 'Adamantite ore',  stackable: false, icon: '🪨' },
+        runite_ore:     { name: 'Runite ore',      stackable: false, icon: '🪨' },
         bronze_bar:     { name: 'Bronze bar',      stackable: false, icon: '🟫' },
         iron_bar:       { name: 'Iron bar',        stackable: false, icon: '⬜' },
         steel_bar:      { name: 'Steel bar',       stackable: false, icon: '🔲' },
+        mithril_bar:    { name: 'Mithril bar',     stackable: false, icon: '🔵' },
+        adamant_bar:    { name: 'Adamant bar',     stackable: false, icon: '🟢' },
+        rune_bar:       { name: 'Rune bar',        stackable: false, icon: '🔷' },
         // Bones
         bones:          { name: 'Bones',           stackable: false, icon: '🦴', prayerXP: 4.5 },
         dragon_bones:   { name: 'Dragon bones',    stackable: false, icon: '🦴', prayerXP: 72 },
@@ -274,7 +288,10 @@ export const CONFIG = {
         // Ranged
         bronze_arrow:   { name: 'Bronze arrow',    stackable: true,  icon: '➡️', rangedStrength: 2 },
         iron_arrow:     { name: 'Iron arrow',      stackable: true,  icon: '➡️', rangedStrength: 4 },
+        steel_arrow:    { name: 'Steel arrow',     stackable: true,  icon: '➡️', rangedStrength: 6 },
         shortbow:       { name: 'Shortbow',        stackable: false, icon: '🏹', equipSlot: 'weapon', attackBonus: 0, strengthBonus: 0, defenceBonus: 0, rangedBonus: 6, attackStyle: 'ranged' },
+        oak_shortbow:   { name: 'Oak shortbow',    stackable: false, icon: '🏹', equipSlot: 'weapon', attackBonus: 0, strengthBonus: 0, defenceBonus: 0, rangedBonus: 14, attackStyle: 'ranged' },
+        knife:          { name: 'Knife',           stackable: false, icon: '🔪' },
         // Equipment — Bronze
         goblin_mail:    { name: 'Goblin mail',     stackable: false, icon: '🛡️', equipSlot: 'body', attackBonus: 0, strengthBonus: 0, defenceBonus: 2 },
         bronze_dagger:  { name: 'Bronze dagger',   stackable: false, icon: '🔪', equipSlot: 'weapon', attackBonus: 2, strengthBonus: 1, defenceBonus: 0 },
@@ -303,6 +320,33 @@ export const CONFIG = {
         steel_chainbody:{ name: 'Steel chainbody',  stackable: false, icon: '🫁', equipSlot: 'body', attackBonus: 0, strengthBonus: 0, defenceBonus: 11 },
         steel_platebody:{ name: 'Steel platebody',  stackable: false, icon: '🫁', equipSlot: 'body', attackBonus: 0, strengthBonus: 0, defenceBonus: 14 },
         steel_legs:     { name: 'Steel platelegs',  stackable: false, icon: '👖', equipSlot: 'legs', attackBonus: 0, strengthBonus: 0, defenceBonus: 9 },
+        // Equipment — Mithril
+        mithril_dagger:   { name: 'Mithril dagger',    stackable: false, icon: '🔪', equipSlot: 'weapon', attackBonus: 12, strengthBonus: 7,  defenceBonus: 0 },
+        mithril_mace:     { name: 'Mithril mace',      stackable: false, icon: '🔨', equipSlot: 'weapon', attackBonus: 14, strengthBonus: 13, defenceBonus: 0 },
+        mithril_sword:    { name: 'Mithril sword',     stackable: false, icon: '⚔️', equipSlot: 'weapon', attackBonus: 18, strengthBonus: 15, defenceBonus: 0 },
+        mithril_helm:     { name: 'Mithril full helm',  stackable: false, icon: '⛑️', equipSlot: 'head', attackBonus: 0, strengthBonus: 0, defenceBonus: 11 },
+        mithril_shield:   { name: 'Mithril shield',    stackable: false, icon: '🛡️', equipSlot: 'shield', attackBonus: 0, strengthBonus: 0, defenceBonus: 13 },
+        mithril_chainbody:{ name: 'Mithril chainbody',  stackable: false, icon: '🫁', equipSlot: 'body', attackBonus: 0, strengthBonus: 0, defenceBonus: 16 },
+        mithril_platebody:{ name: 'Mithril platebody',  stackable: false, icon: '🫁', equipSlot: 'body', attackBonus: 0, strengthBonus: 0, defenceBonus: 21 },
+        mithril_legs:     { name: 'Mithril platelegs',  stackable: false, icon: '👖', equipSlot: 'legs', attackBonus: 0, strengthBonus: 0, defenceBonus: 13 },
+        // Equipment — Adamant
+        adamant_dagger:   { name: 'Adamant dagger',    stackable: false, icon: '🔪', equipSlot: 'weapon', attackBonus: 18, strengthBonus: 10, defenceBonus: 0 },
+        adamant_mace:     { name: 'Adamant mace',      stackable: false, icon: '🔨', equipSlot: 'weapon', attackBonus: 21, strengthBonus: 19, defenceBonus: 0 },
+        adamant_sword:    { name: 'Adamant sword',     stackable: false, icon: '⚔️', equipSlot: 'weapon', attackBonus: 27, strengthBonus: 22, defenceBonus: 0 },
+        adamant_helm:     { name: 'Adamant full helm',  stackable: false, icon: '⛑️', equipSlot: 'head', attackBonus: 0, strengthBonus: 0, defenceBonus: 16 },
+        adamant_shield:   { name: 'Adamant shield',    stackable: false, icon: '🛡️', equipSlot: 'shield', attackBonus: 0, strengthBonus: 0, defenceBonus: 19 },
+        adamant_chainbody:{ name: 'Adamant chainbody',  stackable: false, icon: '🫁', equipSlot: 'body', attackBonus: 0, strengthBonus: 0, defenceBonus: 24 },
+        adamant_platebody:{ name: 'Adamant platebody',  stackable: false, icon: '🫁', equipSlot: 'body', attackBonus: 0, strengthBonus: 0, defenceBonus: 31 },
+        adamant_legs:     { name: 'Adamant platelegs',  stackable: false, icon: '👖', equipSlot: 'legs', attackBonus: 0, strengthBonus: 0, defenceBonus: 19 },
+        // Equipment — Rune
+        rune_dagger:      { name: 'Rune dagger',       stackable: false, icon: '🔪', equipSlot: 'weapon', attackBonus: 26, strengthBonus: 14, defenceBonus: 0 },
+        rune_mace:        { name: 'Rune mace',         stackable: false, icon: '🔨', equipSlot: 'weapon', attackBonus: 31, strengthBonus: 28, defenceBonus: 0 },
+        rune_sword:       { name: 'Rune sword',        stackable: false, icon: '⚔️', equipSlot: 'weapon', attackBonus: 40, strengthBonus: 33, defenceBonus: 0 },
+        rune_helm:        { name: 'Rune full helm',     stackable: false, icon: '⛑️', equipSlot: 'head', attackBonus: 0, strengthBonus: 0, defenceBonus: 24 },
+        rune_shield:      { name: 'Rune shield',       stackable: false, icon: '🛡️', equipSlot: 'shield', attackBonus: 0, strengthBonus: 0, defenceBonus: 29 },
+        rune_chainbody:   { name: 'Rune chainbody',     stackable: false, icon: '🫁', equipSlot: 'body', attackBonus: 0, strengthBonus: 0, defenceBonus: 36 },
+        rune_platebody:   { name: 'Rune platebody',     stackable: false, icon: '🫁', equipSlot: 'body', attackBonus: 0, strengthBonus: 0, defenceBonus: 46 },
+        rune_legs:        { name: 'Rune platelegs',     stackable: false, icon: '👖', equipSlot: 'legs', attackBonus: 0, strengthBonus: 0, defenceBonus: 29 },
         // Other equipment
         leather_boots:  { name: 'Leather boots',   stackable: false, icon: '👢', equipSlot: 'feet', attackBonus: 0, strengthBonus: 0, defenceBonus: 1 },
         // Staff
@@ -321,7 +365,10 @@ export const CONFIG = {
         smelting: {
             bronze_bar: { ores: { copper_ore: 1, tin_ore: 1 }, level: 1, xp: 6 },
             iron_bar:   { ores: { iron_ore: 1 }, level: 15, xp: 12.5 },
-            steel_bar:  { ores: { iron_ore: 1, coal: 2 }, level: 30, xp: 17.5 },
+            steel_bar:   { ores: { iron_ore: 1, coal: 2 }, level: 30, xp: 17.5 },
+            mithril_bar: { ores: { mithril_ore: 1, coal: 4 }, level: 50, xp: 30 },
+            adamant_bar: { ores: { adamantite_ore: 1, coal: 6 }, level: 70, xp: 37.5 },
+            rune_bar:    { ores: { runite_ore: 1, coal: 8 }, level: 85, xp: 50 },
         },
         anvil: {
             // Bronze tier (bars=1-5, levels 1-8)
@@ -351,6 +398,33 @@ export const CONFIG = {
             steel_chainbody: { bar: 'steel_bar', qty: 3, level: 36, xp: 112, category: 'armour' },
             steel_legs:      { bar: 'steel_bar', qty: 3, level: 37, xp: 112, category: 'armour' },
             steel_platebody: { bar: 'steel_bar', qty: 5, level: 38, xp: 187, category: 'armour' },
+            // Mithril
+            mithril_dagger:    { bar: 'mithril_bar', qty: 1, level: 50, xp: 50,  category: 'weapon' },
+            mithril_mace:      { bar: 'mithril_bar', qty: 1, level: 51, xp: 50,  category: 'weapon' },
+            mithril_sword:     { bar: 'mithril_bar', qty: 1, level: 54, xp: 50,  category: 'weapon' },
+            mithril_helm:      { bar: 'mithril_bar', qty: 1, level: 53, xp: 50,  category: 'armour' },
+            mithril_shield:    { bar: 'mithril_bar', qty: 2, level: 54, xp: 100, category: 'armour' },
+            mithril_chainbody: { bar: 'mithril_bar', qty: 3, level: 56, xp: 150, category: 'armour' },
+            mithril_legs:      { bar: 'mithril_bar', qty: 3, level: 57, xp: 150, category: 'armour' },
+            mithril_platebody: { bar: 'mithril_bar', qty: 5, level: 58, xp: 250, category: 'armour' },
+            // Adamant
+            adamant_dagger:    { bar: 'adamant_bar', qty: 1, level: 70, xp: 62,  category: 'weapon' },
+            adamant_mace:      { bar: 'adamant_bar', qty: 1, level: 71, xp: 62,  category: 'weapon' },
+            adamant_sword:     { bar: 'adamant_bar', qty: 1, level: 74, xp: 62,  category: 'weapon' },
+            adamant_helm:      { bar: 'adamant_bar', qty: 1, level: 73, xp: 62,  category: 'armour' },
+            adamant_shield:    { bar: 'adamant_bar', qty: 2, level: 74, xp: 125, category: 'armour' },
+            adamant_chainbody: { bar: 'adamant_bar', qty: 3, level: 76, xp: 187, category: 'armour' },
+            adamant_legs:      { bar: 'adamant_bar', qty: 3, level: 77, xp: 187, category: 'armour' },
+            adamant_platebody: { bar: 'adamant_bar', qty: 5, level: 78, xp: 312, category: 'armour' },
+            // Rune
+            rune_dagger:    { bar: 'rune_bar', qty: 1, level: 85, xp: 75,  category: 'weapon' },
+            rune_mace:      { bar: 'rune_bar', qty: 1, level: 86, xp: 75,  category: 'weapon' },
+            rune_sword:     { bar: 'rune_bar', qty: 1, level: 89, xp: 75,  category: 'weapon' },
+            rune_helm:      { bar: 'rune_bar', qty: 1, level: 88, xp: 75,  category: 'armour' },
+            rune_shield:    { bar: 'rune_bar', qty: 2, level: 89, xp: 150, category: 'armour' },
+            rune_chainbody: { bar: 'rune_bar', qty: 3, level: 91, xp: 225, category: 'armour' },
+            rune_legs:      { bar: 'rune_bar', qty: 3, level: 92, xp: 225, category: 'armour' },
+            rune_platebody: { bar: 'rune_bar', qty: 5, level: 93, xp: 375, category: 'armour' },
         },
     },
 
@@ -376,6 +450,14 @@ export const CONFIG = {
         defence_potion:  { name: 'Defence potion',   herb: 3, vial: 1, level: 20, xp: 75 },
         stamina_potion:  { name: 'Stamina potion',   herb: 2, vial: 1, level: 25, xp: 60 },
         antipoison:      { name: 'Antipoison',       herb: 1, vial: 1, level: 5,  xp: 20 },
+    },
+
+    FLETCHING: {
+        bronze_arrow: { name: 'Bronze arrows',  logs: 'logs',        feathers: 15, qty: 15, level: 1,  xp: 5  },
+        shortbow:     { name: 'Shortbow',       logs: 'logs',        feathers: 0,  qty: 1,  level: 5,  xp: 10 },
+        iron_arrow:   { name: 'Iron arrows',    logs: 'oak_logs',    feathers: 15, qty: 15, level: 20, xp: 10 },
+        oak_shortbow: { name: 'Oak shortbow',   logs: 'oak_logs',    feathers: 0,  qty: 1,  level: 25, xp: 25 },
+        steel_arrow:  { name: 'Steel arrows',   logs: 'willow_logs', feathers: 15, qty: 15, level: 40, xp: 15 },
     },
 
     SPECIAL_ATTACKS: {
@@ -442,6 +524,8 @@ export const CONFIG = {
             { item: 'rune_essence', price: 3, qty: 50 },
             { item: 'vial', price: 5, qty: 50 },
             { item: 'tinderbox', price: 1, qty: 10 },
+            { item: 'knife', price: 5, qty: 5 },
+            { item: 'steel_arrow', price: 10, qty: 30 },
         ],
     },
 
@@ -487,24 +571,25 @@ export const CONFIG = {
     ],
 
     SKILL_GUIDES: {
-        attack:      [{ level: 1, unlock: 'Bronze weapons' }, { level: 5, unlock: 'Iron weapons' }, { level: 20, unlock: 'Steel weapons' }],
+        attack:      [{ level: 1, unlock: 'Bronze weapons' }, { level: 5, unlock: 'Iron weapons' }, { level: 20, unlock: 'Steel weapons' }, { level: 30, unlock: 'Mithril weapons' }, { level: 40, unlock: 'Adamant weapons' }, { level: 50, unlock: 'Rune weapons' }],
         strength:    [{ level: 1, unlock: 'Max hit increases with level' }],
-        defence:     [{ level: 1, unlock: 'Bronze armor' }, { level: 5, unlock: 'Iron armor' }, { level: 20, unlock: 'Steel armor' }],
+        defence:     [{ level: 1, unlock: 'Bronze armor' }, { level: 5, unlock: 'Iron armor' }, { level: 20, unlock: 'Steel armor' }, { level: 30, unlock: 'Mithril armor' }, { level: 40, unlock: 'Adamant armor' }, { level: 50, unlock: 'Rune armor' }],
         hitpoints:   [{ level: 10, unlock: 'Starting HP' }],
-        ranged:      [{ level: 1, unlock: 'Shortbow + Bronze arrows' }, { level: 20, unlock: 'Iron arrows' }],
+        ranged:      [{ level: 1, unlock: 'Shortbow + Bronze arrows' }, { level: 20, unlock: 'Iron arrows' }, { level: 25, unlock: 'Oak shortbow' }, { level: 40, unlock: 'Steel arrows' }],
         magic:       [{ level: 1, unlock: 'Wind Strike' }, { level: 5, unlock: 'Water Strike' }, { level: 9, unlock: 'Earth Strike' }, { level: 13, unlock: 'Fire Strike' }, { level: 35, unlock: 'Fire Bolt' }],
         prayer:      [{ level: 1, unlock: 'Thick Skin (+5 Def)' }, { level: 4, unlock: 'Burst of Strength (+5 Str)' }, { level: 7, unlock: 'Clarity of Thought (+5 Atk)' }, { level: 43, unlock: 'Protect from Melee' }],
         woodcutting: [{ level: 1, unlock: 'Normal trees' }, { level: 15, unlock: 'Oak trees' }, { level: 30, unlock: 'Willow trees' }],
-        mining:      [{ level: 1, unlock: 'Copper & Tin' }, { level: 15, unlock: 'Iron ore' }, { level: 30, unlock: 'Coal' }],
+        mining:      [{ level: 1, unlock: 'Copper & Tin' }, { level: 15, unlock: 'Iron ore' }, { level: 30, unlock: 'Coal' }, { level: 55, unlock: 'Mithril ore' }, { level: 70, unlock: 'Adamantite ore' }, { level: 85, unlock: 'Runite ore' }],
         fishing:     [{ level: 1, unlock: 'Shrimps' }, { level: 20, unlock: 'Trout' }, { level: 40, unlock: 'Lobster' }],
         cooking:     [{ level: 1, unlock: 'Shrimps, Chicken, Beef' }],
         firemaking:  [{ level: 1, unlock: 'Normal logs' }, { level: 15, unlock: 'Oak logs' }, { level: 30, unlock: 'Willow logs' }],
-        smithing:    [{ level: 1, unlock: 'Bronze bars & items' }, { level: 15, unlock: 'Iron bars & items' }, { level: 30, unlock: 'Steel bars & items' }],
+        smithing:    [{ level: 1, unlock: 'Bronze bars & items' }, { level: 15, unlock: 'Iron bars & items' }, { level: 30, unlock: 'Steel bars & items' }, { level: 50, unlock: 'Mithril bars & items' }, { level: 70, unlock: 'Adamant bars & items' }, { level: 85, unlock: 'Rune bars & items' }],
         runecrafting:[{ level: 1, unlock: 'Air runes' }, { level: 2, unlock: 'Mind runes' }, { level: 5, unlock: 'Water runes' }, { level: 9, unlock: 'Earth runes' }, { level: 14, unlock: 'Fire runes' }, { level: 35, unlock: 'Chaos runes' }],
         agility:     [{ level: 1, unlock: 'Lumbridge agility course' }],
         slayer:      [{ level: 1, unlock: 'Slayer tasks from Turael' }],
         thieving:    [{ level: 1, unlock: 'Pickpocket Lumbridge Guide' }, { level: 10, unlock: 'Pickpocket Shopkeeper' }, { level: 15, unlock: 'Pickpocket Fred' }, { level: 25, unlock: 'Pickpocket Banker' }],
         herblore:    [{ level: 3, unlock: 'Attack potion' }, { level: 12, unlock: 'Strength potion' }, { level: 20, unlock: 'Defence potion' }],
+        fletching:   [{ level: 1, unlock: 'Bronze arrows' }, { level: 5, unlock: 'Shortbow' }, { level: 20, unlock: 'Iron arrows' }, { level: 25, unlock: 'Oak shortbow' }, { level: 40, unlock: 'Steel arrows' }],
     },
 
     NPCS: {
@@ -782,6 +867,12 @@ export const CONFIG = {
             { type: 'tin', x: -18, z: -8 }, { type: 'tin', x: -24, z: -6 }, { type: 'tin', x: -21, z: -9 },
             { type: 'iron', x: -30, z: -20 }, { type: 'iron', x: -28, z: -22 }, { type: 'iron', x: -32, z: -18 },
             { type: 'coal', x: -32, z: -24 }, { type: 'coal', x: -34, z: -22 }, { type: 'coal', x: -36, z: -20 }, { type: 'coal', x: -33, z: -26 },
+            // Mithril rocks — further out
+            { type: 'mithril', x: -40, z: -35 }, { type: 'mithril', x: -42, z: -38 }, { type: 'mithril', x: -38, z: -40 },
+            // Adamant rocks — near dungeon
+            { type: 'adamant', x: -50, z: -42 }, { type: 'adamant', x: -53, z: -45 },
+            // Runite rock — wilderness (dangerous!)
+            { type: 'runite', x: -5, z: -65 },
         ],
         monsters: [
             { type: 'chicken', x: 5, z: 25 }, { type: 'chicken', x: 8, z: 28 },
