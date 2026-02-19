@@ -701,13 +701,13 @@ export class Environment {
         this.interactables.push(entrance);
 
 
-        // Dark ground around dungeon area
+        // Dark ground around dungeon entrance (small, centered on entrance)
         const darkGround = new THREE.Mesh(
-            new THREE.CircleGeometry(15, 16),
+            new THREE.CircleGeometry(5, 16),
             new THREE.MeshStandardMaterial({ color: 0x222211, roughness: 0.95 })
         );
         darkGround.rotation.x = -Math.PI / 2;
-        darkGround.position.set(-50, dungeonY + 0.02, -48);
+        darkGround.position.set(dungeonX, dungeonY + 0.02, dungeonZ);
         this.scene.add(darkGround);
 
         // Scattered bones

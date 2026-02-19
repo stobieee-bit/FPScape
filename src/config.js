@@ -1550,8 +1550,8 @@ export const CONFIG = {
             { type: 'coal', x: -32, z: -24 }, { type: 'coal', x: -34, z: -22 }, { type: 'coal', x: -36, z: -20 }, { type: 'coal', x: -33, z: -26 },
             // Mithril rocks — further out
             { type: 'mithril', x: -40, z: -35 }, { type: 'mithril', x: -42, z: -38 }, { type: 'mithril', x: -38, z: -40 },
-            // Adamant rocks — near dungeon
-            { type: 'adamant', x: -50, z: -42 }, { type: 'adamant', x: -53, z: -45 },
+            // Adamant rocks — near dungeon, west side
+            { type: 'adamant', x: -55, z: -30 }, { type: 'adamant', x: -58, z: -33 },
             // Runite rock — wilderness (dangerous!)
             { type: 'runite', x: -5, z: -65 },
             // Obsidian rocks — volcanic biome
