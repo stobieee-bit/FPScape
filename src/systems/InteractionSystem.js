@@ -472,12 +472,12 @@ export class InteractionSystem {
         const dist = this.game.distanceToPlayer(this.hoveredMesh.position);
         if (dist > CONFIG.PLAYER.interactionRange) { this.game.addChatMessage("You're too far away.", 'system'); return; }
 
-        const obstacle = CONFIG.AGILITY.obstacles[obstacleIndex];
+        const obstacle = CONFIG.AGILITY_COURSE.obstacles[obstacleIndex];
         if (!obstacle) return;
 
         const agilityLevel = player.skills.agility.level;
-        if (agilityLevel < obstacle.level) {
-            this.game.addChatMessage(`You need level ${obstacle.level} Agility to attempt this obstacle.`, 'system');
+        if (agilityLevel < CONFIG.AGILITY_COURSE.requiredLevel) {
+            this.game.addChatMessage(`You need level ${CONFIG.AGILITY_COURSE.requiredLevel} Agility to attempt this obstacle.`, 'system');
             return;
         }
 
@@ -503,7 +503,7 @@ export class InteractionSystem {
 
         // Completing all 5 obstacles (index 4 is the last) finishes a lap
         if (obstacleIndex === 4) {
-            const completionXP = CONFIG.AGILITY.completionXP || 0;
+            const completionXP = CONFIG.AGILITY_COURSE.completionXP || 0;
             if (completionXP > 0) {
                 this.game.skillSystem.addXP('agility', completionXP);
             }

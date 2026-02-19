@@ -519,17 +519,19 @@ export class Environment {
 
     // ── Agility Obstacles ──────────────────────────────────────────────
     _placeAgilityObstacles() {
-        for (const obstacle of CONFIG.AGILITY_COURSE.obstacles) {
+        for (let i = 0; i < CONFIG.AGILITY_COURSE.obstacles.length; i++) {
+            const obstacle = CONFIG.AGILITY_COURSE.obstacles[i];
             const obstacleMesh = this.assets.createAgilityObstacle(obstacle);
             const y = this.terrain.getHeightAt(obstacle.x, obstacle.z);
             obstacleMesh.position.set(obstacle.x, y, obstacle.z);
             obstacleMesh.userData = {
-                type: 'agility_obstacle',
+                type: 'agility',
                 interactable: true,
                 name: obstacle.name,
+                obstacleIndex: i,
                 obstacleData: obstacle,
             };
-            obstacleMesh._entityRef = { type: 'agility_obstacle', obstacle };
+            obstacleMesh._entityRef = { type: 'agility', obstacleIndex: i, obstacle };
             this.scene.add(obstacleMesh);
             this.interactables.push(obstacleMesh);
             this.agilityObstacles.push(obstacleMesh);
