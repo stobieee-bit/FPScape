@@ -18,7 +18,8 @@ export class Minimap {
         const half = this.size / 2;
 
         // Clear
-        ctx.fillStyle = '#2D5A1E';
+        const inDungeon = player.currentDungeonFloor >= 0;
+        ctx.fillStyle = inDungeon ? '#222222' : '#2D5A1E';
         ctx.fillRect(0, 0, this.size, this.size);
 
         ctx.save();
@@ -26,6 +27,16 @@ export class Minimap {
 
         // Rotate map so player always faces "up"
         ctx.rotate(input.yaw);
+
+        // Dungeon floor label
+        if (inDungeon) {
+            ctx.save();
+            ctx.rotate(-input.yaw); // Un-rotate for text
+            ctx.fillStyle = '#FF8800';
+            ctx.font = 'bold 10px monospace';
+            ctx.fillText(`Floor ${player.currentDungeonFloor + 1}`, -half + 4, -half + 12);
+            ctx.restore();
+        }
 
         // Draw terrain grid lines (subtle)
         ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
@@ -45,6 +56,39 @@ export class Minimap {
             ctx.lineTo(200, wz);
             ctx.stroke();
         }
+
+        // ── Dungeon-specific rendering ──
+        if (inDungeon) {
+            const floorData = this.game.environment.dungeonFloors?.[player.currentDungeonFloor];
+            if (floorData) {
+                const b = floorData.bounds;
+                const bx1 = (b.minX - player.position.x) * this.scale;
+                const bz1 = (b.minZ - player.position.z) * this.scale;
+                const bw = (b.maxX - b.minX) * this.scale;
+                const bh = (b.maxZ - b.minZ) * this.scale;
+                ctx.strokeStyle = '#666666';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(bx1, bz1, bw, bh);
+
+                // Ladder up (green)
+                if (floorData.ladderUpPos) {
+                    const lx = (floorData.ladderUpPos.x - player.position.x) * this.scale;
+                    const lz = (floorData.ladderUpPos.z - player.position.z) * this.scale;
+                    ctx.fillStyle = '#00CC00';
+                    ctx.fillRect(lx - 3, lz - 3, 6, 6);
+                }
+                // Ladder down (red)
+                if (floorData.ladderDownPos) {
+                    const lx = (floorData.ladderDownPos.x - player.position.x) * this.scale;
+                    const lz = (floorData.ladderDownPos.z - player.position.z) * this.scale;
+                    ctx.fillStyle = '#CC0000';
+                    ctx.fillRect(lx - 3, lz - 3, 6, 6);
+                }
+            }
+        }
+
+        // ── Surface-only elements ──
+        if (!inDungeon) {
 
         // Draw buildings with distinct POI icons
         for (const bData of CONFIG.WORLD_OBJECTS.buildings) {
@@ -192,6 +236,8 @@ export class Minimap {
             ctx.lineWidth = 1;
             ctx.stroke();
         }
+
+        } // end if (!inDungeon)
 
         // Draw monsters (aggressive = bright red, passive = orange)
         for (const monster of this.game.environment.monsters) {

@@ -228,6 +228,48 @@ export const CONFIG = {
             respawnTime: 30,
             xpReward: { attack: 10, strength: 10, defence: 10, hitpoints: 4 },
         },
+        moss_giant: {
+            name: 'Moss Giant', hp: 25, combatLevel: 18,
+            attackLevel: 12, strengthLevel: 12, defenceLevel: 10,
+            attackSpeed: 4, aggroRange: 6, wanderRadius: 4, moveSpeed: 1.2,
+            lootTable: [
+                { item: 'bones', qty: 1, chance: 1.0 },
+                { item: 'coins', qty: 30, chance: 0.7 },
+                { item: 'herb', qty: 2, chance: 0.4 },
+                { item: 'mithril_sword', qty: 1, chance: 0.08 },
+            ],
+            respawnTime: 40,
+            xpReward: { attack: 25, strength: 25, defence: 25, hitpoints: 8 },
+        },
+        shadow_warrior: {
+            name: 'Shadow Warrior', hp: 35, combatLevel: 28,
+            attackLevel: 18, strengthLevel: 17, defenceLevel: 15,
+            attackSpeed: 3, aggroRange: 7, wanderRadius: 4, moveSpeed: 2,
+            lootTable: [
+                { item: 'bones', qty: 1, chance: 1.0 },
+                { item: 'coins', qty: 45, chance: 0.8 },
+                { item: 'adamant_sword', qty: 1, chance: 0.1 },
+                { item: 'adamant_helm', qty: 1, chance: 0.06 },
+            ],
+            respawnTime: 50,
+            xpReward: { attack: 35, strength: 35, defence: 35, hitpoints: 12 },
+        },
+        demon_lord: {
+            name: 'Demon Lord', hp: 60, combatLevel: 40,
+            attackLevel: 22, strengthLevel: 22, defenceLevel: 18,
+            attackSpeed: 3, aggroRange: 10, wanderRadius: 3, moveSpeed: 1.5,
+            attackType: 'magic',
+            poisonChance: 0.3, poisonDamage: 2, poisonTicks: 6,
+            phases: { phase2: 0.5 },
+            lootTable: [
+                { item: 'bones', qty: 1, chance: 1.0 },
+                { item: 'coins', qty: 150, chance: 1.0 },
+                { item: 'rune_sword', qty: 1, chance: 0.2 },
+                { item: 'demons_bane', qty: 1, chance: 0.5 },
+            ],
+            respawnTime: 90,
+            xpReward: { attack: 60, strength: 60, defence: 60, hitpoints: 20 },
+        },
     },
 
     ITEMS: {
@@ -292,6 +334,8 @@ export const CONFIG = {
         shortbow:       { name: 'Shortbow',        stackable: false, icon: '🏹', equipSlot: 'weapon', attackBonus: 0, strengthBonus: 0, defenceBonus: 0, rangedBonus: 6, attackStyle: 'ranged' },
         oak_shortbow:   { name: 'Oak shortbow',    stackable: false, icon: '🏹', equipSlot: 'weapon', attackBonus: 0, strengthBonus: 0, defenceBonus: 0, rangedBonus: 14, attackStyle: 'ranged' },
         knife:          { name: 'Knife',           stackable: false, icon: '🔪' },
+        demons_bane:    { name: "Demon's Bane",    stackable: false, icon: '🗡️', equipSlot: 'weapon', attackBonus: 35, strengthBonus: 30, defenceBonus: 5 },
+        lantern:        { name: 'Lantern',         stackable: false, icon: '🏮' },
         // Equipment — Bronze
         goblin_mail:    { name: 'Goblin mail',     stackable: false, icon: '🛡️', equipSlot: 'body', attackBonus: 0, strengthBonus: 0, defenceBonus: 2 },
         bronze_dagger:  { name: 'Bronze dagger',   stackable: false, icon: '🔪', equipSlot: 'weapon', attackBonus: 2, strengthBonus: 1, defenceBonus: 0 },
@@ -472,6 +516,11 @@ export const CONFIG = {
         earth_strike: { name: 'Earth Strike', level: 9,  runes: { earth_rune: 2, mind_rune: 1 }, maxHit: 6, xp: 9.5, icon: '🪨' },
         fire_strike:  { name: 'Fire Strike',  level: 13, runes: { fire_rune: 3, air_rune: 2, mind_rune: 1 }, maxHit: 8, xp: 11.5, icon: '🔥' },
         fire_bolt:    { name: 'Fire Bolt',    level: 35, runes: { fire_rune: 5, chaos_rune: 1 }, maxHit: 12, xp: 22.5, icon: '☄️' },
+        crumble_undead:{ name: 'Crumble Undead', level: 39, runes: { earth_rune: 3, chaos_rune: 1 }, maxHit: 15, xp: 24.5, icon: '💀', bonusVs: 'undead' },
+        water_bolt:   { name: 'Water Bolt',   level: 47, runes: { water_rune: 3, chaos_rune: 1 }, maxHit: 14, xp: 28.5, icon: '🌊' },
+        earth_bolt:   { name: 'Earth Bolt',   level: 53, runes: { earth_rune: 4, chaos_rune: 1 }, maxHit: 16, xp: 31.5, icon: '⛰️' },
+        fire_blast:   { name: 'Fire Blast',   level: 59, runes: { fire_rune: 5, air_rune: 4, chaos_rune: 2 }, maxHit: 20, xp: 40.5, icon: '🔥' },
+        wind_wave:    { name: 'Wind Wave',    level: 62, runes: { air_rune: 7, chaos_rune: 2 }, maxHit: 22, xp: 44, icon: '🌪️' },
     },
 
     PRAYERS: {
@@ -504,6 +553,8 @@ export const CONFIG = {
         { monster: 'dark_wizard', minQty: 4, maxQty: 8, minCombat: 8, xpPer: 15 },
         { monster: 'giant_spider', minQty: 3, maxQty: 8, minCombat: 10, xpPer: 18 },
         { monster: 'lesser_demon', minQty: 3, maxQty: 6, minCombat: 15, xpPer: 30 },
+        { monster: 'moss_giant', minQty: 4, maxQty: 8, minCombat: 12, xpPer: 20 },
+        { monster: 'shadow_warrior', minQty: 3, maxQty: 6, minCombat: 20, xpPer: 35 },
     ],
 
     SHOP: {
@@ -526,6 +577,7 @@ export const CONFIG = {
             { item: 'tinderbox', price: 1, qty: 10 },
             { item: 'knife', price: 5, qty: 5 },
             { item: 'steel_arrow', price: 10, qty: 30 },
+            { item: 'chaos_rune', price: 15, qty: 30 },
         ],
     },
 
@@ -576,7 +628,7 @@ export const CONFIG = {
         defence:     [{ level: 1, unlock: 'Bronze armor' }, { level: 5, unlock: 'Iron armor' }, { level: 20, unlock: 'Steel armor' }, { level: 30, unlock: 'Mithril armor' }, { level: 40, unlock: 'Adamant armor' }, { level: 50, unlock: 'Rune armor' }],
         hitpoints:   [{ level: 10, unlock: 'Starting HP' }],
         ranged:      [{ level: 1, unlock: 'Shortbow + Bronze arrows' }, { level: 20, unlock: 'Iron arrows' }, { level: 25, unlock: 'Oak shortbow' }, { level: 40, unlock: 'Steel arrows' }],
-        magic:       [{ level: 1, unlock: 'Wind Strike' }, { level: 5, unlock: 'Water Strike' }, { level: 9, unlock: 'Earth Strike' }, { level: 13, unlock: 'Fire Strike' }, { level: 35, unlock: 'Fire Bolt' }],
+        magic:       [{ level: 1, unlock: 'Wind Strike' }, { level: 5, unlock: 'Water Strike' }, { level: 9, unlock: 'Earth Strike' }, { level: 13, unlock: 'Fire Strike' }, { level: 35, unlock: 'Fire Bolt' }, { level: 39, unlock: 'Crumble Undead' }, { level: 47, unlock: 'Water Bolt' }, { level: 53, unlock: 'Earth Bolt' }, { level: 59, unlock: 'Fire Blast' }, { level: 62, unlock: 'Wind Wave' }],
         prayer:      [{ level: 1, unlock: 'Thick Skin (+5 Def)' }, { level: 4, unlock: 'Burst of Strength (+5 Str)' }, { level: 7, unlock: 'Clarity of Thought (+5 Atk)' }, { level: 43, unlock: 'Protect from Melee' }],
         woodcutting: [{ level: 1, unlock: 'Normal trees' }, { level: 15, unlock: 'Oak trees' }, { level: 30, unlock: 'Willow trees' }],
         mining:      [{ level: 1, unlock: 'Copper & Tin' }, { level: 15, unlock: 'Iron ore' }, { level: 30, unlock: 'Coal' }, { level: 55, unlock: 'Mithril ore' }, { level: 70, unlock: 'Adamantite ore' }, { level: 85, unlock: 'Runite ore' }],
@@ -805,6 +857,65 @@ export const CONFIG = {
                 ],
             },
         },
+        dungeon_guide: {
+            name: 'Dungeon Guide', x: -43, z: -33,
+            questChain: ['into_the_depths', 'shadow_purge', 'the_demon_lord'],
+            dialogues: {
+                quest_offer_into_the_depths: [
+                    { text: "Brave adventurer! The dungeon beneath us holds terrible creatures." },
+                    { text: "I need someone to clear the skeletons on the first floor. Kill 3 of them and I'll reward you.",
+                      options: [
+                        { label: "I'll do it!", action: 'accept_quest', next: 2 },
+                        { label: "Not right now.", next: undefined },
+                      ]
+                    },
+                    { text: "Excellent! Climb down the ladder behind me. Be careful in there." },
+                ],
+                quest_progress_into_the_depths: [{ text: "Have you dealt with those skeletons yet? Kill 3 on the first floor." }],
+                quest_turnin_into_the_depths: [
+                    { text: "You've slain the skeletons! Well done, adventurer.",
+                      options: [{ label: "Here's my report.", action: 'turnin_quest', next: 1 }]
+                    },
+                    { text: "Take this lantern — you'll need it deeper in the dungeon." },
+                ],
+                quest_offer_shadow_purge: [
+                    { text: "The second floor is overrun with Shadow Warriors — deadly fast fighters." },
+                    { text: "Can you venture down and slay 2 of them?",
+                      options: [
+                        { label: "I'm ready.", action: 'accept_quest', next: 2 },
+                        { label: "I need to prepare first.", next: undefined },
+                      ]
+                    },
+                    { text: "Good luck. They strike fast, so bring food." },
+                ],
+                quest_progress_shadow_purge: [{ text: "Still hunting those Shadow Warriors? You need to kill 2 on floor 2." }],
+                quest_turnin_shadow_purge: [
+                    { text: "The Shadow Warriors are dealt with! Impressive work.",
+                      options: [{ label: "It was tough.", action: 'turnin_quest', next: 1 }]
+                    },
+                    { text: "Take this adamant sword as a reward. But there's something worse below..." },
+                ],
+                quest_offer_the_demon_lord: [
+                    { text: "On the deepest floor lurks a Demon Lord — a creature of immense power." },
+                    { text: "If you can defeat it, you would be a true hero. Will you face the Demon Lord?",
+                      options: [
+                        { label: "I'll slay the beast!", action: 'accept_quest', next: 2 },
+                        { label: "I'm not ready for that.", next: undefined },
+                      ]
+                    },
+                    { text: "May the gods protect you. The Demon Lord awaits on floor 3." },
+                ],
+                quest_progress_the_demon_lord: [{ text: "The Demon Lord still lives? Descend to floor 3 and finish it!" }],
+                quest_turnin_the_demon_lord: [
+                    { text: "You... you actually defeated the Demon Lord?! Incredible!",
+                      options: [{ label: "It's done.", action: 'turnin_quest', next: 1 }]
+                    },
+                    { text: "You are a legend! Take the Demon's Bane — forged from the beast's own essence." },
+                ],
+                quest_complete: [{ text: "You've conquered the entire dungeon. The land is safer thanks to you, hero." }],
+                default: [{ text: "Beware the dungeon below. Dark creatures lurk within." }],
+            },
+        },
     },
 
     QUESTS: {
@@ -831,6 +942,26 @@ export const CONFIG = {
             description: "Slay the King Black Dragon deep in the dungeon.",
             requirements: { kills: { kbd: 1 } },
             rewards: { xp: { attack: 500, strength: 500, defence: 500 }, items: [{ item: 'coins', qty: 500 }, { item: 'steel_platebody', qty: 1 }] },
+        },
+        into_the_depths: {
+            name: "Into the Depths",
+            description: "Kill 3 skeletons on the first floor of the dungeon.",
+            requirements: { kills: { skeleton: 3 } },
+            rewards: { xp: { attack: 100, strength: 100 }, items: [{ item: 'lantern', qty: 1 }, { item: 'coins', qty: 100 }] },
+        },
+        shadow_purge: {
+            name: "Shadow Purge",
+            description: "Kill 2 Shadow Warriors on the second dungeon floor.",
+            prerequisite: 'into_the_depths',
+            requirements: { kills: { shadow_warrior: 2 } },
+            rewards: { xp: { slayer: 500 }, items: [{ item: 'adamant_sword', qty: 1 }] },
+        },
+        the_demon_lord: {
+            name: "The Demon Lord",
+            description: "Slay the Demon Lord on the deepest floor of the dungeon.",
+            prerequisite: 'shadow_purge',
+            requirements: { kills: { demon_lord: 1 } },
+            rewards: { xp: { attack: 400, strength: 400, defence: 200 }, items: [{ item: 'demons_bane', qty: 1 }] },
         },
     },
 
@@ -882,12 +1013,22 @@ export const CONFIG = {
             { type: 'rat', x: -5, z: -25 }, { type: 'rat', x: -3, z: -28 },
             { type: 'goblin', x: -35, z: 5 }, { type: 'goblin', x: -38, z: 8 }, { type: 'goblin', x: -40, z: 3 },
         ],
-        dungeonMonsters: [
-            { type: 'skeleton', x: -48, z: -42 }, { type: 'skeleton', x: -52, z: -45 }, { type: 'skeleton', x: -45, z: -48 },
-            { type: 'giant_spider', x: -55, z: -50 }, { type: 'giant_spider', x: -50, z: -55 },
-            { type: 'lesser_demon', x: -58, z: -58 },
-            { type: 'kbd', x: -62, z: -62 },
-        ],
+        dungeonFloors: {
+            floor1: { y: -20, monsters: [
+                { type: 'skeleton', x: -47, z: -38 }, { type: 'skeleton', x: -53, z: -42 },
+                { type: 'skeleton', x: -43, z: -45 }, { type: 'moss_giant', x: -55, z: -40 },
+                { type: 'moss_giant', x: -48, z: -48 },
+            ]},
+            floor2: { y: -45, monsters: [
+                { type: 'giant_spider', x: -47, z: -38 }, { type: 'giant_spider', x: -53, z: -42 },
+                { type: 'shadow_warrior', x: -48, z: -45 }, { type: 'shadow_warrior', x: -55, z: -48 },
+                { type: 'lesser_demon', x: -50, z: -50 },
+            ]},
+            floor3: { y: -70, monsters: [
+                { type: 'demon_lord', x: -50, z: -45 },
+                { type: 'kbd', x: -50, z: -52 },
+            ]},
+        },
         wildernessMonsters: [
             { type: 'dark_wizard', x: -5, z: -65 }, { type: 'dark_wizard', x: 5, z: -68 },
             { type: 'dark_wizard', x: 0, z: -72 },

@@ -59,6 +59,9 @@ export class Monster {
             return;
         }
 
+        // Skip if player is on a different vertical level (dungeon floors)
+        if (Math.abs(this.position.y - playerPos.y) > 10) return;
+
         // State machine
         switch (this.state) {
             case 'idle':

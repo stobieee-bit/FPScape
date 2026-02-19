@@ -391,10 +391,36 @@ class Game {
         // Skip player controls when pointer is unlocked (cursor mode or paused)
         if (!this.input.locked) return;
 
-        // Player movement
+        // Player movement (override terrain height when in dungeon)
         this.player.update(dt, this.input, this.engine.camera, (x, z) => {
+            if (this.player.currentDungeonFloor >= 0) {
+                const floorData = this.environment.dungeonFloors?.[this.player.currentDungeonFloor];
+                return floorData ? floorData.y : this.terrain.getHeightAt(x, z);
+            }
             return this.terrain.getHeightAt(x, z);
         });
+
+        // Dungeon bounds clamping
+        if (this.player.currentDungeonFloor >= 0) {
+            const floorData = this.environment.dungeonFloors?.[this.player.currentDungeonFloor];
+            if (floorData?.bounds) {
+                const b = floorData.bounds;
+                this.player.position.x = Math.max(b.minX, Math.min(b.maxX, this.player.position.x));
+                this.player.position.z = Math.max(b.minZ, Math.min(b.maxZ, this.player.position.z));
+            }
+        }
+
+        // Dungeon fog/lighting override
+        const inDungeon = this.player.currentDungeonFloor >= 0;
+        this.engine._inDungeon = inDungeon;
+        if (inDungeon && (!this._wasDungeon)) {
+            this.engine.scene.fog = new THREE.Fog(0x111111, 3, 20);
+            this.engine.scene.background = new THREE.Color(0x111111);
+        } else if (!inDungeon && this._wasDungeon) {
+            this.engine.scene.fog = new THREE.Fog(CONFIG.VISUAL.fogColor, CONFIG.VISUAL.fogNear, CONFIG.VISUAL.fogFar);
+            this.engine.scene.background = new THREE.Color(CONFIG.VISUAL.skyColor);
+        }
+        this._wasDungeon = inDungeon;
 
         // Footstep sounds
         const move = this.input.getMoveDirection();

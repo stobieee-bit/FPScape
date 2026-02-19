@@ -179,12 +179,14 @@ export class ProceduralAssets {
         const group = new THREE.Group();
         const b = { chicken: '_buildChicken', cow: '_buildCow', rat: '_buildRat', goblin: '_buildGoblin',
             skeleton: '_buildSkeleton', giant_spider: '_buildSpider', dark_wizard: '_buildDarkWizard',
-            lesser_demon: '_buildDemon', kbd: '_buildKBD' };
+            lesser_demon: '_buildDemon', kbd: '_buildKBD',
+            moss_giant: '_buildMossGiant', shadow_warrior: '_buildShadowWarrior', demon_lord: '_buildDemonLord' };
         if (b[type]) this[b[type]](group);
 
         const names = { chicken: 'Chicken', cow: 'Cow', rat: 'Giant Rat', goblin: 'Goblin',
             skeleton: 'Skeleton', giant_spider: 'Giant Spider', dark_wizard: 'Dark Wizard',
-            lesser_demon: 'Lesser Demon', kbd: 'King Black Dragon' };
+            lesser_demon: 'Lesser Demon', kbd: 'King Black Dragon',
+            moss_giant: 'Moss Giant', shadow_warrior: 'Shadow Warrior', demon_lord: 'Demon Lord' };
         group.userData = { type: 'monster', subType: type, interactable: true, name: names[type] || type };
         return group;
     }
@@ -361,6 +363,76 @@ export class ProceduralAssets {
         g.add(at(new THREE.PointLight(0xFF4400, 1, 8), 0, 2.3, -2.5));
     }
 
+    _buildMossGiant(g) {
+        const m = new THREE.MeshStandardMaterial({ color: 0x3B6B2A, roughness: 0.85 });
+        const body = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.5, 0.7), m);
+        body.position.y = 1.8; body.castShadow = true; g.add(body);
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.4, 6, 5), m);
+        head.position.y = 2.9; g.add(head);
+        for (let s = -1; s <= 1; s += 2) {
+            const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.1, 1.0, 5), m);
+            arm.position.set(s * 0.65, 1.6, 0); arm.rotation.z = s * 0.2; g.add(arm);
+            const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.12, 1.0, 5), m);
+            leg.position.set(s * 0.25, 0.5, 0); g.add(leg);
+        }
+        // Club
+        const club = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 1.2, 4), this.materials.trunk);
+        club.position.set(0.7, 1.8, -0.2); club.rotation.z = -0.4; g.add(club);
+    }
+
+    _buildShadowWarrior(g) {
+        const m = new THREE.MeshStandardMaterial({ color: 0x1A1A2E, roughness: 0.7, emissive: 0x110022, emissiveIntensity: 0.3 });
+        const body = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.0, 0.3), m);
+        body.position.y = 1.3; body.castShadow = true; g.add(body);
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.25, 6, 5), m);
+        head.position.y = 2.1; g.add(head);
+        const em = new THREE.MeshStandardMaterial({ color: 0xAA00FF, emissive: 0x8800CC, emissiveIntensity: 1.0 });
+        for (let s = -1; s <= 1; s += 2) g.add(at(new THREE.Mesh(new THREE.SphereGeometry(0.04, 4, 3), em), s * 0.09, 2.15, -0.2));
+        for (let s = -1; s <= 1; s += 2) {
+            const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.05, 0.7, 5), m);
+            arm.position.set(s * 0.4, 1.2, 0); arm.rotation.z = s * 0.2; g.add(arm);
+            const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.07, 0.7, 5), m);
+            leg.position.set(s * 0.15, 0.45, 0); g.add(leg);
+        }
+        // Dark blade
+        const blade = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.9, 0.02), new THREE.MeshStandardMaterial({ color: 0x333344, metalness: 0.8 }));
+        blade.position.set(0.45, 1.5, -0.1); blade.rotation.z = -0.3; g.add(blade);
+    }
+
+    _buildDemonLord(g) {
+        const m = new THREE.MeshStandardMaterial({ color: 0x8B0000, roughness: 0.6, emissive: 0x330000, emissiveIntensity: 0.4 });
+        const body = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.4, 0.6), m);
+        body.position.y = 1.8; body.castShadow = true; g.add(body);
+        g.add(at(new THREE.Mesh(new THREE.SphereGeometry(0.35, 6, 5), m), 0, 2.8, 0));
+        // Horns
+        const hm = new THREE.MeshStandardMaterial({ color: 0x222222 });
+        for (let s = -1; s <= 1; s += 2) {
+            const horn = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.6, 4), hm);
+            horn.position.set(s * 0.2, 3.2, 0); horn.rotation.z = s * -0.3; g.add(horn);
+        }
+        // Glowing eyes
+        const em = new THREE.MeshStandardMaterial({ color: 0xFF4400, emissive: 0xFF2200, emissiveIntensity: 1.0 });
+        for (let s = -1; s <= 1; s += 2) g.add(at(new THREE.Mesh(new THREE.SphereGeometry(0.06, 4, 3), em), s * 0.12, 2.85, -0.3));
+        // Arms and legs
+        for (let s = -1; s <= 1; s += 2) {
+            const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.08, 1.0, 5), m);
+            arm.position.set(s * 0.65, 1.7, 0); arm.rotation.z = s * 0.3; g.add(arm);
+            const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.1, 1.0, 5), m);
+            leg.position.set(s * 0.25, 0.5, 0); g.add(leg);
+        }
+        // Wings (smaller than KBD)
+        for (let s = -1; s <= 1; s += 2) {
+            const ws = new THREE.Shape(); ws.moveTo(0, 0); ws.lineTo(1.2, 0.8); ws.lineTo(0.8, 0.2); ws.lineTo(1.5, 0); ws.lineTo(0, -0.3);
+            const wing = new THREE.Mesh(new THREE.ShapeGeometry(ws), new THREE.MeshStandardMaterial({ color: 0x440000, side: THREE.DoubleSide }));
+            wing.position.set(s * 0.5, 2.2, 0.2); wing.rotation.y = s * -Math.PI / 2; wing.scale.x = s; g.add(wing);
+        }
+        // Tail
+        const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.03, 1.5, 4), m);
+        tail.position.set(0, 1.2, 0.6); tail.rotation.x = -0.5; g.add(tail);
+        // Fire aura
+        g.add(at(new THREE.PointLight(0xFF4400, 1.2, 10), 0, 2.5, 0));
+    }
+
     createNPC(npcId) {
         const group = new THREE.Group();
         const mats = {
@@ -375,6 +447,7 @@ export class ProceduralAssets {
             fishing_tutor: [new THREE.MeshStandardMaterial({ color: 0x2266AA }), this.materials.npcPants, new THREE.MeshStandardMaterial({ color: 0x888888 })],
             bartender: [new THREE.MeshStandardMaterial({ color: 0xAA4444 }), new THREE.MeshStandardMaterial({ color: 0x222222 }), this.materials.npcHair],
             merchant: [new THREE.MeshStandardMaterial({ color: 0xCC8833 }), new THREE.MeshStandardMaterial({ color: 0x6B4226 }), new THREE.MeshStandardMaterial({ color: 0x111111 })],
+            dungeon_guide: [new THREE.MeshStandardMaterial({ color: 0x444444 }), new THREE.MeshStandardMaterial({ color: 0x333333 }), new THREE.MeshStandardMaterial({ color: 0x666666 })],
         };
         const [shirt, pants, hair] = mats[npcId] || [this.materials.npcShirt, this.materials.npcPants, this.materials.npcHair];
         this._buildHumanoidNPC(group, shirt, pants, hair);
@@ -675,6 +748,66 @@ export class ProceduralAssets {
         g.add(at(new THREE.PointLight(0x6666FF, 0.5, 5), 0, 2, 0));
         g.userData = { type: 'rune_altar', interactable: true, name: 'Rune Altar' };
         g._entityRef = { type: 'rune_altar' };
+        return g;
+    }
+
+    // ── Dungeon Geometry ──────────────────────────────────────────────
+
+    createDungeonRoom(width, depth, height) {
+        const g = new THREE.Group();
+        const m = this.materials.dungeonStone;
+        // Floor
+        const floor = new THREE.Mesh(new THREE.BoxGeometry(width, 0.3, depth), m);
+        floor.position.y = -0.15; floor.receiveShadow = true; g.add(floor);
+        // Ceiling
+        const ceil = new THREE.Mesh(new THREE.BoxGeometry(width, 0.3, depth), m);
+        ceil.position.y = height + 0.15; g.add(ceil);
+        // Walls (4 sides with thickness)
+        const wt = 0.5; // wall thickness
+        g.add(at(new THREE.Mesh(new THREE.BoxGeometry(width + wt * 2, height, wt), m), 0, height / 2, -depth / 2 - wt / 2));
+        g.add(at(new THREE.Mesh(new THREE.BoxGeometry(width + wt * 2, height, wt), m), 0, height / 2, depth / 2 + wt / 2));
+        g.add(at(new THREE.Mesh(new THREE.BoxGeometry(wt, height, depth), m), -width / 2 - wt / 2, height / 2, 0));
+        g.add(at(new THREE.Mesh(new THREE.BoxGeometry(wt, height, depth), m), width / 2 + wt / 2, height / 2, 0));
+        return g;
+    }
+
+    createDungeonLadder() {
+        const g = new THREE.Group();
+        const woodMat = this.materials.trunk;
+        // Two side rails
+        for (let s = -1; s <= 1; s += 2) {
+            const rail = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 3, 4), woodMat);
+            rail.position.set(s * 0.25, 1.5, 0); g.add(rail);
+        }
+        // Rungs
+        for (let i = 0; i < 6; i++) {
+            const rung = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.5, 4), woodMat);
+            rung.position.set(0, 0.3 + i * 0.5, 0); rung.rotation.z = Math.PI / 2; g.add(rung);
+        }
+        return g;
+    }
+
+    createDungeonTorch() {
+        const g = new THREE.Group();
+        // Bracket
+        const bracket = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.4, 4), this.materials.metalDark);
+        bracket.position.y = 1.8; bracket.rotation.z = Math.PI / 2; g.add(bracket);
+        // Flame
+        const flameMat = new THREE.MeshBasicMaterial({ color: 0xFF6600, transparent: true, opacity: 0.8 });
+        const flame = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.2, 4), flameMat);
+        flame.position.set(0.2, 2.0, 0); g.add(flame);
+        // Light
+        const light = new THREE.PointLight(0xFF4400, 0.6, 8);
+        light.position.set(0.2, 2.0, 0); g.add(light);
+        return g;
+    }
+
+    createDungeonPillar() {
+        const g = new THREE.Group();
+        const m = this.materials.dungeonStone;
+        g.add(at(new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.5, 5, 6), m), 0, 2.5, 0));
+        g.add(at(new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.3, 1.2), m), 0, 0.15, 0));
+        g.add(at(new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.2, 1.0), m), 0, 4.9, 0));
         return g;
     }
 

@@ -604,15 +604,17 @@ export class Engine {
         this.ambientLight.intensity = ambientBase;
         this.hemiLight.intensity = 0.1 + daylight * 0.2;
 
-        // Fog color matches sky mood
-        if (daylight > 0.2) {
-            this.scene.fog.color.lerpColors(
-                new THREE.Color(0x334455), new THREE.Color(0xC8DFF0), daylight
-            );
-            this.scene.background.copy(this.scene.fog.color);
-        } else {
-            this.scene.fog.color.setHex(0x111122);
-            this.scene.background.setHex(0x111122);
+        // Fog color matches sky mood (skip when in dungeon — managed by main.js)
+        if (!this._inDungeon) {
+            if (daylight > 0.2) {
+                this.scene.fog.color.lerpColors(
+                    new THREE.Color(0x334455), new THREE.Color(0xC8DFF0), daylight
+                );
+                this.scene.background.copy(this.scene.fog.color);
+            } else {
+                this.scene.fog.color.setHex(0x111122);
+                this.scene.background.setHex(0x111122);
+            }
         }
 
         // Store sun base offset for updateSunTarget

@@ -93,6 +93,7 @@ export class InteractionSystem {
         else if (data.type === 'rune_altar') this._handleRuneAltarClick();
         else if (data.type === 'church') this._handleChurchClick();
         else if (data.type === 'gravestone') this._handleGravestoneClick();
+        else if (data.type === 'ladder') this._handleLadderClick(this.hoveredEntity);
     }
 
     onRightClick(screenX, screenY) {
@@ -523,6 +524,39 @@ export class InteractionSystem {
             if (this.game.achievementSystem) this.game.achievementSystem.unlock('agility_lap');
             // Reset for next lap
             player.lastAgilityObstacle = -1;
+        }
+    }
+
+    _handleLadderClick(entity) {
+        const player = this.game.player;
+        const dist = this.game.distanceToPlayer(this.hoveredMesh.position);
+        if (dist > CONFIG.PLAYER.interactionRange) { this.game.addChatMessage("You're too far away.", 'system'); return; }
+
+        const { targetFloor, direction } = entity;
+        const floors = this.game.environment.dungeonFloors;
+        if (!floors) return;
+
+        player.stopActions();
+        player.velocity.set(0, 0, 0);
+
+        if (direction === 'down' && targetFloor >= 0 && targetFloor < floors.length) {
+            const floor = floors[targetFloor];
+            player.position.set(floor.ladderUpPos.x, floor.y + CONFIG.PLAYER.height, floor.ladderUpPos.z);
+            player.currentDungeonFloor = targetFloor;
+            this.game.addChatMessage(`You descend to dungeon floor ${targetFloor + 1}.`);
+        } else if (direction === 'up') {
+            if (targetFloor < 0) {
+                // Return to surface
+                player.position.set(-45, this.game.terrain.getHeightAt(-45, -35) + CONFIG.PLAYER.height, -35);
+                player.currentDungeonFloor = -1;
+                this.game.addChatMessage('You climb back to the surface.');
+            } else if (targetFloor < floors.length) {
+                const prevFloor = floors[targetFloor];
+                const pos = prevFloor.ladderDownPos || { x: prevFloor.ladderUpPos.x - 5, z: prevFloor.ladderUpPos.z - 5 };
+                player.position.set(pos.x, prevFloor.y + CONFIG.PLAYER.height, pos.z);
+                player.currentDungeonFloor = targetFloor;
+                this.game.addChatMessage(`You climb up to dungeon floor ${targetFloor + 1}.`);
+            }
         }
     }
 

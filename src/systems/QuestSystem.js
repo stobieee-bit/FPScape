@@ -34,20 +34,47 @@ export class QuestSystem {
         document.exitPointerLock();
     }
 
+    _getActiveQuest(npcId) {
+        const npcConfig = CONFIG.NPCS[npcId];
+        // Quest chain NPCs: find the first incomplete quest in the chain
+        if (npcConfig.questChain) {
+            for (const qid of npcConfig.questChain) {
+                const status = this.quests[qid]?.status || 'not_started';
+                if (status !== 'complete') {
+                    // Check prerequisites
+                    const questConfig = CONFIG.QUESTS[qid];
+                    if (questConfig?.prerequisite) {
+                        const prereqStatus = this.quests[questConfig.prerequisite]?.status;
+                        if (prereqStatus !== 'complete') return null; // prereq not done yet
+                    }
+                    return qid;
+                }
+            }
+            return null; // All quests done
+        }
+        return npcConfig.quest || null;
+    }
+
     _getDialogueKey(npcId) {
         const npcConfig = CONFIG.NPCS[npcId];
-        if (!npcConfig.quest) return 'default';
+        const questId = this._getActiveQuest(npcId);
+        if (!questId) {
+            // Check if all quest chain quests are done
+            if (npcConfig.questChain) {
+                const allDone = npcConfig.questChain.every(qid => this.quests[qid]?.status === 'complete');
+                if (allDone) return 'quest_complete';
+            }
+            return npcConfig.quest ? (this.quests[npcConfig.quest]?.status === 'complete' ? 'quest_complete' : 'default') : 'default';
+        }
 
-        const questId = npcConfig.quest;
         const status = this.quests[questId]?.status || 'not_started';
 
         if (status === 'complete') return 'quest_complete';
         if (status === 'in_progress') {
-            // Check if player has fulfilled requirements
-            if (this.canTurnIn(questId)) return 'quest_turnin';
-            return 'quest_progress';
+            if (this.canTurnIn(questId)) return npcConfig.questChain ? `quest_turnin_${questId}` : 'quest_turnin';
+            return npcConfig.questChain ? `quest_progress_${questId}` : 'quest_progress';
         }
-        return 'quest_offer';
+        return npcConfig.questChain ? `quest_offer_${questId}` : 'quest_offer';
     }
 
     _showDialogueStep(npcConfig, dialogue, step) {
@@ -98,13 +125,15 @@ export class QuestSystem {
     _handleAction(action) {
         if (action === 'accept_quest') {
             const npcId = this.activeDialogue.npcId;
-            const questId = CONFIG.NPCS[npcId].quest;
+            const questId = this._getActiveQuest(npcId);
+            if (!questId) return;
             const questConfig = CONFIG.QUESTS[questId];
             this.quests[questId] = { status: 'in_progress', progress: {} };
             this.game.addChatMessage(`Quest started: ${questConfig.name}`, 'level-up');
         } else if (action === 'turnin_quest') {
             const npcId = this.activeDialogue.npcId;
-            const questId = CONFIG.NPCS[npcId].quest;
+            const questId = this._getActiveQuest(npcId);
+            if (!questId) return;
             const questConfig = CONFIG.QUESTS[questId];
 
             // Remove required items (consumed on turn-in)

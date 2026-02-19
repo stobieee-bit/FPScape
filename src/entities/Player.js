@@ -79,6 +79,9 @@ export class Player {
         // Kill counts for quest tracking
         this.killCounts = {};
 
+        // Dungeon floor tracking (-1 = surface)
+        this.currentDungeonFloor = -1;
+
         // Cached vectors for movement calc
         this._forward = new THREE.Vector3();
         this._right = new THREE.Vector3();
@@ -201,6 +204,7 @@ export class Player {
         this.velocity.set(0, 0, 0);
         this.inCombat = false;
         this.combatTarget = null;
+        this.currentDungeonFloor = -1;
     }
 
     stopActions() {

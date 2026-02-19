@@ -446,8 +446,8 @@ export class Environment {
         const entrance = this.assets.createDungeonEntrance();
         entrance.position.set(dungeonX, dungeonY, dungeonZ);
         entrance.rotation.y = Math.PI * 0.25;
-        entrance.userData = { type: 'dungeon_entrance', interactable: true, name: 'Dungeon entrance' };
-        entrance._entityRef = { type: 'dungeon_entrance' };
+        entrance.userData = { type: 'ladder', interactable: true, name: 'Climb down' };
+        entrance._entityRef = { type: 'ladder', targetFloor: 0, direction: 'down' };
         this.scene.add(entrance);
         this.interactables.push(entrance);
 
@@ -478,10 +478,8 @@ export class Environment {
             this._spawnMonster(data);
         }
 
-        // Dungeon monsters
-        for (const data of CONFIG.WORLD_OBJECTS.dungeonMonsters) {
-            this._spawnMonster(data);
-        }
+        // Dungeon floors (underground)
+        this._buildDungeon();
 
         // Wilderness monsters
         for (const data of CONFIG.WORLD_OBJECTS.wildernessMonsters) {
@@ -500,6 +498,103 @@ export class Environment {
         this.monsters.push(monster);
         this.interactables.push(monsterMesh);
         monsterMesh._entityRef = monster;
+    }
+
+    _spawnDungeonMonster(data, floorY) {
+        const monsterMesh = this.assets.createMonster(data.type);
+        monsterMesh.position.set(data.x, floorY, data.z);
+        this.scene.add(monsterMesh);
+        const monsterConfig = CONFIG.MONSTERS[data.type];
+        const monster = new Monster(monsterMesh, monsterConfig, new THREE.Vector3(data.x, floorY, data.z));
+        this.monsters.push(monster);
+        this.interactables.push(monsterMesh);
+        monsterMesh._entityRef = monster;
+    }
+
+    _buildDungeon() {
+        this.dungeonFloors = [];
+        const floorConfigs = CONFIG.WORLD_OBJECTS.dungeonFloors;
+        const floorKeys = ['floor1', 'floor2', 'floor3'];
+        const roomSizes = [
+            { w: 30, d: 30, h: 5 },  // Floor 1: large
+            { w: 22, d: 22, h: 4.5 },  // Floor 2: tighter
+            { w: 26, d: 26, h: 6 },  // Floor 3: boss arena
+        ];
+        const centerX = -50, centerZ = -43;
+
+        for (let i = 0; i < floorKeys.length; i++) {
+            const fc = floorConfigs[floorKeys[i]];
+            if (!fc) continue;
+            const { w, d, h } = roomSizes[i];
+            const floorY = fc.y;
+
+            // Room structure
+            const room = this.assets.createDungeonRoom(w, d, h);
+            room.position.set(centerX, floorY, centerZ);
+            this.scene.add(room);
+
+            // Ambient light (dimmer each floor)
+            const intensity = [0.3, 0.15, 0.1][i];
+            const ambient = new THREE.PointLight(0xFFAA66, intensity, w);
+            ambient.position.set(centerX, floorY + h - 1, centerZ);
+            this.scene.add(ambient);
+
+            // Torches on walls
+            const torchPositions = [
+                [centerX - w / 2 + 1, centerZ], [centerX + w / 2 - 1, centerZ],
+                [centerX, centerZ - d / 2 + 1], [centerX, centerZ + d / 2 - 1],
+            ];
+            for (const [tx, tz] of torchPositions) {
+                const torch = this.assets.createDungeonTorch();
+                torch.position.set(tx, floorY, tz);
+                this.scene.add(torch);
+            }
+
+            // Floor 3 pillars (boss arena)
+            if (i === 2) {
+                for (const [px, pz] of [[centerX - 6, centerZ - 6], [centerX + 6, centerZ - 6], [centerX - 6, centerZ + 6], [centerX + 6, centerZ + 6]]) {
+                    const pillar = this.assets.createDungeonPillar();
+                    pillar.position.set(px, floorY, pz);
+                    this.scene.add(pillar);
+                }
+            }
+
+            // Ladder positions
+            const ladderUpPos = { x: centerX + w / 2 - 3, z: centerZ + d / 2 - 3 };
+            const ladderDownPos = (i < 2) ? { x: centerX - w / 2 + 3, z: centerZ - d / 2 + 3 } : null;
+
+            // Ladder up (all floors)
+            const ladderUp = this.assets.createDungeonLadder();
+            ladderUp.position.set(ladderUpPos.x, floorY, ladderUpPos.z);
+            ladderUp.userData = { type: 'ladder', interactable: true, name: i === 0 ? 'Climb to surface' : `Climb to floor ${i}` };
+            ladderUp._entityRef = { type: 'ladder', targetFloor: i - 1, direction: 'up' };
+            this.scene.add(ladderUp);
+            this.interactables.push(ladderUp);
+
+            // Ladder down (floors 1 and 2 only)
+            if (ladderDownPos) {
+                const ladderDown = this.assets.createDungeonLadder();
+                ladderDown.position.set(ladderDownPos.x, floorY, ladderDownPos.z);
+                ladderDown.userData = { type: 'ladder', interactable: true, name: `Climb to floor ${i + 2}` };
+                ladderDown._entityRef = { type: 'ladder', targetFloor: i + 1, direction: 'down' };
+                this.scene.add(ladderDown);
+                this.interactables.push(ladderDown);
+            }
+
+            // Spawn monsters for this floor
+            for (const mdata of fc.monsters) {
+                this._spawnDungeonMonster(mdata, floorY);
+            }
+
+            // Store floor metadata
+            this.dungeonFloors.push({
+                y: floorY,
+                height: h,
+                bounds: { minX: centerX - w / 2 + 1, maxX: centerX + w / 2 - 1, minZ: centerZ - d / 2 + 1, maxZ: centerZ + d / 2 - 1 },
+                ladderUpPos,
+                ladderDownPos,
+            });
+        }
     }
 
     // ── Sheep ──────────────────────────────────────────────────────────
@@ -646,6 +741,7 @@ export class Environment {
             adamant_sword: 0x2E7D32, adamant_platebody: 0x2E7D32,
             rune_sword: 0x00ACC1, rune_platebody: 0x00ACC1, rune_dagger: 0x00ACC1,
             knife: 0xCCCCCC, tinderbox: 0xCC6600,
+            demons_bane: 0xFF4400, lantern: 0xFFAA00,
         };
         const color = colors[itemId] || 0xFFFFFF;
         const geo = new THREE.BoxGeometry(0.25, 0.25, 0.25);

@@ -509,7 +509,11 @@ export class CombatSystem {
 
         if (attackRoll >= defenceRoll) {
             // Magic max hit scales: spell base + magic level bonus + magic equipment bonus
-            const effectiveMaxHit = spell.maxHit + Math.floor(player.skills.magic.level * 0.15) + Math.floor(magicBonus * 0.2);
+            let effectiveMaxHit = spell.maxHit + Math.floor(player.skills.magic.level * 0.15) + Math.floor(magicBonus * 0.2);
+            // Crumble Undead bonus vs skeleton-type monsters
+            if (spell.bonusVs === 'undead' && monster.mesh?.userData?.subType === 'skeleton') {
+                effectiveMaxHit = Math.floor(effectiveMaxHit * 1.5);
+            }
             const damage = Math.floor(Math.random() * (effectiveMaxHit + 1));
             const killed = monster.takeDamage(damage);
             this._showHitsplat(monster.mesh, damage, false);

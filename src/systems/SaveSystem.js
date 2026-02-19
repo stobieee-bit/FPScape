@@ -53,6 +53,7 @@ export class SaveSystem {
                 magicStyle: player.magicStyle,
                 selectedSpell: player.selectedSpell,
                 killCounts: player.killCounts || {},
+                currentDungeonFloor: player.currentDungeonFloor,
             },
             inventory: this.game.inventorySystem.slots.map(s =>
                 s ? { itemId: s.itemId, quantity: s.quantity } : null
@@ -141,6 +142,7 @@ export class SaveSystem {
 
             // Restore kill counts
             if (data.player.killCounts) player.killCounts = data.player.killCounts;
+            player.currentDungeonFloor = data.player.currentDungeonFloor ?? -1;
 
             // Restore inventory
             if (data.inventory) {

@@ -875,6 +875,17 @@ export class UIManager {
 
         // Wilderness warning
         this._checkWilderness(player);
+
+        // Dungeon indicator
+        const dungeonInd = document.getElementById('dungeon-indicator');
+        if (dungeonInd) {
+            if (player.currentDungeonFloor >= 0) {
+                dungeonInd.classList.remove('hidden');
+                dungeonInd.textContent = `Dungeon - Floor ${player.currentDungeonFloor + 1}`;
+            } else {
+                dungeonInd.classList.add('hidden');
+            }
+        }
     }
 
     _updateInventory() {
