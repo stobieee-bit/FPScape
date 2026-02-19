@@ -483,6 +483,9 @@ class Game {
     _update(dt) {
         if (this.state !== 'playing') return;
 
+        // Apply accumulated touch-look deltas (mobile camera control)
+        this.input.applyTouchLook();
+
         // Cutscene system update
         if (this.questSystem._cutsceneActive) {
             this.questSystem.updateCutscene(dt);
@@ -641,9 +644,12 @@ class Game {
         if (inDungeon && (!this._wasDungeon)) {
             this.engine.scene.fog = new THREE.Fog(0x111111, 3, 20);
             this.engine.scene.background = new THREE.Color(0x111111);
+            this.audio.startDungeonAmbience();
+            this.audio.stopNightAmbience();
         } else if (!inDungeon && this._wasDungeon) {
             this.engine.scene.fog = new THREE.Fog(CONFIG.VISUAL.fogColor, CONFIG.VISUAL.fogNear, CONFIG.VISUAL.fogFar);
             this.engine.scene.background = new THREE.Color(CONFIG.VISUAL.skyColor);
+            this.audio.stopDungeonAmbience();
         }
         this._wasDungeon = inDungeon;
 
@@ -656,9 +662,11 @@ class Game {
         if (inCave && !this._wasInCave) {
             this.engine.scene.fog = new THREE.Fog(0x0A3C64, 2, 25);
             this.engine.scene.background = new THREE.Color(0x0A3C64);
+            this.audio.startUnderwaterAmbience();
         } else if (!inCave && this._wasInCave && !inDungeon) {
             this.engine.scene.fog = new THREE.Fog(CONFIG.VISUAL.fogColor, CONFIG.VISUAL.fogNear, CONFIG.VISUAL.fogFar);
             this.engine.scene.background = new THREE.Color(CONFIG.VISUAL.skyColor);
+            this.audio.stopUnderwaterAmbience();
         }
 
         // Underwater overlay
@@ -739,7 +747,13 @@ class Game {
         }
 
         // Viewmodel bob + swing + combat sway
-        this.engine.updateViewmodel(dt, isMoving, this.player.inCombat);
+        const yawDelta = this.input.yaw - (this._lastYaw || this.input.yaw);
+        this._lastYaw = this.input.yaw;
+        this.engine.updateViewmodel(dt, isMoving, this.player.inCombat, yawDelta);
+
+        // Camera head bob
+        this.engine.camera.position.y += this.engine._camBobY || 0;
+        this.engine.camera.position.x += this.engine._camBobX || 0;
 
         // Sync viewmodel weapon with equipped item
         const curWeapon = this.player.equipment.weapon;

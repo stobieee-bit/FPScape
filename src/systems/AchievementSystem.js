@@ -49,7 +49,7 @@ export class AchievementSystem {
         // All quests
         if (game.questSystem) {
             const allComplete = Object.keys(CONFIG.QUESTS).every(
-                q => game.questSystem.quests[q] === 'complete'
+                q => game.questSystem.quests[q]?.status === 'complete'
             );
             if (allComplete) this.unlock('all_quests');
         }

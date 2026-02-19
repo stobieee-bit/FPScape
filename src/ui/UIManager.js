@@ -685,6 +685,8 @@ export class UIManager {
 
         // Equip equipment
         if (itemDef.equipSlot) {
+            const reqMsg = this._checkEquipRequirements(item.itemId);
+            if (reqMsg) { this.game.addChatMessage(reqMsg, 'system'); return; }
             const eqSlot = itemDef.equipSlot;
             const current = player.equipment[eqSlot];
             if (current) inv.addItem(current);
@@ -800,6 +802,8 @@ export class UIManager {
             opt.className = 'inv-context-option';
             opt.textContent = `Wield ${itemDef.name}`;
             opt.addEventListener('click', () => {
+                const reqMsg = this._checkEquipRequirements(item.itemId);
+                if (reqMsg) { this.game.addChatMessage(reqMsg, 'system'); menu.remove(); return; }
                 const eqSlot = itemDef.equipSlot;
                 const player = this.game.player;
                 const current = player.equipment[eqSlot];
@@ -885,6 +889,21 @@ export class UIManager {
             if (!menu.contains(ev.target)) { menu.remove(); document.removeEventListener('mousedown', closeMenu); }
         };
         setTimeout(() => document.addEventListener('mousedown', closeMenu), 10);
+    }
+
+    _checkEquipRequirements(itemId) {
+        const item = CONFIG.ITEMS[itemId];
+        if (!item) return null;
+        const p = this.game.player;
+        if (item.attackReq && p.skills.attack.level < item.attackReq)
+            return `You need Attack level ${item.attackReq} to wield this.`;
+        if (item.defenceReq && p.skills.defence.level < item.defenceReq)
+            return `You need Defence level ${item.defenceReq} to wear this.`;
+        if (item.rangedReq && p.skills.ranged.level < item.rangedReq)
+            return `You need Ranged level ${item.rangedReq} to use this.`;
+        if (item.magicReq && p.skills.magic.level < item.magicReq)
+            return `You need Magic level ${item.magicReq} to use this.`;
+        return null;
     }
 
     _onEquipSlotClick(slot) {

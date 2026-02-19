@@ -545,7 +545,7 @@ export class Engine {
     }
 
     /** Update viewmodel animations (call every frame) */
-    updateViewmodel(dt, isMoving, inCombat) {
+    updateViewmodel(dt, isMoving, inCombat, yawDelta) {
         if (!this._vmGroup) return;
 
         // Bob when walking
@@ -555,12 +555,20 @@ export class Engine {
         const bobY = Math.sin(this._bobPhase) * bobAmount;
         const bobX = Math.cos(this._bobPhase * 0.5) * bobAmount * 0.5;
 
+        // Camera head bob offsets (applied to camera in main.js)
+        this._camBobY = isMoving ? Math.sin(this._bobPhase) * 0.028 : 0;
+        this._camBobX = isMoving ? Math.cos(this._bobPhase * 0.5) * 0.012 : 0;
+
+        // Mouse-look weapon sway: weapon lags behind camera turn
+        const swayTarget = -(yawDelta || 0) * 8;
+        this._swayX = (this._swayX || 0) + (swayTarget - (this._swayX || 0)) * 0.1;
+
         // Combat idle sway — weapon gently moves side to side when fighting
         this._combatSwayPhase = (this._combatSwayPhase || 0) + dt * (inCombat ? 2.5 : 0);
         const combatSwayX = inCombat ? Math.sin(this._combatSwayPhase) * 0.008 : 0;
         const combatSwayY = inCombat ? Math.cos(this._combatSwayPhase * 1.3) * 0.005 : 0;
 
-        this._vmGroup.position.set(bobX + combatSwayX, bobY + combatSwayY, 0);
+        this._vmGroup.position.set(bobX + combatSwayX + this._swayX * 0.015, bobY + combatSwayY, 0);
 
         // Swing animation
         if (this._swingActive) {

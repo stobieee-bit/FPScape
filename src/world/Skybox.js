@@ -92,6 +92,62 @@ export class Skybox {
         });
         this.moonGlow = new THREE.Mesh(glowGeo, glowMat);
         this.moon.add(this.moonGlow);
+
+        // --- Clouds ---
+        const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+        const cloudCount = isMobile ? 6 : 10;
+        this.clouds = [];
+        for (let i = 0; i < cloudCount; i++) {
+            const cw = 60 + Math.random() * 80;
+            const ch = 15 + Math.random() * 15;
+            const geo = new THREE.PlaneGeometry(cw, ch, 1, 1);
+            const mat = new THREE.ShaderMaterial({
+                uniforms: {
+                    time: { value: 0 },
+                    opacity: { value: 0.6 },
+                    offset: { value: Math.random() * 100 },
+                },
+                vertexShader: `
+                    varying vec2 vUv;
+                    void main() {
+                        vUv = uv;
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                    }
+                `,
+                fragmentShader: `
+                    uniform float time;
+                    uniform float opacity;
+                    uniform float offset;
+                    varying vec2 vUv;
+                    void main() {
+                        vec2 p = vUv * 4.0 + vec2(time * 0.04 + offset, 0.0);
+                        float n = sin(p.x * 2.1) * sin(p.y * 3.7)
+                                + sin(p.x * 4.3 + 1.1) * sin(p.y * 2.1 + 0.7) * 0.5;
+                        float cloud = smoothstep(0.0, 0.8, n * 0.5 + 0.5);
+                        float edgeFade = smoothstep(0.0, 0.15, vUv.x)
+                                       * smoothstep(1.0, 0.85, vUv.x)
+                                       * smoothstep(0.0, 0.2, vUv.y)
+                                       * smoothstep(1.0, 0.8, vUv.y);
+                        gl_FragColor = vec4(1.0, 1.0, 1.0, cloud * edgeFade * opacity);
+                    }
+                `,
+                transparent: true,
+                depthWrite: false,
+                side: THREE.DoubleSide,
+            });
+            const mesh = new THREE.Mesh(geo, mat);
+            const angle = (i / cloudCount) * Math.PI * 2 + Math.random() * 0.5;
+            const radius = 180 + Math.random() * 60;
+            const height = 60 + Math.random() * 60;
+            mesh.position.set(Math.cos(angle) * radius, height, Math.sin(angle) * radius);
+            mesh.rotation.x = -Math.PI * 0.15;
+            mesh.rotation.y = angle;
+            mesh._drift = 0.003 + Math.random() * 0.005;
+            mesh._angle = angle;
+            mesh._radius = radius;
+            scene.add(mesh);
+            this.clouds.push(mesh);
+        }
     }
 
     // t = 0..1 representing time of day (0=midnight, 0.25=dawn, 0.5=noon, 0.75=dusk)
@@ -188,5 +244,17 @@ export class Skybox {
         this.moon.material.opacity = nightFactor * 0.95;
         this.moonGlow.material.opacity = nightFactor * 0.15;
         this.moon.visible = nightFactor > 0.01;
+
+        // Clouds: drift and day/night opacity
+        const dayFactor = 1.0 - nightFactor;
+        const now = performance.now() * 0.001;
+        for (const cloud of this.clouds) {
+            cloud._angle += cloud._drift * 0.016;
+            cloud.position.x = Math.cos(cloud._angle) * cloud._radius;
+            cloud.position.z = Math.sin(cloud._angle) * cloud._radius;
+            cloud.material.uniforms.time.value = now;
+            cloud.material.uniforms.opacity.value = dayFactor * 0.6;
+            cloud.visible = dayFactor > 0.05;
+        }
     }
 }

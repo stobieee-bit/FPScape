@@ -13,10 +13,13 @@ export class MusicSystem {
 
         // Simple pentatonic scales per mood
         this._scales = {
-            peaceful: [261, 293, 329, 392, 440, 523, 587, 659], // C major pentatonic
-            cheerful: [392, 440, 494, 587, 659, 784, 880, 988], // G major
-            dark:     [293, 329, 349, 440, 466, 587, 659, 698], // D minor
-            danger:   [220, 261, 293, 329, 440, 523, 587, 659], // A minor
+            peaceful:   [261, 293, 329, 392, 440, 523, 587, 659], // C major pentatonic
+            cheerful:   [392, 440, 494, 587, 659, 784, 880, 988], // G major
+            dark:       [293, 329, 349, 440, 466, 587, 659, 698], // D minor
+            danger:     [220, 261, 293, 329, 440, 523, 587, 659], // A minor
+            mysterious: [220, 247, 277, 330, 370, 440, 494, 554], // Phrygian-ish (desert)
+            eerie:      [196, 220, 247, 277, 311, 370, 415, 440], // Minor w/ tritone (swamp)
+            cold:       [277, 311, 349, 415, 466, 554, 622, 698], // Eb major (ice)
         };
     }
 
@@ -72,10 +75,13 @@ export class MusicSystem {
 
         // Generate a simple melody pattern
         const patterns = {
-            peaceful: [0, 2, 4, 2, 3, 5, 4, 2],
-            cheerful: [0, 1, 2, 4, 3, 2, 1, 3],
-            dark:     [0, 3, 1, 4, 2, 0, 3, 1],
-            danger:   [0, 4, 2, 5, 1, 3, 4, 0],
+            peaceful:   [0, 2, 4, 2, 3, 5, 4, 2],
+            cheerful:   [0, 1, 2, 4, 3, 2, 1, 3],
+            dark:       [0, 3, 1, 4, 2, 0, 3, 1],
+            danger:     [0, 4, 2, 5, 1, 3, 4, 0],
+            mysterious: [0, 3, 1, 5, 2, 4, 1, 3],
+            eerie:      [0, 2, 4, 1, 5, 3, 0, 4],
+            cold:       [0, 1, 3, 2, 4, 6, 3, 5],
         };
         const pattern = patterns[zone.mood] || patterns.peaceful;
         const patIdx = this._noteIndex % pattern.length;
@@ -84,7 +90,8 @@ export class MusicSystem {
 
         const t = ctx.currentTime;
         const osc = ctx.createOscillator();
-        osc.type = zone.mood === 'dark' || zone.mood === 'danger' ? 'triangle' : 'sine';
+        const darkMoods = ['dark', 'danger', 'eerie', 'mysterious', 'cold'];
+        osc.type = darkMoods.includes(zone.mood) ? 'triangle' : 'sine';
         osc.frequency.value = freq;
 
         const gain = ctx.createGain();

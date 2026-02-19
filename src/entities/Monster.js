@@ -49,6 +49,12 @@ export class Monster {
         this.bobSpeed = 2 + Math.random();
         this.bobAmount = 0.05;
         this.baseY = spawnPos.y;
+
+        // Idle sway & attack lunge animations
+        this._idleSwayPhase = Math.random() * Math.PI * 2;
+        this._attackLunging = false;
+        this._lungeTime = 0;
+        this._lungeDuration = 0.25;
     }
 
     tick(playerPos) {
@@ -197,6 +203,37 @@ export class Monster {
             this.baseY + bob,
             this.position.z
         );
+
+        // Idle sway — gentle side-to-side when stationary
+        if (!isWalking && !this._attackLunging) {
+            this._idleSwayPhase += dt * 0.4;
+            this.mesh.rotation.z = Math.sin(this._idleSwayPhase) * 0.04;
+        } else if (!this._attackLunging) {
+            this.mesh.rotation.z = 0;
+        }
+
+        // Attack lunge animation
+        if (this._attackLunging) {
+            this._lungeTime += dt;
+            const t = this._lungeTime / this._lungeDuration;
+            if (t >= 1) {
+                this._attackLunging = false;
+                this.mesh.rotation.x = 0;
+                this.mesh.rotation.z = 0;
+            } else {
+                // Lean forward then snap back
+                const lunge = Math.sin(t * Math.PI) * 0.25;
+                this.mesh.rotation.x = -lunge;
+                // Nudge toward target during peak
+                if (this.combatTarget && t > 0.3 && t < 0.7) {
+                    const dx = this.combatTarget.x - this.position.x;
+                    const dz = this.combatTarget.z - this.position.z;
+                    const d = Math.sqrt(dx * dx + dz * dz) || 1;
+                    this.mesh.position.x = this.position.x + (dx / d) * 0.15 * Math.sin(t * Math.PI);
+                    this.mesh.position.z = this.position.z + (dz / d) * 0.15 * Math.sin(t * Math.PI);
+                }
+            }
+        }
     }
 
     _pickWanderTarget() {
@@ -250,6 +287,11 @@ export class Monster {
         }, 120);
     }
 
+    triggerAttackLunge() {
+        this._attackLunging = true;
+        this._lungeTime = 0;
+    }
+
     die() {
         this.alive = false;
         this.state = 'dead';
@@ -277,11 +319,12 @@ export class Monster {
         const DURATION = 0.8;
 
         if (t < 0.2) {
-            // Phase 1: Dramatic squash
+            // Phase 1: Dramatic squash + lateral tip
             const p = t / 0.2; // 0→1
             this.mesh.scale.y = 1 - p * 0.4;       // 1 → 0.6
             this.mesh.scale.x = 1 + p * 0.3;       // 1 → 1.3
             this.mesh.scale.z = 1 + p * 0.3;
+            this.mesh.rotation.z = p * 0.4;         // Tip sideways
         } else if (t < DURATION) {
             // Phase 2: Sink + fade + spin
             const p = (t - 0.2) / (DURATION - 0.2); // 0→1
@@ -296,6 +339,7 @@ export class Monster {
             // Finalize: hide mesh, restore transforms for respawn
             this.mesh.visible = false;
             this.mesh.scale.set(1, 1, 1);
+            this.mesh.rotation.set(0, this.mesh.rotation.y, 0);
             this.mesh.position.y = this._deathOriginY;
             this.mesh.traverse(c => {
                 if (c.material) {

@@ -54,6 +54,7 @@ export class Environment {
         this._placeTorches();
         this._placeBiomes();
         this._placeUnderwaterCave();
+        this._placeGrass();
     }
 
     _placeBuildings() {
@@ -328,13 +329,18 @@ export class Environment {
                 foamColor: { value: new THREE.Color(0xCCEEFF) },
             },
             vertexShader: `
+                uniform float time;
                 varying vec2 vUv;
                 varying vec3 vWorldPos;
                 void main() {
                     vUv = uv;
-                    vec4 wp = modelMatrix * vec4(position, 1.0);
+                    // Vertex wave displacement
+                    float wave = sin(position.x * 0.6 + time * 1.2) * 0.06
+                               + sin(position.z * 0.8 - time * 0.9) * 0.04;
+                    vec3 displaced = position + vec3(0.0, wave, 0.0);
+                    vec4 wp = modelMatrix * vec4(displaced, 1.0);
                     vWorldPos = wp.xyz;
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(displaced, 1.0);
                 }
             `,
             fragmentShader: `
@@ -387,7 +393,7 @@ export class Environment {
                 }
             `,
             transparent: true,
-            side: THREE.FrontSide,
+            side: THREE.DoubleSide,
         });
     }
 
@@ -401,13 +407,18 @@ export class Environment {
                 crustColor: { value: new THREE.Color(0x331100) },
             },
             vertexShader: `
+                uniform float time;
                 varying vec2 vUv;
                 varying vec3 vWorldPos;
                 void main() {
                     vUv = uv;
-                    vec4 wp = modelMatrix * vec4(position, 1.0);
+                    // Vertex wave displacement
+                    float wave = sin(position.x * 0.6 + time * 1.2) * 0.06
+                               + sin(position.z * 0.8 - time * 0.9) * 0.04;
+                    vec3 displaced = position + vec3(0.0, wave, 0.0);
+                    vec4 wp = modelMatrix * vec4(displaced, 1.0);
                     vWorldPos = wp.xyz;
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(displaced, 1.0);
                 }
             `,
             fragmentShader: `
@@ -1241,6 +1252,90 @@ export class Environment {
         this.removeGroundItem(gi.mesh);
     }
 
+    _placeGrass() {
+        const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+        const count = isMobile ? 300 : 800;
+        const geo = new THREE.PlaneGeometry(0.4, 0.35);
+        geo.translate(0, 0.175, 0); // pivot at base
+
+        const mat = new THREE.MeshBasicMaterial({
+            color: 0x4A7A30,
+            transparent: true,
+            opacity: 0.9,
+            alphaTest: 0.3,
+            side: THREE.DoubleSide,
+            depthWrite: false,
+        });
+
+        const dummy = new THREE.Object3D();
+        const transforms = [];
+
+        // Avoid buildings and non-grassy areas
+        const buildings = CONFIG.WORLD_OBJECTS?.buildings || [];
+        const avoidPoints = buildings.map(b => ({ x: b.x, z: b.z }));
+
+        for (let i = 0; i < count; i++) {
+            let x, z;
+            let tooClose = true;
+            let attempts = 0;
+            while (tooClose && attempts++ < 20) {
+                x = (Math.random() - 0.5) * 120;
+                z = (Math.random() - 0.5) * 120;
+                tooClose = avoidPoints.some(p => Math.abs(p.x - x) < 3 && Math.abs(p.z - z) < 3);
+                // Skip desert, deep wilderness, dungeon entrance area
+                if (x > 45 || z < -60 || (x < -40 && z < -30)) tooClose = true;
+            }
+            if (attempts >= 20) continue;
+            const y = this.terrain.getHeightAt(x, z);
+            const scale = 0.7 + Math.random() * 0.6;
+            const rotY = Math.random() * Math.PI * 2;
+            transforms.push({ x, y, z, scale, rotY });
+        }
+
+        const finalCount = transforms.length;
+        if (finalCount === 0) return;
+
+        // Two crossed planes for volumetric grass effect
+        const im1 = new THREE.InstancedMesh(geo, mat, finalCount);
+        const im2 = new THREE.InstancedMesh(geo, mat.clone(), finalCount);
+
+        // Per-instance color variation
+        const colors1 = new Float32Array(finalCount * 3);
+        const colors2 = new Float32Array(finalCount * 3);
+
+        for (let i = 0; i < finalCount; i++) {
+            const { x, y, z, scale, rotY } = transforms[i];
+            // Plane 1
+            dummy.position.set(x, y, z);
+            dummy.rotation.set(0, rotY, 0);
+            dummy.scale.set(scale, scale, scale);
+            dummy.updateMatrix();
+            im1.setMatrixAt(i, dummy.matrix);
+            // Plane 2 — 90 degrees rotated
+            dummy.rotation.set(0, rotY + Math.PI / 2, 0);
+            dummy.updateMatrix();
+            im2.setMatrixAt(i, dummy.matrix);
+
+            // Random green tint per instance
+            const r = 0.22 + Math.random() * 0.12;
+            const g = 0.42 + Math.random() * 0.16;
+            const b = 0.12 + Math.random() * 0.08;
+            colors1[i * 3] = r; colors1[i * 3 + 1] = g; colors1[i * 3 + 2] = b;
+            colors2[i * 3] = r; colors2[i * 3 + 1] = g; colors2[i * 3 + 2] = b;
+        }
+
+        im1.instanceMatrix.needsUpdate = true;
+        im2.instanceMatrix.needsUpdate = true;
+        im1.instanceColor = new THREE.InstancedBufferAttribute(colors1, 3);
+        im2.instanceColor = new THREE.InstancedBufferAttribute(colors2, 3);
+        im1.castShadow = false; im1.receiveShadow = false;
+        im2.castShadow = false; im2.receiveShadow = false;
+        im1.frustumCulled = false;
+        im2.frustumCulled = false;
+        this.scene.add(im1);
+        this.scene.add(im2);
+    }
+
     updateAnimations(dt, playerPos) {
         const time = performance.now() * 0.001;
         if (this.pondMesh && this.pondMesh.material.uniforms) {
@@ -1500,18 +1595,25 @@ export class Environment {
     }
 
     // ── Loot Beam ──
-    spawnLootBeam(position) {
-        const beamGeo = new THREE.CylinderGeometry(0.1, 0.1, 20, 6);
+    spawnLootBeam(position, tier = 'uncommon') {
+        const colors = { uncommon: 0xFFD700, rare: 0xFF6600, ultra: 0xFF00FF };
+        const heights = { uncommon: 15, rare: 20, ultra: 25 };
+        const durations = { uncommon: 10, rare: 20, ultra: 30 };
+        const color = colors[tier] || colors.uncommon;
+        const height = heights[tier] || 15;
+        const duration = durations[tier] || 10;
+
+        const beamGeo = new THREE.CylinderGeometry(0.06, 0.06, height, 6);
         const beamMat = new THREE.MeshBasicMaterial({
-            color: 0xFFD700,
+            color,
             transparent: true,
-            opacity: 0.4,
+            opacity: 0.35,
             side: THREE.DoubleSide,
         });
         const beam = new THREE.Mesh(beamGeo, beamMat);
-        beam.position.set(position.x, position.y + 10, position.z);
+        beam.position.set(position.x, position.y + height / 2, position.z);
         this.scene.add(beam);
-        this.lootBeams.push({ mesh: beam, timer: 10 }); // Show for 10 seconds
+        this.lootBeams.push({ mesh: beam, timer: duration, tier });
     }
 
     // ── Gravestone ──

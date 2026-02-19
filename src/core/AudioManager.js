@@ -772,6 +772,107 @@ export class AudioManager {
         }
     }
 
+    // ── Dungeon ambience: cave drips at random intervals ──────────────
+
+    playCaveDrip() {
+        if (!this.ctx) return;
+        this._init();
+        const ctx = this.ctx;
+        const t = ctx.currentTime;
+
+        // Primary drip: high-pitched sine descend
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800 + Math.random() * 400, t);
+        osc.frequency.exponentialRampToValueAtTime(200, t + 0.3);
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.04, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+
+        // Resonant echo tap
+        const osc2 = ctx.createOscillator();
+        osc2.type = 'sine';
+        osc2.frequency.value = 300 + Math.random() * 100;
+        const g2 = ctx.createGain();
+        g2.gain.setValueAtTime(0.015, t + 0.05);
+        g2.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+
+        osc.connect(gain).connect(this.dest);
+        osc2.connect(g2).connect(this.dest);
+        osc.start(t); osc.stop(t + 0.35);
+        osc2.start(t + 0.05); osc2.stop(t + 0.5);
+    }
+
+    startDungeonAmbience() {
+        if (this._dungeonAmbienceActive) return;
+        this._init();
+        this._dungeonAmbienceActive = true;
+        this._dungeonDripTimers = [];
+        const dripLoop = () => {
+            if (!this._dungeonAmbienceActive) return;
+            this.playCaveDrip();
+            const delay = 3000 + Math.random() * 7000;
+            const id = setTimeout(dripLoop, delay);
+            this._dungeonDripTimers.push(id);
+        };
+        const startId = setTimeout(dripLoop, 1500);
+        this._dungeonDripTimers.push(startId);
+    }
+
+    stopDungeonAmbience() {
+        this._dungeonAmbienceActive = false;
+        if (this._dungeonDripTimers) {
+            for (const id of this._dungeonDripTimers) clearTimeout(id);
+            this._dungeonDripTimers = [];
+        }
+    }
+
+    // ── Underwater ambience: low warbling tone through bandpass ──────
+
+    startUnderwaterAmbience() {
+        if (this._uwAmbienceActive) return;
+        this._init();
+        this._uwAmbienceActive = true;
+        this._playUnderwaterLoop();
+    }
+
+    _playUnderwaterLoop() {
+        if (!this._uwAmbienceActive || !this.ctx) return;
+        const ctx = this.ctx;
+        const t = ctx.currentTime;
+        const duration = 3;
+
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(80, t);
+        osc.frequency.linearRampToValueAtTime(100, t + duration * 0.5);
+        osc.frequency.linearRampToValueAtTime(75, t + duration);
+
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.015, t);
+        gain.gain.setValueAtTime(0.015, t + duration - 0.5);
+        gain.gain.linearRampToValueAtTime(0, t + duration);
+
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.value = 200;
+        filter.Q.value = 1;
+
+        osc.connect(filter).connect(gain).connect(this.dest);
+        osc.start(t);
+        osc.stop(t + duration);
+
+        this._uwLoopTimer = setTimeout(() => this._playUnderwaterLoop(), duration * 900);
+    }
+
+    stopUnderwaterAmbience() {
+        this._uwAmbienceActive = false;
+        if (this._uwLoopTimer) {
+            clearTimeout(this._uwLoopTimer);
+            this._uwLoopTimer = null;
+        }
+    }
+
     // Surface-aware footstep sounds
     playFootstepSurface(surface) {
         this._init();

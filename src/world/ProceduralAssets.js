@@ -560,7 +560,7 @@ export class ProceduralAssets {
     createMonster(type = 'chicken') {
         const group = new THREE.Group();
         const b = { chicken: '_buildChicken', cow: '_buildCow', rat: '_buildRat', goblin: '_buildGoblin',
-            skeleton: '_buildSkeleton', giant_spider: '_buildSpider', dark_wizard: '_buildDarkWizard',
+            skeleton: '_buildSkeleton', skeleton_weak: '_buildSkeleton', giant_spider: '_buildSpider', dark_wizard: '_buildDarkWizard',
             lesser_demon: '_buildDemon', kbd: '_buildKBD',
             moss_giant: '_buildMossGiant', shadow_warrior: '_buildShadowWarrior', demon_lord: '_buildDemonLord',
             scorpion: '_buildScorpion', giant_frog: '_buildGiantFrog', ice_wolf: '_buildIceWolf',
@@ -569,7 +569,7 @@ export class ProceduralAssets {
         if (b[type]) this[b[type]](group);
 
         const names = { chicken: 'Chicken', cow: 'Cow', rat: 'Giant Rat', goblin: 'Goblin',
-            skeleton: 'Skeleton', giant_spider: 'Giant Spider', dark_wizard: 'Dark Wizard',
+            skeleton: 'Skeleton', skeleton_weak: 'Skeleton', giant_spider: 'Giant Spider', dark_wizard: 'Dark Wizard',
             lesser_demon: 'Lesser Demon', kbd: 'King Black Dragon',
             moss_giant: 'Moss Giant', shadow_warrior: 'Shadow Warrior', demon_lord: 'Demon Lord',
             scorpion: 'Scorpion', giant_frog: 'Giant Frog', ice_wolf: 'Ice Wolf',

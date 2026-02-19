@@ -203,16 +203,17 @@ export class CombatSystem {
     }
 
     _spawnKBDMinions(kbdMonster) {
-        // Spawn 2 skeleton minions near the KBD
+        // Spawn 2 skeleton minions near the KBD at the same dungeon floor Y
+        const floorY = kbdMonster.mesh.position.y;
         for (let i = 0; i < 2; i++) {
             const offsetX = (Math.random() - 0.5) * 6;
             const offsetZ = (Math.random() - 0.5) * 6;
             const data = {
-                type: 'skeleton',
+                type: 'skeleton_weak',
                 x: kbdMonster.position.x + offsetX,
                 z: kbdMonster.position.z + offsetZ
             };
-            this.game.environment._spawnMonster(data);
+            this.game.environment._spawnDungeonMonster(data, floorY);
         }
     }
 
@@ -577,7 +578,8 @@ export class CombatSystem {
             // Magic max hit scales: spell base + magic level bonus + magic equipment bonus
             let effectiveMaxHit = spell.maxHit + Math.floor(player.skills.magic.level * 0.15) + Math.floor(magicBonus * 0.2);
             // Crumble Undead bonus vs skeleton-type monsters
-            if (spell.bonusVs === 'undead' && monster.mesh?.userData?.subType === 'skeleton') {
+            const subType = monster.mesh?.userData?.subType;
+            if (spell.bonusVs === 'undead' && (subType === 'skeleton' || subType === 'skeleton_weak')) {
                 effectiveMaxHit = Math.floor(effectiveMaxHit * 1.5);
             }
             const damage = Math.floor(Math.random() * (effectiveMaxHit + 1));
@@ -641,7 +643,10 @@ export class CombatSystem {
 
             player.hp -= damage;
             this._showPlayerHitsplat(damage, false);
-            if (damage > 0) this.game.addChatMessage(`The ${monster.name} hits you for ${damage} damage.`, 'damage');
+            if (damage > 0) {
+                this.game.addChatMessage(`The ${monster.name} hits you for ${damage} damage.`, 'damage');
+                monster.triggerAttackLunge();
+            }
 
             // Screen shake on big hits (5+ damage)
             if (damage >= 5) {
@@ -769,10 +774,19 @@ export class CombatSystem {
                     'loot'
                 );
 
-                // Loot beam on rare drops (chance <= 0.15)
-                const lootEntry = monsterLootTable.find(e => e.item === drop.item);
-                if (lootEntry && lootEntry.chance <= 0.15) {
-                    this.game.environment.spawnLootBeam(deathPos);
+                // Loot beam on valuable drops — tiered by item rarity
+                const itemId = drop.item;
+                let beamTier = null;
+                if (itemId.startsWith('rune_') && CONFIG.ITEMS[itemId]?.equipSlot) beamTier = 'rare';
+                else if (itemId === 'dragon_bones' || itemId === 'demons_bane') beamTier = 'rare';
+                else if (itemId.startsWith('adamant_') && CONFIG.ITEMS[itemId]?.equipSlot) beamTier = 'uncommon';
+                else if (itemId.startsWith('mithril_') && CONFIG.ITEMS[itemId]?.equipSlot) beamTier = 'uncommon';
+                else if (itemId === 'coins' && drop.qty >= 100) beamTier = 'uncommon';
+                const lootEntry = monsterLootTable.find(e => e.item === itemId);
+                if (!beamTier && lootEntry && lootEntry.chance <= 0.05) beamTier = 'ultra';
+                else if (!beamTier && lootEntry && lootEntry.chance <= 0.1) beamTier = 'rare';
+                if (beamTier) {
+                    this.game.environment.spawnLootBeam(deathPos, beamTier);
                 }
             }
         }, 800);
