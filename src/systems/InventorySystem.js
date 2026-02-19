@@ -89,7 +89,7 @@ export class InventorySystem {
                 player.hp = Math.min(player.maxHp, player.hp + def.healAmount);
                 this.removeItem(slot.itemId, 1);
                 this.game.addChatMessage(`You eat the ${def.name}. It heals ${def.healAmount}.`, 'system');
-                this.game.audio.playEat?.();
+                this.game.audio.playEat();
                 return;
             }
         }

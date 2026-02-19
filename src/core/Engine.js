@@ -150,84 +150,91 @@ export class Engine {
         const skinMat = new THREE.MeshStandardMaterial({ color: 0xD4A574, roughness: 0.8 });
         const skinDark = new THREE.MeshStandardMaterial({ color: 0xC49464, roughness: 0.85 });
 
-        // ── Forearm (tapered, angled into view) ──
+        // ── Forearm (tapered cylinder coming from bottom-right) ──
         const forearm = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.030, 0.042, 0.38, 8),
+            new THREE.CylinderGeometry(0.028, 0.038, 0.32, 8),
             skinMat
         );
-        forearm.rotation.x = -Math.PI * 0.06;
-        forearm.rotation.z = Math.PI * 0.10;
-        forearm.position.set(0.25, -0.30, -0.32);
+        forearm.rotation.x = -Math.PI * 0.08;
+        forearm.rotation.z = Math.PI * 0.08;
+        forearm.position.set(0.22, -0.26, -0.35);
         this._vmGroup.add(forearm);
 
-        // ── Wrist (transition to hand) ──
+        // ── Wrist (bridges forearm to hand) ──
         const wrist = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.028, 0.030, 0.05, 8),
+            new THREE.CylinderGeometry(0.024, 0.028, 0.08, 8),
             skinMat
         );
-        wrist.rotation.x = -Math.PI * 0.18;
-        wrist.rotation.z = Math.PI * 0.06;
-        wrist.position.set(0.22, -0.14, -0.48);
+        wrist.rotation.x = -Math.PI * 0.20;
+        wrist.rotation.z = Math.PI * 0.04;
+        wrist.position.set(0.195, -0.11, -0.49);
         this._vmGroup.add(wrist);
 
-        // ── Hand group (palm + curled fingers forming a grip) ──
+        // ── Hand group ──
         this._vmHand = new THREE.Group();
-        this._vmHand.position.set(0.20, -0.08, -0.55);
-        this._vmHand.rotation.set(-Math.PI * 0.25, 0, Math.PI * 0.03);
+        this._vmHand.position.set(0.19, -0.07, -0.55);
+        this._vmHand.rotation.set(-Math.PI * 0.15, 0, Math.PI * 0.03);
 
-        // Palm (smaller, flatter)
+        // Palm — flat box, forms the back of the hand
         const palm = new THREE.Mesh(
-            new THREE.BoxGeometry(0.06, 0.028, 0.065),
+            new THREE.BoxGeometry(0.055, 0.025, 0.055),
             skinMat
         );
+        palm.position.set(0, 0.004, 0.005);
         this._vmHand.add(palm);
 
-        // Back of hand (slight bulge)
+        // Back-of-hand bulge
         const handBack = new THREE.Mesh(
-            new THREE.SphereGeometry(0.030, 6, 4),
+            new THREE.SphereGeometry(0.028, 6, 4),
             skinMat
         );
-        handBack.scale.set(1, 0.5, 0.9);
-        handBack.position.set(0, 0.012, 0.015);
+        handBack.scale.set(1, 0.4, 0.9);
+        handBack.position.set(0, 0.014, 0.010);
         this._vmHand.add(handBack);
 
-        // Thumb (wraps around from the side)
-        const thumb = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.009, 0.008, 0.045, 5),
+        // ── Thumb (wraps from left side) ──
+        const thumb1 = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.009, 0.008, 0.030, 5),
             skinDark
         );
-        thumb.position.set(-0.038, -0.005, -0.005);
-        thumb.rotation.set(-Math.PI * 0.2, 0, Math.PI * 0.4);
-        this._vmHand.add(thumb);
-        // Thumb tip
-        const thumbTip = new THREE.Mesh(new THREE.SphereGeometry(0.009, 4, 3), skinDark);
-        thumbTip.position.set(-0.045, -0.015, -0.020);
-        this._vmHand.add(thumbTip);
+        thumb1.position.set(-0.032, -0.003, -0.005);
+        thumb1.rotation.set(-0.3, 0, 0.5);
+        this._vmHand.add(thumb1);
 
-        // ── Fingers (curled under to form grip) ──
-        const fingerSpread = [
-            { x: -0.018, curl: 0.55 },
-            { x: -0.006, curl: 0.60 },
-            { x:  0.006, curl: 0.60 },
-            { x:  0.018, curl: 0.55 },
+        const thumb2 = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.008, 0.007, 0.022, 5),
+            skinDark
+        );
+        thumb2.position.set(-0.038, -0.014, -0.018);
+        thumb2.rotation.set(-0.1, 0, 0.3);
+        this._vmHand.add(thumb2);
+
+        // ── Four fingers: each has 2 segments curling under the palm ──
+        // Grip axis runs along hand's local X at about y=-0.015, z=-0.025
+        const fingerData = [
+            { x: -0.017, r1: 0.007, r2: 0.006 },  // index
+            { x: -0.006, r1: 0.007, r2: 0.006 },  // middle
+            { x:  0.006, r1: 0.007, r2: 0.006 },  // ring
+            { x:  0.017, r1: 0.006, r2: 0.005 },  // pinky
         ];
-        for (const f of fingerSpread) {
-            // Proximal segment (attached to palm)
+
+        for (const f of fingerData) {
+            // Proximal — angles down from knuckle edge
             const seg1 = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.008, 0.007, 0.030, 4),
+                new THREE.CylinderGeometry(f.r1, f.r1 * 0.9, 0.020, 5),
                 skinDark
             );
-            seg1.position.set(f.x, -0.010, -0.040);
-            seg1.rotation.x = f.curl;
+            seg1.position.set(f.x, -0.006, -0.030);
+            seg1.rotation.x = 0.9;
             this._vmHand.add(seg1);
 
-            // Distal segment (curled further under)
+            // Distal — curls tightly under
             const seg2 = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.007, 0.006, 0.025, 4),
+                new THREE.CylinderGeometry(f.r2, f.r2 * 0.85, 0.016, 5),
                 skinDark
             );
-            seg2.position.set(f.x, -0.025, -0.050);
-            seg2.rotation.x = f.curl + 0.4;
+            seg2.position.set(f.x, -0.018, -0.024);
+            seg2.rotation.x = 1.5;
             this._vmHand.add(seg2);
         }
 
@@ -251,9 +258,15 @@ export class Engine {
         if (!item) return;
 
         const g = new THREE.Group();
-        const metalColor = itemId.startsWith('steel') ? 0xB8B8C0 :
+        const metalColor = itemId.startsWith('rune') ? 0x4FAACC :
+                           itemId.startsWith('adamant') ? 0x338844 :
+                           itemId.startsWith('mithril') ? 0x6644AA :
+                           itemId.startsWith('steel') ? 0xB8B8C0 :
                            itemId.startsWith('iron') ? 0x7A7A80 : 0xCD7F32;
-        const metalDark = itemId.startsWith('steel') ? 0x909098 :
+        const metalDark = itemId.startsWith('rune') ? 0x3888AA :
+                          itemId.startsWith('adamant') ? 0x226633 :
+                          itemId.startsWith('mithril') ? 0x443388 :
+                          itemId.startsWith('steel') ? 0x909098 :
                           itemId.startsWith('iron') ? 0x5A5A60 : 0xA06025;
         const metalMat = new THREE.MeshStandardMaterial({ color: metalColor, metalness: 0.75, roughness: 0.25 });
         const metalDarkMat = new THREE.MeshStandardMaterial({ color: metalDark, metalness: 0.6, roughness: 0.35 });
@@ -531,9 +544,10 @@ export class Engine {
             g.add(gGrip);
         }
 
-        g.position.set(0.20, -0.08, -0.55);
-        g.rotation.x = -Math.PI * 0.18;
-        g.rotation.z = Math.PI * 0.08;
+        // Position weapon so its grip sits inside the hand's finger curl.
+        // Match hand rotation so weapon aligns with the grip.
+        g.position.set(0.19, -0.09, -0.56);
+        g.rotation.set(-Math.PI * 0.15, 0, Math.PI * 0.03);
         this._vmGroup.add(g);
         this._vmWeapon = g;
     }

@@ -203,7 +203,7 @@ export class TradeSystem {
             this.game.inventorySystem.addItem(item.itemId, item.quantity);
         }
         this.game.addChatMessage('Trade complete!', 'level-up');
-        this.game.audio.playPickup?.();
+        this.game.audio.playPickup();
         this.close();
     }
 

@@ -161,7 +161,7 @@ body { overflow: hidden; background: #000; font-family: 'Segoe UI', Tahoma, Gene
 #orb-spec.spec-active .orb-fill.spec { stroke: #FFDD00; }
 
 /* Coords */
-#coords { position: absolute; bottom: 360px; left: 10px; color: #8B7355; font-size: 10px; pointer-events: none; }
+#coords { position: absolute; top: 28px; left: 10px; color: #8B7355; font-size: 10px; pointer-events: none; }
 
 /* Chat Box */
 #chat-box { position: absolute; bottom: 10px; left: 10px; width: 400px; height: 140px; padding: 6px; display: flex; flex-direction: column; }
@@ -550,7 +550,7 @@ img, span, div, button { -webkit-user-drag: none; }
     .orb-ring { width: 34px; height: 34px; }
     .orb-icon { font-size: 12px; }
     .orb-text { font-size: 10px; left: 38px; }
-    #coords { bottom: auto; top: 32px; left: 6px; font-size: 9px; }
+    #coords { top: 28px; left: 6px; font-size: 9px; }
     #dialogue-box { width: 90vw; }
     .overlay-panel { width: 95vw; max-height: 70vh; }
     #smithing-overlay, #ge-overlay { width: 95vw; }

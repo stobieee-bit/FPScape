@@ -908,7 +908,7 @@ class Game {
             banner = document.createElement('div');
             banner.id = 'update-banner';
             banner.innerHTML = '🔄 New update available — <a href="#" onclick="location.reload();return false;">click to refresh</a>';
-            document.getElementById('game-container').appendChild(banner);
+            document.body.appendChild(banner);
         }
         banner.classList.remove('hidden');
     }
