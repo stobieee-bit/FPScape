@@ -647,6 +647,16 @@ export class CombatSystem {
         this.game.particleSystem.createDeathBurst(monster.position);
         this.game.audio.playMonsterDeath();
 
+        // Pet roll on boss kills
+        if (this.game.petSystem && monsterType) {
+            this.game.petSystem.rollBossPet(monsterType);
+        }
+
+        // Clue scroll progress check
+        if (this.game.clueScrollSystem && monsterType) {
+            this.game.clueScrollSystem.checkKill(monsterType);
+        }
+
         // Generate loot now (before respawn recycles the monster), but delay spawning
         const deathPos = monster.position.clone();
         const loot = monster.generateLoot();

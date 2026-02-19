@@ -23,6 +23,8 @@ import { SlayerSystem } from './systems/SlayerSystem.js';
 import { MusicSystem } from './systems/MusicSystem.js';
 import { AchievementSystem } from './systems/AchievementSystem.js';
 import { WorldMapSystem } from './systems/WorldMapSystem.js';
+import { PetSystem } from './systems/PetSystem.js';
+import { ClueScrollSystem } from './systems/ClueScrollSystem.js';
 import { UIManager } from './ui/UIManager.js';
 import { Minimap } from './ui/Minimap.js';
 import { ContextMenu } from './ui/ContextMenu.js';
@@ -63,6 +65,8 @@ class Game {
         this.musicSystem = new MusicSystem(this);
         this.achievementSystem = new AchievementSystem(this);
         this.worldMapSystem = new WorldMapSystem(this);
+        this.petSystem = new PetSystem(this);
+        this.clueScrollSystem = new ClueScrollSystem(this);
 
         // Multiplayer
         this.remotePlayerManager = new RemotePlayerManager(this);
@@ -85,6 +89,15 @@ class Game {
         // Create rain system
         this._rainEmitter = this.particleSystem.createRainSystem(this.player.position);
         this.weatherSystem.setRainEmitter(this._rainEmitter);
+
+        // Create snow system
+        this._snowEmitter = this.particleSystem.createSnowSystem(this.player.position);
+        this.weatherSystem.setSnowEmitter(this._snowEmitter);
+
+        // Create firefly system near trees
+        if (this.environment.fireflyPositions) {
+            this.particleSystem.createFireflySystem(this.environment.fireflyPositions);
+        }
 
         // Hook into level-up for sparkle burst + banner
         const origLevelUp = this.skillSystem._onLevelUp.bind(this.skillSystem);
@@ -197,8 +210,20 @@ class Game {
             } else {
                 this.addChatMessage('Active buffs: ' + buffs.map(([k, v]) => `${k} +${v.boost} (${Math.ceil(v.timer)}s)`).join(', '), 'system');
             }
+        } else if (cmd === 'dig') {
+            this.interactionSystem.handleDig();
+        } else if (cmd === 'search') {
+            this.interactionSystem.handleSearch();
+        } else if (cmd === 'clue') {
+            const hint = this.clueScrollSystem.getCurrentHint();
+            if (hint) this.addChatMessage(`Current clue: "${hint}"`, 'system');
+            else this.addChatMessage('No active clue scroll.', 'system');
+        } else if (cmd === 'pets') {
+            const owned = [...this.petSystem.ownedPets];
+            if (owned.length === 0) this.addChatMessage('No pets owned yet.', 'system');
+            else this.addChatMessage('Owned pets: ' + owned.map(p => CONFIG.PETS[p]?.name || p).join(', '), 'system');
         } else if (cmd === 'help') {
-            this.addChatMessage('Commands: ::save, ::total, ::kc, ::quests, ::achievements, ::slayer, ::buffs, ::help', 'system');
+            this.addChatMessage('Commands: ::save, ::total, ::kc, ::quests, ::achievements, ::slayer, ::buffs, ::dig, ::search, ::clue, ::pets, ::help', 'system');
         } else {
             this.addChatMessage(`Unknown command: ${cmd}`, 'system');
         }
@@ -363,6 +388,22 @@ class Game {
 
         // Weather system
         this.weatherSystem.update(dt);
+
+        // Pet following
+        this.petSystem.update(dt);
+
+        // Firefly night toggle
+        const timeOfDay = this.engine.timeOfDay || 0.5;
+        const isNight = timeOfDay < 0.25 || timeOfDay > 0.75;
+        this.particleSystem.setFirefliesActive(isNight);
+
+        // Weather fog modifier (surface only)
+        if (!this.engine._inDungeon) {
+            const fogMod = this.weatherSystem.getWeatherFogModifier();
+            if (this.engine.scene.fog) {
+                this.engine.scene.fog.far = CONFIG.VISUAL.fogFar * fogMod;
+            }
+        }
 
         // Save system (auto-save timer)
         this.saveSystem.update(dt);

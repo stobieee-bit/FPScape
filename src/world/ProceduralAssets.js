@@ -180,13 +180,15 @@ export class ProceduralAssets {
         const b = { chicken: '_buildChicken', cow: '_buildCow', rat: '_buildRat', goblin: '_buildGoblin',
             skeleton: '_buildSkeleton', giant_spider: '_buildSpider', dark_wizard: '_buildDarkWizard',
             lesser_demon: '_buildDemon', kbd: '_buildKBD',
-            moss_giant: '_buildMossGiant', shadow_warrior: '_buildShadowWarrior', demon_lord: '_buildDemonLord' };
+            moss_giant: '_buildMossGiant', shadow_warrior: '_buildShadowWarrior', demon_lord: '_buildDemonLord',
+            scorpion: '_buildScorpion', giant_frog: '_buildGiantFrog', ice_wolf: '_buildIceWolf' };
         if (b[type]) this[b[type]](group);
 
         const names = { chicken: 'Chicken', cow: 'Cow', rat: 'Giant Rat', goblin: 'Goblin',
             skeleton: 'Skeleton', giant_spider: 'Giant Spider', dark_wizard: 'Dark Wizard',
             lesser_demon: 'Lesser Demon', kbd: 'King Black Dragon',
-            moss_giant: 'Moss Giant', shadow_warrior: 'Shadow Warrior', demon_lord: 'Demon Lord' };
+            moss_giant: 'Moss Giant', shadow_warrior: 'Shadow Warrior', demon_lord: 'Demon Lord',
+            scorpion: 'Scorpion', giant_frog: 'Giant Frog', ice_wolf: 'Ice Wolf' };
         group.userData = { type: 'monster', subType: type, interactable: true, name: names[type] || type };
         return group;
     }
@@ -433,6 +435,161 @@ export class ProceduralAssets {
         g.add(at(new THREE.PointLight(0xFF4400, 1.2, 10), 0, 2.5, 0));
     }
 
+    _buildScorpion(g) {
+        const m = new THREE.MeshStandardMaterial({ color: 0x8B5A2B, roughness: 0.7 });
+        // Body
+        const body = new THREE.Mesh(new THREE.SphereGeometry(0.4, 5, 4), m);
+        body.position.y = 0.3; body.scale.set(1, 0.6, 1.2); g.add(body);
+        // Tail (curved up)
+        for (let i = 0; i < 4; i++) {
+            const seg = new THREE.Mesh(new THREE.SphereGeometry(0.08, 4, 3), m);
+            seg.position.set(0, 0.5 + i * 0.25, -0.3 - i * 0.15); g.add(seg);
+        }
+        // Stinger
+        const sting = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.15, 4), new THREE.MeshStandardMaterial({ color: 0x333333 }));
+        sting.position.set(0, 1.45, -0.75); sting.rotation.x = Math.PI; g.add(sting);
+        // Pincers
+        for (let s = -1; s <= 1; s += 2) {
+            const pincer = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.06, 0.3), m);
+            pincer.position.set(s * 0.35, 0.3, -0.5); g.add(pincer);
+        }
+    }
+
+    _buildGiantFrog(g) {
+        const m = new THREE.MeshStandardMaterial({ color: 0x4CAF50, roughness: 0.8 });
+        // Body (round)
+        const body = new THREE.Mesh(new THREE.SphereGeometry(0.5, 6, 5), m);
+        body.position.y = 0.5; body.scale.set(1, 0.8, 1.1); g.add(body);
+        // Eyes (on top)
+        const eyeMat = new THREE.MeshStandardMaterial({ color: 0xFFFF00 });
+        for (let s = -1; s <= 1; s += 2) {
+            const eye = new THREE.Mesh(new THREE.SphereGeometry(0.1, 4, 3), eyeMat);
+            eye.position.set(s * 0.2, 0.95, -0.3); g.add(eye);
+        }
+        // Legs (back, larger)
+        for (let s = -1; s <= 1; s += 2) {
+            const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.06, 0.5, 4), m);
+            leg.position.set(s * 0.4, 0.15, 0.2); leg.rotation.z = s * 0.4; g.add(leg);
+        }
+    }
+
+    _buildIceWolf(g) {
+        const m = new THREE.MeshStandardMaterial({ color: 0xCCDDEE, roughness: 0.5, emissive: 0x223344, emissiveIntensity: 0.2 });
+        // Body (horizontal)
+        const body = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 1.0), m);
+        body.position.set(0, 0.6, 0); g.add(body);
+        // Head
+        const head = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.35, 0.4), m);
+        head.position.set(0, 0.75, -0.6); g.add(head);
+        // Snout
+        g.add(at(new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.15, 0.2), m), 0, 0.65, -0.85));
+        // Eyes (blue glow)
+        const em = new THREE.MeshStandardMaterial({ color: 0x44AAFF, emissive: 0x2288FF, emissiveIntensity: 1.0 });
+        for (let s = -1; s <= 1; s += 2) g.add(at(new THREE.Mesh(new THREE.SphereGeometry(0.04, 3, 2), em), s * 0.1, 0.8, -0.75));
+        // Legs
+        for (let s = -1; s <= 1; s += 2) {
+            for (let fz of [-0.3, 0.3]) {
+                const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.05, 0.5, 4), m);
+                leg.position.set(s * 0.2, 0.25, fz); g.add(leg);
+            }
+        }
+        // Tail
+        const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.02, 0.5, 4), m);
+        tail.position.set(0, 0.7, 0.6); tail.rotation.x = -0.7; g.add(tail);
+    }
+
+    // ── Pet Meshes ──
+    createPet(petId) {
+        const group = new THREE.Group();
+        const petBuilders = {
+            rock_golem: () => { this._buildRockGolemPet(group); },
+            beaver: () => { this._buildBeaverPet(group); },
+            heron: () => { this._buildHeronPet(group); },
+            phoenix: () => { this._buildPhoenixPet(group); },
+            rocky: () => { this._buildRockyPet(group); },
+            kbd_jr: () => { this._buildKBD(group); group.scale.setScalar(0.3); },
+            demon_jr: () => { this._buildDemonLord(group); group.scale.setScalar(0.3); },
+            bloodhound: () => { this._buildBloodhoundPet(group); },
+        };
+        if (petBuilders[petId]) petBuilders[petId]();
+        group.userData = { type: 'pet', petId };
+        return group;
+    }
+
+    _buildRockGolemPet(g) {
+        const m = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.9 });
+        g.add(at(new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.3), m), 0, 0.3, 0));
+        g.add(at(new THREE.Mesh(new THREE.SphereGeometry(0.15, 4, 3), m), 0, 0.55, 0));
+        const em = new THREE.MeshStandardMaterial({ color: 0xFFAA00, emissive: 0xFF8800, emissiveIntensity: 0.8 });
+        for (let s = -1; s <= 1; s += 2) g.add(at(new THREE.Mesh(new THREE.SphereGeometry(0.03, 3, 2), em), s * 0.06, 0.58, -0.12));
+    }
+
+    _buildBeaverPet(g) {
+        const m = new THREE.MeshStandardMaterial({ color: 0x8B6914, roughness: 0.85 });
+        g.add(at(new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.2, 0.35), m), 0, 0.2, 0));
+        g.add(at(new THREE.Mesh(new THREE.SphereGeometry(0.1, 4, 3), m), 0, 0.35, -0.15));
+        g.add(at(new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.03, 0.25), new THREE.MeshStandardMaterial({ color: 0x5C4B1F })), 0, 0.1, 0.25));
+    }
+
+    _buildHeronPet(g) {
+        const m = new THREE.MeshStandardMaterial({ color: 0xDDDDDD });
+        g.add(at(new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.5, 4), m), 0, 0.25, 0));
+        g.add(at(new THREE.Mesh(new THREE.SphereGeometry(0.08, 4, 3), m), 0, 0.6, 0));
+        g.add(at(new THREE.Mesh(new THREE.ConeGeometry(0.02, 0.15, 3), new THREE.MeshStandardMaterial({ color: 0xFFAA00 })), 0, 0.6, -0.1));
+    }
+
+    _buildPhoenixPet(g) {
+        const m = new THREE.MeshStandardMaterial({ color: 0xFF4400, emissive: 0xFF2200, emissiveIntensity: 0.6 });
+        g.add(at(new THREE.Mesh(new THREE.SphereGeometry(0.12, 5, 4), m), 0, 0.5, 0));
+        g.add(at(new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.2, 4), m), 0, 0.7, 0));
+        g.add(at(new THREE.PointLight(0xFF4400, 0.4, 3), 0, 0.5, 0));
+    }
+
+    _buildRockyPet(g) {
+        const m = new THREE.MeshStandardMaterial({ color: 0x666666 });
+        g.add(at(new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.25, 0.3), m), 0, 0.2, 0));
+        g.add(at(new THREE.Mesh(new THREE.SphereGeometry(0.1, 4, 3), m), 0, 0.4, -0.1));
+        const mask = new THREE.MeshStandardMaterial({ color: 0x222222 });
+        g.add(at(new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.06, 0.05), mask), 0, 0.42, -0.15));
+    }
+
+    _buildBloodhoundPet(g) {
+        const m = new THREE.MeshStandardMaterial({ color: 0xCC6633 });
+        g.add(at(new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.4), m), 0, 0.25, 0));
+        g.add(at(new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.15, 0.15), m), 0, 0.35, -0.25));
+        g.add(at(new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.03, 0.1), new THREE.MeshStandardMaterial({ color: 0x333333 })), 0, 0.3, -0.35));
+        for (let s = -1; s <= 1; s += 2) {
+            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.1, 0.04), m), s * 0.06, 0.45, -0.22));
+        }
+    }
+
+    // ── Biome Props ──
+    createCactus() {
+        const g = new THREE.Group();
+        const m = new THREE.MeshStandardMaterial({ color: 0x2D8B2D, roughness: 0.8 });
+        g.add(at(new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.2, 1.5, 6), m), 0, 0.75, 0));
+        g.add(at(new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.6, 5), m), 0.3, 0.9, 0));
+        g.add(at(new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.5, 5), m), -0.25, 0.7, 0));
+        return g;
+    }
+
+    createDeadTree() {
+        const g = new THREE.Group();
+        const m = new THREE.MeshStandardMaterial({ color: 0x3D2B1A, roughness: 0.95 });
+        g.add(at(new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.2, 2, 5), m), 0, 1, 0));
+        g.add(at(new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.06, 0.8, 4), m), 0.15, 1.8, 0));
+        g.add(at(new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.05, 0.6, 4), m), -0.2, 1.6, 0.1));
+        return g;
+    }
+
+    createIceRock() {
+        const g = new THREE.Group();
+        const m = new THREE.MeshStandardMaterial({ color: 0xAABBDD, roughness: 0.3, transparent: true, opacity: 0.8 });
+        g.add(at(new THREE.Mesh(new THREE.OctahedronGeometry(0.5, 0), m), 0, 0.5, 0));
+        g.add(at(new THREE.Mesh(new THREE.OctahedronGeometry(0.3, 0), m), 0.4, 0.3, 0.2));
+        return g;
+    }
+
     createNPC(npcId) {
         const group = new THREE.Group();
         const mats = {
@@ -448,6 +605,9 @@ export class ProceduralAssets {
             bartender: [new THREE.MeshStandardMaterial({ color: 0xAA4444 }), new THREE.MeshStandardMaterial({ color: 0x222222 }), this.materials.npcHair],
             merchant: [new THREE.MeshStandardMaterial({ color: 0xCC8833 }), new THREE.MeshStandardMaterial({ color: 0x6B4226 }), new THREE.MeshStandardMaterial({ color: 0x111111 })],
             dungeon_guide: [new THREE.MeshStandardMaterial({ color: 0x444444 }), new THREE.MeshStandardMaterial({ color: 0x333333 }), new THREE.MeshStandardMaterial({ color: 0x666666 })],
+            swamp_witch: [new THREE.MeshStandardMaterial({ color: 0x2D4A2D }), new THREE.MeshStandardMaterial({ color: 0x1A3A1A }), new THREE.MeshStandardMaterial({ color: 0x555555 })],
+            ice_hermit: [new THREE.MeshStandardMaterial({ color: 0xAABBCC }), new THREE.MeshStandardMaterial({ color: 0x8899AA }), new THREE.MeshStandardMaterial({ color: 0xCCCCCC })],
+            desert_merchant: [new THREE.MeshStandardMaterial({ color: 0xC2A050 }), new THREE.MeshStandardMaterial({ color: 0x8B6914 }), new THREE.MeshStandardMaterial({ color: 0x222222 })],
         };
         const [shirt, pants, hair] = mats[npcId] || [this.materials.npcShirt, this.materials.npcPants, this.materials.npcHair];
         this._buildHumanoidNPC(group, shirt, pants, hair);

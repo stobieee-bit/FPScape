@@ -55,6 +55,33 @@ export class Terrain {
             r += variation;
             g += variation;
 
+            // Biome color tinting
+            if (CONFIG.BIOMES) {
+                // Desert (x > 50): blend toward sandy
+                if (x > 45) {
+                    const t = Math.min(1, (x - 45) / 15);
+                    r = r + (0.76 - r) * t;
+                    g = g + (0.70 - g) * t;
+                    b = b + (0.50 - b) * t;
+                }
+                // Swamp (x < -30, z > 25): blend toward dark green
+                if (x < -25 && z > 20) {
+                    const tx = Math.min(1, (-25 - x) / 15);
+                    const tz = Math.min(1, (z - 20) / 15);
+                    const t = tx * tz;
+                    r = r + (0.23 - r) * t;
+                    g = g + (0.33 - g) * t;
+                    b = b + (0.14 - b) * t;
+                }
+                // Ice (z < -75): blend toward white/icy
+                if (z < -70) {
+                    const t = Math.min(1, (-70 - z) / 15);
+                    r = r + (0.91 - r) * t;
+                    g = g + (0.91 - g) * t;
+                    b = b + (0.94 - b) * t;
+                }
+            }
+
             colors[i * 3] = r;
             colors[i * 3 + 1] = g;
             colors[i * 3 + 2] = b;

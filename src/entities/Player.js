@@ -82,6 +82,9 @@ export class Player {
         // Dungeon floor tracking (-1 = surface)
         this.currentDungeonFloor = -1;
 
+        // Pet tracking
+        this.activePet = null;
+
         // Cached vectors for movement calc
         this._forward = new THREE.Vector3();
         this._right = new THREE.Vector3();
@@ -205,6 +208,7 @@ export class Player {
         this.inCombat = false;
         this.combatTarget = null;
         this.currentDungeonFloor = -1;
+        this.activePet = null;
     }
 
     stopActions() {

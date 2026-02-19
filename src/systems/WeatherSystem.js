@@ -1,17 +1,26 @@
 export class WeatherSystem {
     constructor(game) {
         this.game = game;
-        this.currentWeather = 'clear'; // clear | rain
+        this.currentWeather = 'clear'; // clear | rain | storm | snow
         this.weatherTimer = 0;
-        this.nextChange = 120 + Math.random() * 120; // 2-4 min before first weather change
+        this.nextChange = 120 + Math.random() * 120;
         this.rainEmitter = null;
+        this.snowEmitter = null;
         this.rainVolume = 0;
         this._rainNode = null;
         this._rainGain = null;
+
+        // Storm lightning
+        this._lightningTimer = 0;
+        this._lightningInterval = 5;
     }
 
     setRainEmitter(emitter) {
         this.rainEmitter = emitter;
+    }
+
+    setSnowEmitter(emitter) {
+        this.snowEmitter = emitter;
     }
 
     update(dt) {
@@ -20,21 +29,41 @@ export class WeatherSystem {
         if (this.weatherTimer >= this.nextChange) {
             this.weatherTimer = 0;
             this.nextChange = 60 + Math.random() * 120;
-
-            if (this.currentWeather === 'clear') {
-                this._startRain();
-            } else {
-                this._stopRain();
-            }
+            this._pickWeather();
         }
 
         // Fade rain volume
-        if (this.currentWeather === 'rain') {
+        const wantsRain = this.currentWeather === 'rain' || this.currentWeather === 'storm';
+        if (wantsRain) {
             this.rainVolume = Math.min(1, this.rainVolume + dt * 0.5);
         } else {
             this.rainVolume = Math.max(0, this.rainVolume - dt * 0.5);
         }
         this._updateRainSound();
+
+        // Storm lightning
+        if (this.currentWeather === 'storm') {
+            this._lightningTimer += dt;
+            if (this._lightningTimer >= this._lightningInterval) {
+                this._lightningTimer = 0;
+                this._lightningInterval = 3 + Math.random() * 5;
+                this._flashLightning();
+            }
+        }
+    }
+
+    _pickWeather() {
+        this._stopAll();
+        const r = Math.random();
+        if (r < 0.50) this._startClear();
+        else if (r < 0.75) this._startRain();
+        else if (r < 0.85) this._startStorm();
+        else this._startSnow();
+    }
+
+    _startClear() {
+        this.currentWeather = 'clear';
+        this.game.addChatMessage('The skies clear up.', 'system');
     }
 
     _startRain() {
@@ -44,11 +73,56 @@ export class WeatherSystem {
         this._startRainSound();
     }
 
-    _stopRain() {
-        this.currentWeather = 'clear';
+    _startStorm() {
+        this.currentWeather = 'storm';
+        if (this.rainEmitter) this.rainEmitter.active = true;
+        this._lightningTimer = 2 + Math.random() * 3;
+        this.game.addChatMessage('A thunderstorm rolls in!', 'system');
+        this._startRainSound();
+    }
+
+    _startSnow() {
+        this.currentWeather = 'snow';
+        if (this.snowEmitter) this.snowEmitter.active = true;
+        this.game.addChatMessage('Snow begins to fall.', 'system');
+    }
+
+    _stopAll() {
         if (this.rainEmitter) this.rainEmitter.active = false;
-        this.game.addChatMessage('The rain has stopped.', 'system');
-        // Sound fades out via rainVolume
+        if (this.snowEmitter) this.snowEmitter.active = false;
+    }
+
+    _flashLightning() {
+        if (this.game.particleSystem) {
+            this.game.particleSystem.flashLightning();
+        }
+        // Thunder sound after short delay
+        setTimeout(() => {
+            this._playThunder();
+        }, 500 + Math.random() * 1500);
+    }
+
+    _playThunder() {
+        const audio = this.game.audio;
+        audio._init();
+        const ctx = audio.ctx;
+        // Short burst of low-freq noise for thunder
+        const bufSize = Math.floor(ctx.sampleRate * 0.8);
+        const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < bufSize; i++) {
+            const t = i / bufSize;
+            data[i] = (Math.random() * 2 - 1) * (1 - t) * 0.6;
+        }
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 400;
+        const gain = ctx.createGain();
+        gain.gain.value = 0.15;
+        src.connect(filter).connect(gain).connect(audio.dest);
+        src.start();
     }
 
     _startRainSound() {
@@ -56,9 +130,8 @@ export class WeatherSystem {
         audio._init();
         const ctx = audio.ctx;
 
-        if (this._rainNode) return; // Already playing
+        if (this._rainNode) return;
 
-        // Create continuous rain noise
         const bufferSize = ctx.sampleRate * 2;
         const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
         const data = buffer.getChannelData(0);
@@ -83,18 +156,31 @@ export class WeatherSystem {
 
     _updateRainSound() {
         if (this._rainGain) {
-            this._rainGain.gain.value = this.rainVolume * 0.08;
+            const vol = this.currentWeather === 'storm' ? 0.12 : 0.08;
+            this._rainGain.gain.value = this.rainVolume * vol;
         }
 
-        // Stop sound if fully faded
-        if (this.rainVolume <= 0 && this._rainNode && this.currentWeather === 'clear') {
+        if (this.rainVolume <= 0 && this._rainNode && this.currentWeather !== 'rain' && this.currentWeather !== 'storm') {
             try { this._rainNode.stop(); } catch (e) {}
             this._rainNode = null;
             this._rainGain = null;
         }
     }
 
+    getWeatherFogModifier() {
+        switch (this.currentWeather) {
+            case 'storm': return 0.4;
+            case 'rain': return 0.65;
+            case 'snow': return 0.7;
+            default: return 1.0;
+        }
+    }
+
     isRaining() {
-        return this.currentWeather === 'rain';
+        return this.currentWeather === 'rain' || this.currentWeather === 'storm';
+    }
+
+    isSnowing() {
+        return this.currentWeather === 'snow';
     }
 }

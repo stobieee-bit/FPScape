@@ -169,6 +169,102 @@ export class ParticleSystem {
         }
     }
 
+    // Create snow particle system (like rain but slower, white, wider)
+    createSnowSystem(playerPos) {
+        const count = 200;
+        const geo = new THREE.BufferGeometry();
+        const positions = new Float32Array(count * 3);
+        const velocities = [];
+        const drifts = [];
+
+        for (let i = 0; i < count; i++) {
+            positions[i * 3] = (Math.random() - 0.5) * 80;
+            positions[i * 3 + 1] = Math.random() * 30 + 5;
+            positions[i * 3 + 2] = (Math.random() - 0.5) * 80;
+            velocities.push(-3 - Math.random() * 2);
+            drifts.push((Math.random() - 0.5) * 2);
+        }
+
+        geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+        const mat = new THREE.PointsMaterial({
+            color: 0xFFFFFF,
+            size: 0.25,
+            transparent: true,
+            opacity: 0.8,
+        });
+
+        const points = new THREE.Points(geo, mat);
+        points.visible = false;
+        this.scene.add(points);
+
+        const emitter = {
+            type: 'snow',
+            points,
+            velocities,
+            drifts,
+            count,
+            active: false,
+            playerRef: playerPos,
+        };
+
+        this.emitters.push(emitter);
+        return emitter;
+    }
+
+    // Create firefly system — small glowing dots near trees
+    createFireflySystem(positions) {
+        const fireflies = [];
+        for (const pos of positions) {
+            const colors = [0x88FF44, 0xAAFF00, 0xFFFF44];
+            const geo = new THREE.SphereGeometry(0.08, 4, 3);
+            const mat = new THREE.MeshBasicMaterial({
+                color: colors[Math.floor(Math.random() * colors.length)],
+                transparent: true,
+                opacity: 0,
+            });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set(
+                pos.x + (Math.random() - 0.5) * 3,
+                pos.y + 0.5 + Math.random() * 1.5,
+                pos.z + (Math.random() - 0.5) * 3
+            );
+            this.scene.add(mesh);
+            fireflies.push({
+                mesh,
+                origin: mesh.position.clone(),
+                phase: Math.random() * Math.PI * 2,
+                wanderAngle: Math.random() * Math.PI * 2,
+                wanderSpeed: 0.3 + Math.random() * 0.3,
+            });
+        }
+
+        this._fireflies = fireflies;
+        this._firefliesActive = false;
+    }
+
+    setFirefliesActive(active) {
+        this._firefliesActive = active;
+    }
+
+    // Lightning flash — briefly brighten the scene
+    flashLightning() {
+        const light = new THREE.PointLight(0xFFFFFF, 8, 200);
+        light.position.set(
+            (Math.random() - 0.5) * 80,
+            50,
+            (Math.random() - 0.5) * 80
+        );
+        this.scene.add(light);
+        setTimeout(() => {
+            light.intensity = 3;
+        }, 50);
+        setTimeout(() => {
+            this.scene.remove(light);
+            light.dispose();
+        }, 150);
+    }
+
     // Create rain particle system
     createRainSystem(playerPos) {
         const count = 400;
@@ -216,6 +312,7 @@ export class ParticleSystem {
             if (em.type === 'smoke') this._updateSmoke(em, dt);
             else if (em.type === 'sparkle') this._updateSparkle(em, dt);
             else if (em.type === 'rain') this._updateRain(em, dt);
+            else if (em.type === 'snow') this._updateSnow(em, dt);
 
             // Remove dead emitters (except persistent ones)
             if (em.type === 'sparkle' && em.particles.length === 0 && em.spawned) {
@@ -238,6 +335,34 @@ export class ParticleSystem {
             const t = 1 - p.life / p.maxLife;
             p.mesh.material.opacity = 0.5 * (1 - t);
             p.mesh.scale.setScalar(1 + t * 1.5);
+        }
+
+        // Update fireflies
+        if (this._fireflies) {
+            const now = Date.now() * 0.001;
+            for (const ff of this._fireflies) {
+                if (this._firefliesActive) {
+                    // Pulse opacity
+                    const pulse = Math.sin(now * 2 + ff.phase) * 0.5 + 0.5;
+                    ff.mesh.material.opacity = pulse * 0.8;
+                    // Wander
+                    ff.wanderAngle += (Math.random() - 0.5) * 0.1;
+                    ff.mesh.position.x += Math.cos(ff.wanderAngle) * ff.wanderSpeed * dt;
+                    ff.mesh.position.z += Math.sin(ff.wanderAngle) * ff.wanderSpeed * dt;
+                    ff.mesh.position.y = ff.origin.y + Math.sin(now * 1.5 + ff.phase) * 0.3;
+                    // Clamp to origin radius
+                    const dx = ff.mesh.position.x - ff.origin.x;
+                    const dz = ff.mesh.position.z - ff.origin.z;
+                    const dist = Math.sqrt(dx * dx + dz * dz);
+                    if (dist > 3) {
+                        ff.mesh.position.x = ff.origin.x + (dx / dist) * 3;
+                        ff.mesh.position.z = ff.origin.z + (dz / dist) * 3;
+                        ff.wanderAngle += Math.PI;
+                    }
+                } else {
+                    ff.mesh.material.opacity = 0;
+                }
+            }
         }
 
         // Update hit burst particles
@@ -363,6 +488,32 @@ export class ParticleSystem {
         }
 
         // Center rain around player
+        posAttr.needsUpdate = true;
+    }
+
+    _updateSnow(em, dt) {
+        if (!em.active) {
+            em.points.visible = false;
+            return;
+        }
+
+        em.points.visible = true;
+        const posAttr = em.points.geometry.getAttribute('position');
+        const arr = posAttr.array;
+        const px = em.playerRef.x;
+        const pz = em.playerRef.z;
+
+        for (let i = 0; i < em.count; i++) {
+            arr[i * 3 + 1] += em.velocities[i] * dt;
+            arr[i * 3] += em.drifts[i] * dt;
+
+            if (arr[i * 3 + 1] < 0) {
+                arr[i * 3] = px + (Math.random() - 0.5) * 80;
+                arr[i * 3 + 1] = 25 + Math.random() * 10;
+                arr[i * 3 + 2] = pz + (Math.random() - 0.5) * 80;
+            }
+        }
+
         posAttr.needsUpdate = true;
     }
 }

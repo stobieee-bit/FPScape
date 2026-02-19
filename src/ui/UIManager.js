@@ -582,6 +582,25 @@ export class UIManager {
             }
             return;
         }
+
+        // Read clue scroll
+        if (item.itemId.startsWith('clue_scroll_') && this.game.clueScrollSystem) {
+            const tier = item.itemId.replace('clue_scroll_', '');
+            inv.removeItem(item.itemId, 1);
+            this.game.clueScrollSystem.startClue(tier);
+            return;
+        }
+
+        // Summon/dismiss pet
+        if (item.itemId.startsWith('pet_') && this.game.petSystem) {
+            const petId = item.itemId.replace('pet_', '');
+            if (this.game.petSystem.activePet === petId) {
+                this.game.petSystem.dismissPet();
+            } else {
+                this.game.petSystem.summonPet(petId);
+            }
+            return;
+        }
     }
 
     _onInventoryRightClick(e) {
@@ -885,6 +904,24 @@ export class UIManager {
             } else {
                 dungeonInd.classList.add('hidden');
             }
+        }
+
+        // Weather indicator
+        const weatherInd = document.getElementById('weather-indicator');
+        if (weatherInd && this.game.weatherSystem) {
+            const weatherIcons = { clear: '', rain: 'Rain', storm: 'Storm', snow: 'Snow' };
+            const w = this.game.weatherSystem.currentWeather;
+            if (w === 'clear') {
+                weatherInd.classList.add('hidden');
+            } else {
+                weatherInd.classList.remove('hidden');
+                weatherInd.textContent = weatherIcons[w] || w;
+            }
+        }
+
+        // Clue scroll overlay
+        if (this.game.clueScrollSystem) {
+            this.game.clueScrollSystem._updateOverlay();
         }
     }
 

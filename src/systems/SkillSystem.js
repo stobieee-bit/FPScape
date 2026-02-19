@@ -153,6 +153,11 @@ export class SkillSystem {
             // Award XP
             this.addXP(skillType, node.xpPerHarvest);
 
+            // Pet roll
+            if (this.game.petSystem) {
+                this.game.petSystem.rollSkillingPet(skillType);
+            }
+
             // If fully depleted, stop skilling
             if (fullyHarvested) {
                 player.skilling = false;
@@ -204,6 +209,7 @@ export class SkillSystem {
                 const itemName = CONFIG.ITEMS[fishConfig.yieldItem].name;
                 this.game.addChatMessage(`You catch some ${itemName.toLowerCase()}.`);
                 this.addXP('fishing', fishConfig.xpPerCatch);
+                if (this.game.petSystem) this.game.petSystem.rollSkillingPet('fishing');
             } else {
                 this.game.addChatMessage("Your inventory is full!", 'system');
                 player.skilling = false;
@@ -259,6 +265,7 @@ export class SkillSystem {
             const cookedName = CONFIG.ITEMS[itemDef.cookedItem].name;
             this.game.addChatMessage(`You cook the ${cookedName.toLowerCase()}.`);
             this.addXP('cooking', itemDef.cookXP);
+            if (this.game.petSystem) this.game.petSystem.rollSkillingPet('cooking');
         }
 
         // Check if we have more to cook

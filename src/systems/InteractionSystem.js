@@ -879,4 +879,17 @@ export class InteractionSystem {
         this.game.skillSystem.addXP('herblore', bestPotion.xp);
         this.game.addChatMessage(`You brew a ${bestPotion.name}.`, 'level-up');
     }
+
+    // ── Clue Scroll Actions ──
+    handleDig() {
+        if (!this.game.clueScrollSystem) return;
+        const player = this.game.player;
+        this.game.clueScrollSystem.checkDigLocation(player.position.x, player.position.z);
+    }
+
+    handleSearch() {
+        if (!this.game.clueScrollSystem) return;
+        const player = this.game.player;
+        this.game.clueScrollSystem.checkSearch(player.position.x, player.position.z);
+    }
 }

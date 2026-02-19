@@ -17,9 +17,16 @@ export class Minimap {
         const input = this.game.input;
         const half = this.size / 2;
 
-        // Clear
+        // Clear — biome-tinted background
         const inDungeon = player.currentDungeonFloor >= 0;
-        ctx.fillStyle = inDungeon ? '#222222' : '#2D5A1E';
+        let bgColor = '#2D5A1E';
+        if (!inDungeon && CONFIG.BIOMES) {
+            const px = player.position.x, pz = player.position.z;
+            if (px > 50) bgColor = '#C2B280';
+            else if (px < -30 && pz > 25) bgColor = '#3B5323';
+            else if (pz < -75) bgColor = '#D0D8E8';
+        }
+        ctx.fillStyle = inDungeon ? '#222222' : bgColor;
         ctx.fillRect(0, 0, this.size, this.size);
 
         ctx.save();
@@ -277,6 +284,37 @@ export class Minimap {
                 ctx.strokeStyle = '#FFFFFF';
                 ctx.lineWidth = 0.5;
                 ctx.stroke();
+            }
+        }
+
+        // Active pet (cyan dot near player)
+        if (this.game.petSystem && this.game.petSystem.petMesh) {
+            const pm = this.game.petSystem.petMesh;
+            const pdx = (pm.position.x - player.position.x) * this.scale;
+            const pdz = (pm.position.z - player.position.z) * this.scale;
+            if (Math.abs(pdx) < half && Math.abs(pdz) < half) {
+                ctx.fillStyle = '#00FFCC';
+                ctx.beginPath();
+                ctx.arc(pdx, pdz, 2.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Clue scroll target marker (gold X for dig/search steps)
+        if (this.game.clueScrollSystem) {
+            const step = this.game.clueScrollSystem.getCurrentStep();
+            const target = step && (step.type === 'dig' || step.type === 'search') ? { x: step.x, z: step.z } : null;
+            if (target) {
+                const cdx = (target.x - player.position.x) * this.scale;
+                const cdz = (target.z - player.position.z) * this.scale;
+                if (Math.abs(cdx) < half && Math.abs(cdz) < half) {
+                    ctx.strokeStyle = '#FFD700';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(cdx - 4, cdz - 4); ctx.lineTo(cdx + 4, cdz + 4);
+                    ctx.moveTo(cdx + 4, cdz - 4); ctx.lineTo(cdx - 4, cdz + 4);
+                    ctx.stroke();
+                }
             }
         }
 

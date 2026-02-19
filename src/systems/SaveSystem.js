@@ -94,6 +94,22 @@ export class SaveSystem {
             data.achievements = [...this.game.achievementSystem.completed];
         }
 
+        // Save pets
+        if (this.game.petSystem) {
+            data.pets = {
+                owned: [...this.game.petSystem.ownedPets],
+                active: this.game.petSystem.activePet,
+            };
+        }
+
+        // Save clue scroll progress
+        if (this.game.clueScrollSystem) {
+            data.clues = {
+                activeClue: this.game.clueScrollSystem.activeClue,
+                completedClues: this.game.clueScrollSystem.completedClues,
+            };
+        }
+
         try {
             localStorage.setItem(this.SAVE_KEY, JSON.stringify(data));
             // silent save — no chat spam
@@ -184,6 +200,20 @@ export class SaveSystem {
             // Restore achievements
             if (data.achievements && this.game.achievementSystem) {
                 this.game.achievementSystem.completed = new Set(data.achievements);
+            }
+
+            // Restore pets
+            if (data.pets && this.game.petSystem) {
+                this.game.petSystem.ownedPets = new Set(data.pets.owned || []);
+                if (data.pets.active && this.game.petSystem.ownedPets.has(data.pets.active)) {
+                    this.game.petSystem.summonPet(data.pets.active);
+                }
+            }
+
+            // Restore clue scroll progress
+            if (data.clues && this.game.clueScrollSystem) {
+                this.game.clueScrollSystem.activeClue = data.clues.activeClue || null;
+                this.game.clueScrollSystem.completedClues = data.clues.completedClues || { easy: 0, medium: 0, hard: 0 };
             }
 
             this.game.addChatMessage('Game loaded!', 'system');

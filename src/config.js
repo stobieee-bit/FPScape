@@ -99,6 +99,7 @@ export const CONFIG = {
                 { item: 'raw_chicken', qty: 1, chance: 1.0 },
                 { item: 'bones', qty: 1, chance: 1.0 },
                 { item: 'feather', qty: 5, chance: 0.8 },
+                { item: 'clue_scroll_easy', qty: 1, chance: 0.04 },
             ],
             respawnTime: 15,
             xpReward: { attack: 4, strength: 4, defence: 4, hitpoints: 1 },
@@ -111,6 +112,7 @@ export const CONFIG = {
                 { item: 'raw_beef', qty: 1, chance: 1.0 },
                 { item: 'bones', qty: 1, chance: 1.0 },
                 { item: 'cowhide', qty: 1, chance: 1.0 },
+                { item: 'clue_scroll_easy', qty: 1, chance: 0.03 },
             ],
             respawnTime: 15,
             xpReward: { attack: 8, strength: 8, defence: 8, hitpoints: 3 },
@@ -122,6 +124,7 @@ export const CONFIG = {
             lootTable: [
                 { item: 'bones', qty: 1, chance: 1.0 },
                 { item: 'coins', qty: 3, chance: 0.3 },
+                { item: 'clue_scroll_easy', qty: 1, chance: 0.05 },
             ],
             respawnTime: 12,
             xpReward: { attack: 4, strength: 4, defence: 4, hitpoints: 1 },
@@ -134,6 +137,7 @@ export const CONFIG = {
                 { item: 'bones', qty: 1, chance: 1.0 },
                 { item: 'coins', qty: 5, chance: 0.5 },
                 { item: 'goblin_mail', qty: 1, chance: 0.1 },
+                { item: 'clue_scroll_easy', qty: 1, chance: 0.04 },
             ],
             respawnTime: 20,
             xpReward: { attack: 5, strength: 5, defence: 5, hitpoints: 2 },
@@ -146,6 +150,7 @@ export const CONFIG = {
                 { item: 'bones', qty: 1, chance: 1.0 },
                 { item: 'coins', qty: 15, chance: 0.6 },
                 { item: 'iron_sword', qty: 1, chance: 0.15 },
+                { item: 'clue_scroll_medium', qty: 1, chance: 0.03 },
             ],
             respawnTime: 30,
             xpReward: { attack: 12, strength: 12, defence: 12, hitpoints: 4 },
@@ -158,6 +163,7 @@ export const CONFIG = {
             lootTable: [
                 { item: 'coins', qty: 25, chance: 0.7 },
                 { item: 'iron_chainbody', qty: 1, chance: 0.08 },
+                { item: 'clue_scroll_medium', qty: 1, chance: 0.02 },
             ],
             respawnTime: 40,
             xpReward: { attack: 18, strength: 18, defence: 18, hitpoints: 6 },
@@ -174,6 +180,7 @@ export const CONFIG = {
                 { item: 'coins', qty: 20, chance: 0.5 },
                 { item: 'rune_essence', qty: 3, chance: 0.3 },
                 { item: 'herb', qty: 1, chance: 0.25 },
+                { item: 'clue_scroll_hard', qty: 1, chance: 0.02 },
             ],
             respawnTime: 35,
             xpReward: { attack: 15, strength: 15, defence: 15, hitpoints: 5 },
@@ -212,6 +219,7 @@ export const CONFIG = {
                 { item: 'rune_platebody', qty: 1, chance: 0.05 },
                 { item: 'rune_essence', qty: 10, chance: 0.5 },
                 { item: 'herb', qty: 3, chance: 0.5 },
+                { item: 'clue_scroll_hard', qty: 1, chance: 0.02 },
             ],
             respawnTime: 120,
             xpReward: { attack: 80, strength: 80, defence: 80, hitpoints: 30 },
@@ -224,6 +232,7 @@ export const CONFIG = {
                 { item: 'bones', qty: 1, chance: 1.0 },
                 { item: 'coins', qty: 15, chance: 0.6 },
                 { item: 'mithril_dagger', qty: 1, chance: 0.05 },
+                { item: 'clue_scroll_medium', qty: 1, chance: 0.03 },
             ],
             respawnTime: 30,
             xpReward: { attack: 10, strength: 10, defence: 10, hitpoints: 4 },
@@ -237,6 +246,7 @@ export const CONFIG = {
                 { item: 'coins', qty: 30, chance: 0.7 },
                 { item: 'herb', qty: 2, chance: 0.4 },
                 { item: 'mithril_sword', qty: 1, chance: 0.08 },
+                { item: 'clue_scroll_medium', qty: 1, chance: 0.025 },
             ],
             respawnTime: 40,
             xpReward: { attack: 25, strength: 25, defence: 25, hitpoints: 8 },
@@ -250,6 +260,7 @@ export const CONFIG = {
                 { item: 'coins', qty: 45, chance: 0.8 },
                 { item: 'adamant_sword', qty: 1, chance: 0.1 },
                 { item: 'adamant_helm', qty: 1, chance: 0.06 },
+                { item: 'clue_scroll_hard', qty: 1, chance: 0.015 },
             ],
             respawnTime: 50,
             xpReward: { attack: 35, strength: 35, defence: 35, hitpoints: 12 },
@@ -266,9 +277,49 @@ export const CONFIG = {
                 { item: 'coins', qty: 150, chance: 1.0 },
                 { item: 'rune_sword', qty: 1, chance: 0.2 },
                 { item: 'demons_bane', qty: 1, chance: 0.5 },
+                { item: 'clue_scroll_hard', qty: 1, chance: 0.01 },
             ],
             respawnTime: 90,
             xpReward: { attack: 60, strength: 60, defence: 60, hitpoints: 20 },
+        },
+        // ── Biome monsters ──
+        scorpion: {
+            name: 'Scorpion', hp: 18, combatLevel: 14,
+            attackLevel: 10, strengthLevel: 12, defenceLevel: 8,
+            attackSpeed: 3, aggroRange: 5, wanderRadius: 5, moveSpeed: 1.8,
+            poisonChance: 0.2, poisonDamage: 1, poisonTicks: 4,
+            lootTable: [
+                { item: 'bones', qty: 1, chance: 1.0 },
+                { item: 'coins', qty: 20, chance: 0.6 },
+                { item: 'clue_scroll_easy', qty: 1, chance: 0.04 },
+            ],
+            respawnTime: 25,
+            xpReward: { attack: 14, strength: 14, defence: 14, hitpoints: 5 },
+        },
+        giant_frog: {
+            name: 'Giant Frog', hp: 12, combatLevel: 10,
+            attackLevel: 7, strengthLevel: 8, defenceLevel: 5,
+            attackSpeed: 4, aggroRange: 4, wanderRadius: 6, moveSpeed: 1.5,
+            lootTable: [
+                { item: 'bones', qty: 1, chance: 1.0 },
+                { item: 'coins', qty: 10, chance: 0.5 },
+                { item: 'clue_scroll_easy', qty: 1, chance: 0.05 },
+            ],
+            respawnTime: 20,
+            xpReward: { attack: 10, strength: 10, defence: 10, hitpoints: 4 },
+        },
+        ice_wolf: {
+            name: 'Ice Wolf', hp: 28, combatLevel: 20,
+            attackLevel: 15, strengthLevel: 14, defenceLevel: 12,
+            attackSpeed: 3, aggroRange: 8, wanderRadius: 5, moveSpeed: 2.5,
+            lootTable: [
+                { item: 'bones', qty: 1, chance: 1.0 },
+                { item: 'coins', qty: 35, chance: 0.7 },
+                { item: 'iron_chainbody', qty: 1, chance: 0.1 },
+                { item: 'clue_scroll_medium', qty: 1, chance: 0.03 },
+            ],
+            respawnTime: 35,
+            xpReward: { attack: 22, strength: 22, defence: 22, hitpoints: 9 },
         },
     },
 
@@ -336,6 +387,23 @@ export const CONFIG = {
         knife:          { name: 'Knife',           stackable: false, icon: '🔪' },
         demons_bane:    { name: "Demon's Bane",    stackable: false, icon: '🗡️', equipSlot: 'weapon', attackBonus: 35, strengthBonus: 30, defenceBonus: 5 },
         lantern:        { name: 'Lantern',         stackable: false, icon: '🏮' },
+        // Clue scrolls
+        clue_scroll_easy:   { name: 'Clue scroll (easy)',   stackable: false, icon: '📜', clue: 'easy' },
+        clue_scroll_medium: { name: 'Clue scroll (medium)', stackable: false, icon: '📜', clue: 'medium' },
+        clue_scroll_hard:   { name: 'Clue scroll (hard)',   stackable: false, icon: '📜', clue: 'hard' },
+        // Cosmetics (clue rewards)
+        fancy_hat:      { name: 'Fancy hat',       stackable: false, icon: '🎩', equipSlot: 'head', attackBonus: 0, strengthBonus: 0, defenceBonus: 0 },
+        golden_boots:   { name: 'Golden boots',    stackable: false, icon: '👢', equipSlot: 'feet', attackBonus: 0, strengthBonus: 0, defenceBonus: 0 },
+        team_cape:      { name: 'Team cape',       stackable: false, icon: '🧣', equipSlot: 'body', attackBonus: 0, strengthBonus: 0, defenceBonus: 0 },
+        // Pets (inventory items)
+        pet_rock_golem: { name: 'Rock Golem',      stackable: false, icon: '🪨', pet: 'rock_golem' },
+        pet_beaver:     { name: 'Beaver',           stackable: false, icon: '🦫', pet: 'beaver' },
+        pet_heron:      { name: 'Heron',            stackable: false, icon: '🐦', pet: 'heron' },
+        pet_phoenix:    { name: 'Phoenix',          stackable: false, icon: '🔥', pet: 'phoenix' },
+        pet_rocky:      { name: 'Rocky',            stackable: false, icon: '🦝', pet: 'rocky' },
+        pet_kbd_jr:     { name: 'KBD Jr.',          stackable: false, icon: '🐉', pet: 'kbd_jr' },
+        pet_demon_jr:   { name: 'Demon Jr.',        stackable: false, icon: '👹', pet: 'demon_jr' },
+        pet_bloodhound: { name: 'Bloodhound',      stackable: false, icon: '🐕', pet: 'bloodhound' },
         // Equipment — Bronze
         goblin_mail:    { name: 'Goblin mail',     stackable: false, icon: '🛡️', equipSlot: 'body', attackBonus: 0, strengthBonus: 0, defenceBonus: 2 },
         bronze_dagger:  { name: 'Bronze dagger',   stackable: false, icon: '🔪', equipSlot: 'weapon', attackBonus: 2, strengthBonus: 1, defenceBonus: 0 },
@@ -602,6 +670,15 @@ export const CONFIG = {
                 { item: 'antipoison', price: 40, qty: 3 },
             ],
         },
+        desert_shop: {
+            name: "Desert Bazaar",
+            stock: [
+                { item: 'cooked_lobster', price: 40, qty: 10 },
+                { item: 'stamina_potion', price: 25, qty: 5 },
+                { item: 'steel_platebody', price: 200, qty: 2 },
+                { item: 'antipoison', price: 30, qty: 5 },
+            ],
+        },
     },
 
     ACHIEVEMENTS: [
@@ -620,6 +697,11 @@ export const CONFIG = {
         { id: 'craft_runes',    name: 'Rune Crafter',       desc: 'Craft your first runes', icon: '🌀' },
         { id: 'slayer_task',    name: 'Slayer Initiate',    desc: 'Complete a Slayer task', icon: '💀' },
         { id: 'all_quests',     name: 'Questmaster',        desc: 'Complete all available quests', icon: '🏆' },
+        { id: 'pet_owner',      name: 'Pet Owner',          desc: 'Acquire your first pet', icon: '🐾' },
+        { id: 'pet_collector',  name: 'Pet Collector',      desc: 'Acquire 3 different pets', icon: '🏠' },
+        { id: 'treasure_hunter',name: 'Treasure Hunter',    desc: 'Complete your first clue scroll', icon: '🗺️' },
+        { id: 'master_sleuth',  name: 'Master Sleuth',      desc: 'Complete 10 clue scrolls', icon: '🔎' },
+        { id: 'biome_explorer', name: 'Biome Explorer',     desc: 'Visit the desert, swamp, and ice regions', icon: '🌍' },
     ],
 
     SKILL_GUIDES: {
@@ -916,6 +998,63 @@ export const CONFIG = {
                 default: [{ text: "Beware the dungeon below. Dark creatures lurk within." }],
             },
         },
+        swamp_witch: {
+            name: 'Swamp Witch', x: -45, z: 35,
+            quest: 'swamp_thing',
+            dialogues: {
+                quest_offer: [
+                    { text: "Heh heh... the frogs have grown too bold. They've been eating my herbs!" },
+                    { text: "Kill 5 of those giant frogs and I'll brew you something nice.",
+                      options: [
+                        { label: "I'll deal with them.", action: 'accept_quest', next: 2 },
+                        { label: "No thanks, witch.", next: undefined },
+                      ]
+                    },
+                    { text: "Good... their bones will fuel my cauldron. Heh heh heh..." },
+                ],
+                quest_progress: [{ text: "Still haven't killed 5 frogs? They're all around the swamp." }],
+                quest_turnin: [
+                    { text: "The frogs are dealt with? Wonderful!",
+                      options: [{ label: "They're gone.", action: 'turnin_quest', next: 1 }]
+                    },
+                    { text: "Here, take this potion. Brewed it myself. Heh heh..." },
+                ],
+                quest_complete: [{ text: "The swamp is peaceful again. Well... as peaceful as a swamp gets." }],
+                default: [{ text: "Watch your step around here. The swamp has a mind of its own." }],
+            },
+        },
+        ice_hermit: {
+            name: 'Ice Hermit', x: 10, z: -90,
+            quest: 'frozen_heart',
+            dialogues: {
+                quest_offer: [
+                    { text: "The wolves... they circle closer every night. I can barely sleep." },
+                    { text: "If you could thin their numbers — kill 3 ice wolves — I'd be grateful.",
+                      options: [
+                        { label: "I'll protect you.", action: 'accept_quest', next: 2 },
+                        { label: "Find shelter elsewhere.", next: undefined },
+                      ]
+                    },
+                    { text: "Thank you... be careful, they're fast and their bite is cold as death." },
+                ],
+                quest_progress: [{ text: "The wolves still howl... please, kill 3 ice wolves." }],
+                quest_turnin: [
+                    { text: "The howling has stopped! You've saved me!",
+                      options: [{ label: "Stay safe.", action: 'turnin_quest', next: 1 }]
+                    },
+                    { text: "Take this — I found it frozen in the ice. It may serve you well." },
+                ],
+                quest_complete: [{ text: "Peace at last. The ice is quiet again." }],
+                default: [{ text: "It's cold here, but I've grown used to it. The ice has its own beauty." }],
+            },
+        },
+        desert_merchant: {
+            name: 'Desert Merchant', x: 60, z: 10,
+            shop: 'desert_shop',
+            dialogues: {
+                default: [{ text: "Welcome to the desert bazaar! I have exotic wares from distant lands." }],
+            },
+        },
     },
 
     QUESTS: {
@@ -963,6 +1102,18 @@ export const CONFIG = {
             requirements: { kills: { demon_lord: 1 } },
             rewards: { xp: { attack: 400, strength: 400, defence: 200 }, items: [{ item: 'demons_bane', qty: 1 }] },
         },
+        swamp_thing: {
+            name: "Swamp Thing",
+            description: "Kill 5 giant frogs for the Swamp Witch.",
+            requirements: { kills: { giant_frog: 5 } },
+            rewards: { xp: { hitpoints: 200, herblore: 150 }, items: [{ item: 'antipoison', qty: 3 }, { item: 'coins', qty: 200 }] },
+        },
+        frozen_heart: {
+            name: "Frozen Heart",
+            description: "Kill 3 ice wolves for the Ice Hermit.",
+            requirements: { kills: { ice_wolf: 3 } },
+            rewards: { xp: { attack: 300, defence: 200 }, items: [{ item: 'mithril_platebody', qty: 1 }, { item: 'coins', qty: 300 }] },
+        },
     },
 
     MUSIC_ZONES: {
@@ -970,6 +1121,9 @@ export const CONFIG = {
         wilderness: { x: 0, z: -70, radius: 30, tempo: 70, key: 'Dm', mood: 'dark' },
         dungeon: { x: -50, z: -48, radius: 20, tempo: 80, key: 'Am', mood: 'danger' },
         farm: { x: 20, z: 30, radius: 20, tempo: 120, key: 'G', mood: 'cheerful' },
+        desert: { x: 65, z: 10, radius: 25, tempo: 90, key: 'Em', mood: 'mysterious' },
+        swamp: { x: -45, z: 40, radius: 25, tempo: 60, key: 'Cm', mood: 'eerie' },
+        ice: { x: 10, z: -90, radius: 25, tempo: 75, key: 'Fm', mood: 'cold' },
     },
 
     VISUAL: {
@@ -979,6 +1133,92 @@ export const CONFIG = {
         hemiSkyColor: 0x87CEEB, hemiGroundColor: 0x8B7355, hemiIntensity: 0.3,
         fogColor: 0xC8DFF0, fogNear: 60, fogFar: 180,
         skyColor: 0x87CEEB,
+    },
+
+    PETS: {
+        rock_golem: { name: 'Rock Golem', icon: '🪨', source: 'mining', chance: 1/3000, color: 0x888888, item: 'pet_rock_golem' },
+        beaver:     { name: 'Beaver',     icon: '🦫', source: 'woodcutting', chance: 1/3000, color: 0x8B6914, item: 'pet_beaver' },
+        heron:      { name: 'Heron',      icon: '🐦', source: 'fishing', chance: 1/3000, color: 0xDDDDDD, item: 'pet_heron' },
+        phoenix:    { name: 'Phoenix',    icon: '🔥', source: 'firemaking', chance: 1/2000, color: 0xFF4400, item: 'pet_phoenix' },
+        rocky:      { name: 'Rocky',      icon: '🦝', source: 'thieving', chance: 1/2500, color: 0x666666, item: 'pet_rocky' },
+        kbd_jr:     { name: 'KBD Jr.',    icon: '🐉', source: 'kbd', chance: 1/50, color: 0x222222, item: 'pet_kbd_jr' },
+        demon_jr:   { name: 'Demon Jr.',  icon: '👹', source: 'demon_lord', chance: 1/50, color: 0x8B0000, item: 'pet_demon_jr' },
+        bloodhound: { name: 'Bloodhound', icon: '🐕', source: 'clue_hard', chance: 1/50, color: 0xCC6633, item: 'pet_bloodhound' },
+    },
+
+    CLUE_SCROLLS: {
+        easy: {
+            stepsCount: [2, 3],
+            steps: [
+                { type: 'dig', x: 15, z: 10, hint: 'Dig near the cluster of trees east of Lumbridge.' },
+                { type: 'dig', x: -20, z: -5, hint: 'Dig where copper meets tin in the mining area.' },
+                { type: 'dig', x: 25, z: 20, hint: 'Dig by the shimmering fishing waters.' },
+                { type: 'kill', monster: 'goblin', hint: 'Defeat a goblin to find the next clue.' },
+                { type: 'kill', monster: 'chicken', hint: 'A chicken holds a secret. Defeat one!' },
+                { type: 'search', x: 0, z: -15, hint: 'Search near the castle entrance.' },
+                { type: 'search', x: 10, z: -5, hint: 'Search near the General Store.' },
+            ],
+            rewards: {
+                coins: [50, 200],
+                items: [
+                    { item: 'iron_sword', chance: 0.3 },
+                    { item: 'iron_platebody', chance: 0.2 },
+                    { item: 'fancy_hat', chance: 0.02 },
+                    { item: 'golden_boots', chance: 0.02 },
+                ],
+            },
+        },
+        medium: {
+            stepsCount: [3, 4],
+            steps: [
+                { type: 'dig', x: -30, z: -20, hint: 'Dig in the iron mining area south-west.' },
+                { type: 'dig', x: 30, z: -5, hint: 'Dig among the oak trees to the east.' },
+                { type: 'dig', x: -45, z: -35, hint: 'Dig near the dungeon entrance.' },
+                { type: 'kill', monster: 'skeleton', hint: 'Slay a skeleton for the next step.' },
+                { type: 'kill', monster: 'giant_spider', hint: 'A giant spider guards the clue.' },
+                { type: 'search', x: -12, z: -12, hint: 'Search near the furnace.' },
+                { type: 'search', x: 15, z: -15, hint: 'Search by the church.' },
+                { type: 'search', x: 25, z: -5, hint: 'Search inside the tavern.' },
+            ],
+            rewards: {
+                coins: [200, 500],
+                items: [
+                    { item: 'steel_platebody', chance: 0.3 },
+                    { item: 'mithril_sword', chance: 0.2 },
+                    { item: 'fancy_hat', chance: 0.033 },
+                    { item: 'golden_boots', chance: 0.033 },
+                    { item: 'team_cape', chance: 0.033 },
+                ],
+            },
+        },
+        hard: {
+            stepsCount: [3, 4],
+            steps: [
+                { type: 'dig', x: -5, z: -65, hint: 'Dig near the runite rock in the Wilderness.' },
+                { type: 'dig', x: -50, z: -43, hint: 'Dig deep within the dungeon area.' },
+                { type: 'dig', x: 60, z: 10, hint: 'Dig in the scorching desert sands.' },
+                { type: 'kill', monster: 'lesser_demon', hint: 'Slay a lesser demon for the final piece.' },
+                { type: 'kill', monster: 'shadow_warrior', hint: 'Defeat a shadow warrior lurking below.' },
+                { type: 'search', x: -45, z: 35, hint: 'Search the murky swamp to the south-west.' },
+                { type: 'search', x: 10, z: -90, hint: 'Search the frozen north.' },
+            ],
+            rewards: {
+                coins: [500, 2000],
+                items: [
+                    { item: 'adamant_platebody', chance: 0.3 },
+                    { item: 'rune_sword', chance: 0.15 },
+                    { item: 'fancy_hat', chance: 0.05 },
+                    { item: 'golden_boots', chance: 0.05 },
+                    { item: 'team_cape', chance: 0.05 },
+                ],
+            },
+        },
+    },
+
+    BIOMES: {
+        desert: { minX: 50, maxX: 90, minZ: -10, maxZ: 30, groundColor: 0xC2B280, fogColor: 0xD4C8A0, fogFar: 120 },
+        swamp:  { minX: -60, maxX: -30, minZ: 25, maxZ: 55, groundColor: 0x3B5323, fogColor: 0x556B2F, fogFar: 80 },
+        ice:    { minX: -20, maxX: 30, minZ: -110, maxZ: -75, groundColor: 0xE8E8F0, fogColor: 0xC8D8E8, fogFar: 100 },
     },
 
     WORLD_OBJECTS: {

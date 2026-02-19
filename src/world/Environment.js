@@ -46,6 +46,7 @@ export class Environment {
         this._placeRuneAltar();
         this._placeWildernessBoundary();
         this._placeTorches();
+        this._placeBiomes();
     }
 
     _placeBuildings() {
@@ -710,6 +711,79 @@ export class Environment {
         this.scene.add(ditch);
     }
 
+    // ── Biome Content ─────────────────────────────────────────────────
+    _placeBiomes() {
+        // Desert (x > 50)
+        const desert = CONFIG.BIOMES?.desert;
+        if (desert) {
+            for (let i = 0; i < 6; i++) {
+                const cx = 55 + Math.random() * 30;
+                const cz = -5 + Math.random() * 30;
+                const cactus = this.assets.createCactus();
+                const cy = this.terrain.getHeightAt(cx, cz);
+                cactus.position.set(cx, cy, cz);
+                this.scene.add(cactus);
+            }
+            // Scorpions
+            const scorpionSpots = [
+                { x: 60, z: 5 }, { x: 65, z: 15 }, { x: 70, z: 10 },
+            ];
+            for (const sp of scorpionSpots) {
+                this._spawnMonster({ type: 'scorpion', x: sp.x, z: sp.z });
+            }
+        }
+
+        // Swamp (x < -30, z > 25)
+        const swamp = CONFIG.BIOMES?.swamp;
+        if (swamp) {
+            for (let i = 0; i < 5; i++) {
+                const tx = -35 - Math.random() * 20;
+                const tz = 30 + Math.random() * 20;
+                const deadTree = this.assets.createDeadTree();
+                const ty = this.terrain.getHeightAt(tx, tz);
+                deadTree.position.set(tx, ty, tz);
+                this.scene.add(deadTree);
+            }
+            // Giant frogs
+            const frogSpots = [
+                { x: -40, z: 35 }, { x: -45, z: 40 }, { x: -38, z: 45 }, { x: -50, z: 38 },
+            ];
+            for (const sp of frogSpots) {
+                this._spawnMonster({ type: 'giant_frog', x: sp.x, z: sp.z });
+            }
+        }
+
+        // Ice (z < -75)
+        const ice = CONFIG.BIOMES?.ice;
+        if (ice) {
+            for (let i = 0; i < 4; i++) {
+                const rx = -15 + Math.random() * 40;
+                const rz = -80 - Math.random() * 25;
+                const iceRock = this.assets.createIceRock();
+                const ry = this.terrain.getHeightAt(rx, rz);
+                iceRock.position.set(rx, ry, rz);
+                this.scene.add(iceRock);
+            }
+            // Ice wolves
+            const wolfSpots = [
+                { x: 0, z: -85 }, { x: 10, z: -90 }, { x: -10, z: -88 },
+            ];
+            for (const sp of wolfSpots) {
+                this._spawnMonster({ type: 'ice_wolf', x: sp.x, z: sp.z });
+            }
+        }
+
+        // Firefly spawn positions (near tree clusters)
+        this.fireflyPositions = [
+            { x: 15, y: this.terrain.getHeightAt(15, 10), z: 10 },
+            { x: 18, y: this.terrain.getHeightAt(18, 12), z: 12 },
+            { x: -10, y: this.terrain.getHeightAt(-10, 15), z: 15 },
+            { x: -12, y: this.terrain.getHeightAt(-12, 18), z: 18 },
+            { x: 30, y: this.terrain.getHeightAt(30, -5), z: -5 },
+            { x: 32, y: this.terrain.getHeightAt(32, -3), z: -3 },
+        ];
+    }
+
     spawnGroundItem(itemId, qty, worldPos) {
         const itemDef = CONFIG.ITEMS[itemId];
         if (!itemDef) return;
@@ -742,6 +816,12 @@ export class Environment {
             rune_sword: 0x00ACC1, rune_platebody: 0x00ACC1, rune_dagger: 0x00ACC1,
             knife: 0xCCCCCC, tinderbox: 0xCC6600,
             demons_bane: 0xFF4400, lantern: 0xFFAA00,
+            clue_scroll_easy: 0xFFAA00, clue_scroll_medium: 0xFF6600, clue_scroll_hard: 0xFF0000,
+            fancy_hat: 0xFF00FF, golden_boots: 0xFFD700, team_cape: 0x4444FF,
+            pet_rock_golem: 0x888888, pet_beaver: 0x8B6914, pet_heron: 0xEEEEFF,
+            pet_phoenix: 0xFF4400, pet_rocky: 0x666666, pet_kbd_jr: 0x222222,
+            pet_demon_jr: 0xFF2200, pet_bloodhound: 0xAA6633,
+            stamina_potion: 0xFFAA00, antipoison: 0x00AA44,
         };
         const color = colors[itemId] || 0xFFFFFF;
         const geo = new THREE.BoxGeometry(0.25, 0.25, 0.25);
