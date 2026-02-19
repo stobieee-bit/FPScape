@@ -17,8 +17,8 @@ export const CONFIG = {
     },
 
     WORLD: {
-        size: 200,
-        segments: 100,
+        size: 300,
+        segments: 150,
         noiseScale: 0.02,
         heightAmplitude: 2,
     },
@@ -28,7 +28,7 @@ export const CONFIG = {
         runSpeed: 6,
         height: 1.8,
         eyeHeight: 1.6,
-        interactionRange: 8,
+        interactionRange: 4,
         gravity: -20,
         groundCheckDist: 0.3,
     },
@@ -47,7 +47,7 @@ export const CONFIG = {
         meleeRange: 3,
         rangedRange: 12,
         magicRange: 10,
-        playerAttackSpeed: 4,  // ticks between attacks
+        playerAttackSpeed: 3,  // ticks between attacks (1.8s)
     },
 
     XP_TABLE,
@@ -75,19 +75,21 @@ export const CONFIG = {
     },
 
     TREES: {
-        normal: { name: 'Tree', hp: 10, respawnTime: 15, requiredLevel: 1, xpPerHarvest: 25, yieldItem: 'logs', successChance: 0.6 },
-        oak:    { name: 'Oak tree', hp: 15, respawnTime: 20, requiredLevel: 15, xpPerHarvest: 37, yieldItem: 'oak_logs', successChance: 0.4 },
-        willow: { name: 'Willow tree', hp: 20, respawnTime: 25, requiredLevel: 30, xpPerHarvest: 67, yieldItem: 'willow_logs', successChance: 0.3 },
+        normal: { name: 'Tree', hp: 10, respawnTime: 15, requiredLevel: 1, xpPerHarvest: 25, yieldItem: 'logs', successChance: 0.25 },
+        oak:    { name: 'Oak tree', hp: 15, respawnTime: 20, requiredLevel: 15, xpPerHarvest: 37, yieldItem: 'oak_logs', successChance: 0.15 },
+        willow: { name: 'Willow tree', hp: 20, respawnTime: 25, requiredLevel: 30, xpPerHarvest: 67, yieldItem: 'willow_logs', successChance: 0.10 },
+        palm:   { name: 'Palm tree', hp: 15, respawnTime: 20, requiredLevel: 35, xpPerHarvest: 55, yieldItem: 'palm_logs', successChance: 0.12 },
     },
 
     ROCKS: {
-        copper: { name: 'Copper rock', hp: 6, respawnTime: 4, requiredLevel: 1, xpPerHarvest: 17, yieldItem: 'copper_ore', successChance: 0.6 },
-        tin:    { name: 'Tin rock', hp: 6, respawnTime: 4, requiredLevel: 1, xpPerHarvest: 17, yieldItem: 'tin_ore', successChance: 0.6 },
-        iron:   { name: 'Iron rock', hp: 10, respawnTime: 10, requiredLevel: 15, xpPerHarvest: 35, yieldItem: 'iron_ore', successChance: 0.35 },
-        coal:    { name: 'Coal rock', hp: 12, respawnTime: 30, requiredLevel: 30, xpPerHarvest: 50, yieldItem: 'coal', successChance: 0.3 },
-        mithril: { name: 'Mithril rock', hp: 15, respawnTime: 60, requiredLevel: 55, xpPerHarvest: 80, yieldItem: 'mithril_ore', successChance: 0.25 },
-        adamant: { name: 'Adamant rock', hp: 20, respawnTime: 120, requiredLevel: 70, xpPerHarvest: 95, yieldItem: 'adamantite_ore', successChance: 0.2 },
-        runite:  { name: 'Runite rock', hp: 25, respawnTime: 300, requiredLevel: 85, xpPerHarvest: 125, yieldItem: 'runite_ore', successChance: 0.15 },
+        copper: { name: 'Copper rock', hp: 6, respawnTime: 4, requiredLevel: 1, xpPerHarvest: 17, yieldItem: 'copper_ore', successChance: 0.30 },
+        tin:    { name: 'Tin rock', hp: 6, respawnTime: 4, requiredLevel: 1, xpPerHarvest: 17, yieldItem: 'tin_ore', successChance: 0.30 },
+        iron:   { name: 'Iron rock', hp: 10, respawnTime: 10, requiredLevel: 15, xpPerHarvest: 35, yieldItem: 'iron_ore', successChance: 0.18 },
+        coal:    { name: 'Coal rock', hp: 12, respawnTime: 30, requiredLevel: 30, xpPerHarvest: 50, yieldItem: 'coal', successChance: 0.14 },
+        mithril: { name: 'Mithril rock', hp: 15, respawnTime: 60, requiredLevel: 55, xpPerHarvest: 80, yieldItem: 'mithril_ore', successChance: 0.10 },
+        adamant: { name: 'Adamant rock', hp: 20, respawnTime: 120, requiredLevel: 70, xpPerHarvest: 95, yieldItem: 'adamantite_ore', successChance: 0.08 },
+        runite:  { name: 'Runite rock', hp: 25, respawnTime: 300, requiredLevel: 85, xpPerHarvest: 125, yieldItem: 'runite_ore', successChance: 0.05 },
+        obsidian: { name: 'Obsidian rock', hp: 18, respawnTime: 90, requiredLevel: 65, xpPerHarvest: 90, yieldItem: 'obsidian_ore', successChance: 0.08 },
     },
 
     MONSTERS: {
@@ -102,7 +104,7 @@ export const CONFIG = {
                 { item: 'clue_scroll_easy', qty: 1, chance: 0.04 },
             ],
             respawnTime: 15,
-            xpReward: { attack: 4, strength: 4, defence: 4, hitpoints: 1 },
+            xpReward: { attack: 8, strength: 8, defence: 8, hitpoints: 3 },
         },
         cow: {
             name: 'Cow', hp: 8, combatLevel: 2,
@@ -115,7 +117,7 @@ export const CONFIG = {
                 { item: 'clue_scroll_easy', qty: 1, chance: 0.03 },
             ],
             respawnTime: 15,
-            xpReward: { attack: 8, strength: 8, defence: 8, hitpoints: 3 },
+            xpReward: { attack: 16, strength: 16, defence: 16, hitpoints: 8 },
         },
         rat: {
             name: 'Giant Rat', hp: 4, combatLevel: 1,
@@ -127,7 +129,7 @@ export const CONFIG = {
                 { item: 'clue_scroll_easy', qty: 1, chance: 0.05 },
             ],
             respawnTime: 12,
-            xpReward: { attack: 4, strength: 4, defence: 4, hitpoints: 1 },
+            xpReward: { attack: 8, strength: 8, defence: 8, hitpoints: 3 },
         },
         goblin: {
             name: 'Goblin', hp: 5, combatLevel: 2,
@@ -140,7 +142,7 @@ export const CONFIG = {
                 { item: 'clue_scroll_easy', qty: 1, chance: 0.04 },
             ],
             respawnTime: 20,
-            xpReward: { attack: 5, strength: 5, defence: 5, hitpoints: 2 },
+            xpReward: { attack: 12, strength: 12, defence: 12, hitpoints: 5 },
         },
         skeleton: {
             name: 'Skeleton', hp: 12, combatLevel: 8,
@@ -153,7 +155,7 @@ export const CONFIG = {
                 { item: 'clue_scroll_medium', qty: 1, chance: 0.03 },
             ],
             respawnTime: 30,
-            xpReward: { attack: 12, strength: 12, defence: 12, hitpoints: 4 },
+            xpReward: { attack: 20, strength: 20, defence: 20, hitpoints: 10 },
         },
         giant_spider: {
             name: 'Giant Spider', hp: 18, combatLevel: 12,
@@ -166,7 +168,7 @@ export const CONFIG = {
                 { item: 'clue_scroll_medium', qty: 1, chance: 0.02 },
             ],
             respawnTime: 40,
-            xpReward: { attack: 18, strength: 18, defence: 18, hitpoints: 6 },
+            xpReward: { attack: 30, strength: 30, defence: 30, hitpoints: 15 },
         },
         dark_wizard: {
             name: 'Dark Wizard', hp: 15, combatLevel: 10,
@@ -183,7 +185,7 @@ export const CONFIG = {
                 { item: 'clue_scroll_hard', qty: 1, chance: 0.02 },
             ],
             respawnTime: 35,
-            xpReward: { attack: 15, strength: 15, defence: 15, hitpoints: 5 },
+            xpReward: { attack: 25, strength: 25, defence: 25, hitpoints: 12 },
         },
         lesser_demon: {
             name: 'Lesser Demon', hp: 30, combatLevel: 22,
@@ -199,7 +201,7 @@ export const CONFIG = {
                 { item: 'herb', qty: 2, chance: 0.35 },
             ],
             respawnTime: 50,
-            xpReward: { attack: 30, strength: 30, defence: 30, hitpoints: 10 },
+            xpReward: { attack: 50, strength: 50, defence: 50, hitpoints: 25 },
         },
         kbd: {
             name: 'King Black Dragon', hp: 80, combatLevel: 50,
@@ -222,7 +224,7 @@ export const CONFIG = {
                 { item: 'clue_scroll_hard', qty: 1, chance: 0.02 },
             ],
             respawnTime: 120,
-            xpReward: { attack: 80, strength: 80, defence: 80, hitpoints: 30 },
+            xpReward: { attack: 150, strength: 150, defence: 150, hitpoints: 80 },
         },
         skeleton: {
             name: 'Skeleton', hp: 15, combatLevel: 12,
@@ -235,7 +237,7 @@ export const CONFIG = {
                 { item: 'clue_scroll_medium', qty: 1, chance: 0.03 },
             ],
             respawnTime: 30,
-            xpReward: { attack: 10, strength: 10, defence: 10, hitpoints: 4 },
+            xpReward: { attack: 20, strength: 20, defence: 20, hitpoints: 10 },
         },
         moss_giant: {
             name: 'Moss Giant', hp: 25, combatLevel: 18,
@@ -249,7 +251,7 @@ export const CONFIG = {
                 { item: 'clue_scroll_medium', qty: 1, chance: 0.025 },
             ],
             respawnTime: 40,
-            xpReward: { attack: 25, strength: 25, defence: 25, hitpoints: 8 },
+            xpReward: { attack: 40, strength: 40, defence: 40, hitpoints: 20 },
         },
         shadow_warrior: {
             name: 'Shadow Warrior', hp: 35, combatLevel: 28,
@@ -263,7 +265,7 @@ export const CONFIG = {
                 { item: 'clue_scroll_hard', qty: 1, chance: 0.015 },
             ],
             respawnTime: 50,
-            xpReward: { attack: 35, strength: 35, defence: 35, hitpoints: 12 },
+            xpReward: { attack: 60, strength: 60, defence: 60, hitpoints: 25 },
         },
         demon_lord: {
             name: 'Demon Lord', hp: 60, combatLevel: 40,
@@ -280,7 +282,7 @@ export const CONFIG = {
                 { item: 'clue_scroll_hard', qty: 1, chance: 0.01 },
             ],
             respawnTime: 90,
-            xpReward: { attack: 60, strength: 60, defence: 60, hitpoints: 20 },
+            xpReward: { attack: 100, strength: 100, defence: 100, hitpoints: 50 },
         },
         // ── Biome monsters ──
         scorpion: {
@@ -291,10 +293,11 @@ export const CONFIG = {
             lootTable: [
                 { item: 'bones', qty: 1, chance: 1.0 },
                 { item: 'coins', qty: 20, chance: 0.6 },
+                { item: 'desert_artifact_shard', qty: 1, chance: 0.15 },
                 { item: 'clue_scroll_easy', qty: 1, chance: 0.04 },
             ],
             respawnTime: 25,
-            xpReward: { attack: 14, strength: 14, defence: 14, hitpoints: 5 },
+            xpReward: { attack: 25, strength: 25, defence: 25, hitpoints: 10 },
         },
         giant_frog: {
             name: 'Giant Frog', hp: 12, combatLevel: 10,
@@ -306,7 +309,7 @@ export const CONFIG = {
                 { item: 'clue_scroll_easy', qty: 1, chance: 0.05 },
             ],
             respawnTime: 20,
-            xpReward: { attack: 10, strength: 10, defence: 10, hitpoints: 4 },
+            xpReward: { attack: 18, strength: 18, defence: 18, hitpoints: 8 },
         },
         ice_wolf: {
             name: 'Ice Wolf', hp: 28, combatLevel: 20,
@@ -319,7 +322,62 @@ export const CONFIG = {
                 { item: 'clue_scroll_medium', qty: 1, chance: 0.03 },
             ],
             respawnTime: 35,
-            xpReward: { attack: 22, strength: 22, defence: 22, hitpoints: 9 },
+            xpReward: { attack: 35, strength: 35, defence: 35, hitpoints: 15 },
+        },
+        giant_crab: {
+            name: 'Giant Crab', hp: 18, combatLevel: 12,
+            attackLevel: 8, strengthLevel: 10, defenceLevel: 15,
+            attackSpeed: 5, aggroRange: 0, wanderRadius: 3, moveSpeed: 1,
+            lootTable: [
+                { item: 'raw_lobster', qty: 1, chance: 0.6 },
+                { item: 'coins', qty: 20, chance: 0.8 },
+                { item: 'bones', qty: 1, chance: 1.0 },
+            ],
+            respawnTime: 30,
+            xpReward: { attack: 25, strength: 25, defence: 25, hitpoints: 10 },
+        },
+        fire_elemental: {
+            name: 'Fire Elemental', hp: 35, combatLevel: 28,
+            attackLevel: 18, strengthLevel: 20, defenceLevel: 14,
+            attackSpeed: 3, aggroRange: 6, wanderRadius: 4, moveSpeed: 1.5,
+            attackType: 'magic',
+            lootTable: [
+                { item: 'fire_rune', qty: 15, chance: 0.8 },
+                { item: 'obsidian_ore', qty: 1, chance: 0.4 },
+                { item: 'coins', qty: 40, chance: 0.7 },
+                { item: 'clue_scroll_medium', qty: 1, chance: 0.03 },
+            ],
+            respawnTime: 40,
+            xpReward: { attack: 55, strength: 55, defence: 55, hitpoints: 25 },
+        },
+        desert_guard: {
+            name: 'Desert Guard', hp: 25, combatLevel: 20,
+            attackLevel: 14, strengthLevel: 13, defenceLevel: 12,
+            attackSpeed: 4, aggroRange: 0, wanderRadius: 4, moveSpeed: 1.2,
+            lootTable: [
+                { item: 'bones', qty: 1, chance: 1.0 },
+                { item: 'coins', qty: 30, chance: 0.7 },
+                { item: 'steel_sword', qty: 1, chance: 0.1 },
+                { item: 'palm_logs', qty: 1, chance: 0.15 },
+            ],
+            respawnTime: 35,
+            xpReward: { attack: 35, strength: 35, defence: 35, hitpoints: 15 },
+        },
+        sea_serpent: {
+            name: 'Sea Serpent', hp: 40, combatLevel: 30,
+            attackLevel: 20, strengthLevel: 18, defenceLevel: 16,
+            attackSpeed: 3, aggroRange: 7, wanderRadius: 3, moveSpeed: 1.5,
+            attackType: 'magic',
+            lootTable: [
+                { item: 'water_rune', qty: 10, chance: 0.8 },
+                { item: 'pearl', qty: 1, chance: 0.3 },
+                { item: 'raw_lobster', qty: 2, chance: 0.5 },
+                { item: 'coins', qty: 50, chance: 0.7 },
+                { item: 'raw_seaweed', qty: 2, chance: 0.4 },
+                { item: 'clue_scroll_hard', qty: 1, chance: 0.02 },
+            ],
+            respawnTime: 45,
+            xpReward: { attack: 65, strength: 65, defence: 65, hitpoints: 30 },
         },
     },
 
@@ -379,11 +437,11 @@ export const CONFIG = {
         chaos_rune:     { name: 'Chaos rune',      stackable: true,  icon: '🌀' },
         rune_essence:   { name: 'Rune essence',    stackable: false, icon: '💎' },
         // Ranged
-        bronze_arrow:   { name: 'Bronze arrow',    stackable: true,  icon: '➡️', rangedStrength: 2 },
-        iron_arrow:     { name: 'Iron arrow',      stackable: true,  icon: '➡️', rangedStrength: 4 },
-        steel_arrow:    { name: 'Steel arrow',     stackable: true,  icon: '➡️', rangedStrength: 6 },
-        shortbow:       { name: 'Shortbow',        stackable: false, icon: '🏹', equipSlot: 'weapon', attackBonus: 0, strengthBonus: 0, defenceBonus: 0, rangedBonus: 6, attackStyle: 'ranged' },
-        oak_shortbow:   { name: 'Oak shortbow',    stackable: false, icon: '🏹', equipSlot: 'weapon', attackBonus: 0, strengthBonus: 0, defenceBonus: 0, rangedBonus: 14, attackStyle: 'ranged' },
+        bronze_arrow:   { name: 'Bronze arrow',    stackable: true,  icon: '➡️', rangedStrength: 2, arrowTier: 1 },
+        iron_arrow:     { name: 'Iron arrow',      stackable: true,  icon: '➡️', rangedStrength: 4, arrowTier: 1 },
+        steel_arrow:    { name: 'Steel arrow',     stackable: true,  icon: '➡️', rangedStrength: 6, arrowTier: 2 },
+        shortbow:       { name: 'Shortbow',        stackable: false, icon: '🏹', equipSlot: 'weapon', attackBonus: 0, strengthBonus: 0, defenceBonus: 0, rangedBonus: 6, attackStyle: 'ranged', bowTier: 1 },
+        oak_shortbow:   { name: 'Oak shortbow',    stackable: false, icon: '🏹', equipSlot: 'weapon', attackBonus: 0, strengthBonus: 0, defenceBonus: 0, rangedBonus: 14, attackStyle: 'ranged', bowTier: 2 },
         knife:          { name: 'Knife',           stackable: false, icon: '🔪' },
         demons_bane:    { name: "Demon's Bane",    stackable: false, icon: '🗡️', equipSlot: 'weapon', attackBonus: 35, strengthBonus: 30, defenceBonus: 5 },
         lantern:        { name: 'Lantern',         stackable: false, icon: '🏮' },
@@ -463,14 +521,28 @@ export const CONFIG = {
         leather_boots:  { name: 'Leather boots',   stackable: false, icon: '👢', equipSlot: 'feet', attackBonus: 0, strengthBonus: 0, defenceBonus: 1 },
         // Staff
         staff_of_air:   { name: 'Staff of air',    stackable: false, icon: '🪄', equipSlot: 'weapon', attackBonus: 2, strengthBonus: 2, defenceBonus: 2, magicBonus: 10, attackStyle: 'magic', providesRune: 'air_rune' },
+        // Quest items
+        desert_artifact_shard: { name: 'Artifact Shard', stackable: true, icon: '🔶', examine: 'A piece of an ancient artifact.', value: 150 },
+        ancient_artifact: { name: 'Ancient Artifact', stackable: false, icon: '🏺', examine: 'A reassembled ancient artifact, pulsing with energy.', value: 500 },
+        cursed_artifact: { name: 'Cursed Artifact', stackable: false, icon: '🏺', examine: 'The artifact is tainted with dark energy.', value: 0 },
+        purification_potion: { name: 'Purification Potion', stackable: false, icon: '⚗️', examine: 'A holy potion that can cleanse dark energy.', value: 200 },
+        blessed_artifact: { name: 'Blessed Artifact', stackable: false, icon: '✨', examine: 'A purified artifact radiating holy light.', value: 1000 },
+        dark_artifact: { name: 'Dark Artifact', stackable: false, icon: '🖤', examine: 'An artifact infused with dark power.', value: 1000 },
+        moonflower: { name: 'Moonflower', stackable: false, icon: '🌸', examine: 'A rare flower that blooms only under moonlight.', value: 300 },
+        witchs_amulet: { name: "Witch's Amulet", stackable: false, icon: '📿', examine: 'An enchanted amulet gifted by the swamp witch.', value: 500 },
+        // Batch 6 — new biome items
+        obsidian_ore:   { name: 'Obsidian ore',    stackable: false, icon: '🪨' },
+        palm_logs:      { name: 'Palm logs',       stackable: false, icon: '🪵', fmLevel: 35, fmXP: 70 },
+        pearl:          { name: 'Pearl',           stackable: true,  icon: '🔮' },
+        raw_seaweed:    { name: 'Raw seaweed',     stackable: true,  icon: '🌿' },
     },
 
     EQUIPMENT_SLOTS: ['weapon', 'shield', 'body', 'legs', 'feet', 'head'],
 
     FISHING: {
-        shrimp:  { name: 'Shrimp',  requiredLevel: 1,  xpPerCatch: 10,  yieldItem: 'raw_shrimp',   successChance: 0.5 },
-        trout:   { name: 'Trout',   requiredLevel: 20, xpPerCatch: 50,  yieldItem: 'raw_trout',    successChance: 0.35 },
-        lobster: { name: 'Lobster', requiredLevel: 40, xpPerCatch: 90,  yieldItem: 'raw_lobster',  successChance: 0.25 },
+        shrimp:  { name: 'Shrimp',  requiredLevel: 1,  xpPerCatch: 10,  yieldItem: 'raw_shrimp',   successChance: 0.25 },
+        trout:   { name: 'Trout',   requiredLevel: 20, xpPerCatch: 50,  yieldItem: 'raw_trout',    successChance: 0.15 },
+        lobster: { name: 'Lobster', requiredLevel: 40, xpPerCatch: 90,  yieldItem: 'raw_lobster',  successChance: 0.10 },
     },
 
     SMITHING: {
@@ -550,10 +622,10 @@ export const CONFIG = {
     },
 
     THIEVING: {
-        guide:    { npcId: 'guide',   name: 'Lumbridge Guide', requiredLevel: 1,  xp: 8,   stunTicks: 5, successBase: 0.6, loot: [{ item: 'coins', qty: 3 }] },
-        general:  { npcId: 'general', name: 'Shopkeeper',      requiredLevel: 10, xp: 16,  stunTicks: 5, successBase: 0.5, loot: [{ item: 'coins', qty: 10 }] },
-        banker:   { npcId: 'banker',  name: 'Banker',          requiredLevel: 25, xp: 30,  stunTicks: 6, successBase: 0.4, loot: [{ item: 'coins', qty: 25 }] },
-        fred:     { npcId: 'fred',    name: 'Fred the Farmer', requiredLevel: 15, xp: 20,  stunTicks: 5, successBase: 0.45, loot: [{ item: 'coins', qty: 12 }, { item: 'wool', qty: 1 }] },
+        guide:    { npcId: 'guide',   name: 'Lumbridge Guide', requiredLevel: 1,  xp: 8,   stunTicks: 5, successBase: 0.40, loot: [{ item: 'coins', qty: 3 }] },
+        general:  { npcId: 'general', name: 'Shopkeeper',      requiredLevel: 10, xp: 16,  stunTicks: 5, successBase: 0.35, loot: [{ item: 'coins', qty: 10 }] },
+        banker:   { npcId: 'banker',  name: 'Banker',          requiredLevel: 25, xp: 30,  stunTicks: 6, successBase: 0.25, loot: [{ item: 'coins', qty: 25 }] },
+        fred:     { npcId: 'fred',    name: 'Fred the Farmer', requiredLevel: 15, xp: 20,  stunTicks: 5, successBase: 0.30, loot: [{ item: 'coins', qty: 12 }, { item: 'wool', qty: 1 }] },
     },
 
     HERBLORE: {
@@ -885,7 +957,7 @@ export const CONFIG = {
         },
         fishing_tutor: {
             name: 'Fishing Tutor', x: 23, z: 18,
-            quest: null,
+            quest: 'fishermans_woe',
             dialogues: {
                 default: [
                     { text: "Ahoy! I'm the Fishing Tutor. Looking to catch some fish?" },
@@ -897,6 +969,22 @@ export const CONFIG = {
                       ]
                     },
                 ],
+                quest_offer: [
+                    { text: "Those blasted giant crabs keep scaring away all the fish!" },
+                    { text: "Could you kill 4 of them for me? They're near the fishing spots to the east.", options: [
+                        { label: "I'll handle them!", action: 'accept_quest', next: 2 },
+                        { label: "Maybe later." }
+                    ]},
+                    { text: "Thank you! Those crabs have huge claws, so be careful." }
+                ],
+                quest_progress: [{ text: "Have you killed those giant crabs yet? I need 4 of them gone." }],
+                quest_turnin: [
+                    { text: "You killed all 4 giant crabs? Wonderful!" },
+                    { text: "The fishing spots should be much safer now. Here's your reward!", options: [
+                        { label: "Thanks!", action: 'turnin_quest' }
+                    ]}
+                ],
+                quest_complete: [{ text: "The fishing is so much better now that those crabs are gone!" }],
             },
         },
         bartender: {
@@ -1000,9 +1088,9 @@ export const CONFIG = {
         },
         swamp_witch: {
             name: 'Swamp Witch', x: -45, z: 35,
-            quest: 'swamp_thing',
+            questChain: ['swamp_thing', 'witchs_bargain_p1', 'witchs_bargain_p2'],
             dialogues: {
-                quest_offer: [
+                quest_offer_swamp_thing: [
                     { text: "Heh heh... the frogs have grown too bold. They've been eating my herbs!" },
                     { text: "Kill 5 of those giant frogs and I'll brew you something nice.",
                       options: [
@@ -1012,12 +1100,43 @@ export const CONFIG = {
                     },
                     { text: "Good... their bones will fuel my cauldron. Heh heh heh..." },
                 ],
-                quest_progress: [{ text: "Still haven't killed 5 frogs? They're all around the swamp." }],
-                quest_turnin: [
+                quest_progress_swamp_thing: [{ text: "Still haven't killed 5 frogs? They're all around the swamp." }],
+                quest_turnin_swamp_thing: [
                     { text: "The frogs are dealt with? Wonderful!",
                       options: [{ label: "They're gone.", action: 'turnin_quest', next: 1 }]
                     },
                     { text: "Here, take this potion. Brewed it myself. Heh heh..." },
+                ],
+                quest_offer_witchs_bargain_p1: [
+                    { text: "You've proven yourself useful, adventurer." },
+                    { text: "I need rare herbs for a powerful ritual. Bring me 10 herbs.", options: [
+                        { label: "I'll gather them.", action: 'accept_quest', next: 2 },
+                        { label: "Not now." }
+                    ]},
+                    { text: "Good. Don't dawdle — the stars won't wait forever." }
+                ],
+                quest_progress_witchs_bargain_p1: [{ text: "I still need 10 herbs. Hurry!" }],
+                quest_turnin_witchs_bargain_p1: [
+                    { text: "Excellent herbs. The ritual is almost ready..." },
+                    { text: "*The witch chants and a shimmering portal appears nearby*" },
+                    { text: "A gateway to the Hidden Grove! Only there grows the Moonflower I need.", options: [
+                        { label: "Amazing!", action: 'turnin_quest' }
+                    ]}
+                ],
+                quest_offer_witchs_bargain_p2: [
+                    { text: "Enter the portal I've opened and find a Moonflower in the Hidden Grove." },
+                    { text: "Be warned — the grove is ancient and strange.", options: [
+                        { label: "I'm ready.", action: 'accept_quest', next: 2 },
+                        { label: "I need to prepare." }
+                    ]},
+                    { text: "The portal awaits. Don't be afraid." }
+                ],
+                quest_progress_witchs_bargain_p2: [{ text: "Find a Moonflower in the Hidden Grove beyond the portal." }],
+                quest_turnin_witchs_bargain_p2: [
+                    { text: "A Moonflower! Magnificent! Its petals shimmer with lunar magic." },
+                    { text: "As promised, take this enchanted amulet. It carries my blessing.", options: [
+                        { label: "Thank you, Witch!", action: 'turnin_quest' }
+                    ]}
                 ],
                 quest_complete: [{ text: "The swamp is peaceful again. Well... as peaceful as a swamp gets." }],
                 default: [{ text: "Watch your step around here. The swamp has a mind of its own." }],
@@ -1053,6 +1172,74 @@ export const CONFIG = {
             shop: 'desert_shop',
             dialogues: {
                 default: [{ text: "Welcome to the desert bazaar! I have exotic wares from distant lands." }],
+            },
+        },
+        ge_clerk: {
+            name: 'GE Clerk', x: 8, z: -12,
+            quest: null,
+            dialogues: {
+                default: [
+                    { text: "Welcome to the Grand Exchange! I can help you buy and sell items at market prices.",
+                      options: [
+                        { label: "I'd like to trade.", action: 'open_ge' },
+                        { label: "No thanks." },
+                      ]
+                    },
+                ],
+            },
+        },
+        archaeologist: {
+            name: 'Archaeologist', x: 62, z: 5,
+            colors: { skin: 0xC8A882, shirt: 0x886644, pants: 0x554422 },
+            questChain: ['lost_artifact_p1', 'lost_artifact_p2', 'lost_artifact_p3'],
+            dialogues: {
+                default: [{ text: "I'm studying the ancient ruins in this desert. Come back when you're more experienced." }],
+                quest_offer_lost_artifact_p1: [
+                    { text: "Adventurer! I've been studying these desert ruins and believe there are artifact fragments buried here." },
+                    { text: "Could you search the desert and bring me 3 artifact shards? They should be scattered around the ruins.", options: [
+                        { label: "I'll find them!", action: 'accept_quest', next: 2 },
+                        { label: "Not right now." }
+                    ]},
+                    { text: "Excellent! Search the desert area carefully. The shards glow faintly in the sand." }
+                ],
+                quest_progress_lost_artifact_p1: [{ text: "Keep searching the desert for those artifact shards. I need 3 of them." }],
+                quest_turnin_lost_artifact_p1: [
+                    { text: "You found all three shards! Let me reassemble them..." },
+                    { text: "By the gods... it's forming into something... *the artifact pulses with dark energy*" },
+                    { text: "This artifact is CURSED! We need to find someone who can purify it. Take this cursed artifact to the Swamp Witch — she knows dark magic.", options: [
+                        { label: "I'll take it to her.", action: 'turnin_quest' }
+                    ]}
+                ],
+                quest_offer_lost_artifact_p2: [
+                    { text: "The Swamp Witch should be able to help with the cursed artifact. Bring her the artifact and 5 herbs." },
+                ],
+                quest_progress_lost_artifact_p2: [{ text: "Take the cursed artifact and 5 herbs to the Swamp Witch." }],
+                quest_turnin_lost_artifact_p2: [
+                    { text: "The witch has prepared the potion. Now you must make a choice..." },
+                    { text: "You can purify the artifact with holy water at the church, or harness its dark power...", options: [
+                        { label: "Purify it (Prayer + Magic XP)", action: 'set_flag:artifact_choice:purify', next: 2 },
+                        { label: "Harness dark power (Attack + Strength XP)", action: 'set_flag:artifact_choice:dark', next: 2 }
+                    ]},
+                    { text: "An interesting choice. Return to me when you're ready to complete the ritual.", options: [
+                        { label: "Let's do it.", action: 'turnin_quest' }
+                    ]}
+                ],
+                quest_offer_lost_artifact_p3: [
+                    { text: "It's time to complete the ritual with the artifact." },
+                    { text: "Bring the artifact to me and I'll perform the final step.", options: [
+                        { label: "Let's finish this.", action: 'accept_quest', next: 2 },
+                        { label: "Not yet." }
+                    ]},
+                    { text: "The final step requires great care..." }
+                ],
+                quest_progress_lost_artifact_p3: [{ text: "Bring me the artifact to complete the ritual." }],
+                quest_turnin_lost_artifact_p3: [
+                    { text: "The ritual is complete! The artifact has been transformed." },
+                    { text: "May it serve you well, adventurer.", options: [
+                        { label: "Thank you!", action: 'turnin_quest' }
+                    ]}
+                ],
+                quest_complete: [{ text: "The artifact's power is incredible. Thank you for your help!" }],
             },
         },
     },
@@ -1114,6 +1301,69 @@ export const CONFIG = {
             requirements: { kills: { ice_wolf: 3 } },
             rewards: { xp: { attack: 300, defence: 200 }, items: [{ item: 'mithril_platebody', qty: 1 }, { item: 'coins', qty: 300 }] },
         },
+        fishermans_woe: {
+            name: "Fisherman's Woe",
+            description: 'Kill 4 giant crabs near the fishing area.',
+            requirements: { kills: { giant_crab: 4 } },
+            rewards: {
+                xp: { fishing: 300, attack: 150 },
+                items: [{ item: 'coins', qty: 200 }, { item: 'raw_lobster', qty: 5 }],
+            },
+        },
+        lost_artifact_p1: {
+            name: 'The Lost Artifact: Discovery',
+            description: 'Find 3 artifact shards in the desert.',
+            requirements: { items: [{ item: 'desert_artifact_shard', qty: 3 }] },
+            rewards: {
+                xp: { mining: 200 },
+                items: [{ item: 'cursed_artifact', qty: 1 }],
+            },
+        },
+        lost_artifact_p2: {
+            name: 'The Lost Artifact: The Curse',
+            description: 'Bring the cursed artifact and 5 herbs to be cleansed.',
+            prerequisite: 'lost_artifact_p1',
+            requirements: { items: [{ item: 'cursed_artifact', qty: 1 }, { item: 'herb', qty: 5 }] },
+            rewards: {
+                xp: { herblore: 300 },
+                items: [{ item: 'purification_potion', qty: 1 }],
+            },
+        },
+        lost_artifact_p3: {
+            name: 'The Lost Artifact: Purification',
+            description: 'Complete the artifact ritual.',
+            prerequisite: 'lost_artifact_p2',
+            requirements: { items: [{ item: 'purification_potion', qty: 1 }] },
+            rewards: {
+                xp: { prayer: 200 },
+                conditional: {
+                    flag: 'artifact_choice',
+                    expectedValue: 'purify',
+                    true: { xp: { prayer: 500, magic: 500 }, items: [{ item: 'blessed_artifact', qty: 1 }] },
+                    false: { xp: { attack: 500, strength: 500 }, items: [{ item: 'dark_artifact', qty: 1 }] },
+                },
+            },
+        },
+        witchs_bargain_p1: {
+            name: "The Witch's Bargain: Rare Herbs",
+            description: 'Bring 10 herbs to the Swamp Witch.',
+            prerequisite: 'swamp_thing',
+            requirements: { items: [{ item: 'herb', qty: 10 }] },
+            rewards: {
+                xp: { herblore: 400 },
+                items: [{ item: 'coins', qty: 300 }],
+            },
+        },
+        witchs_bargain_p2: {
+            name: "The Witch's Bargain: The Moonflower",
+            description: 'Find a Moonflower in the Hidden Grove.',
+            prerequisite: 'witchs_bargain_p1',
+            requirements: { items: [{ item: 'moonflower', qty: 1 }] },
+            rewards: {
+                xp: { magic: 500, herblore: 300 },
+                items: [{ item: 'witchs_amulet', qty: 1 }],
+            },
+        },
     },
 
     MUSIC_ZONES: {
@@ -1131,8 +1381,16 @@ export const CONFIG = {
         sunPosition: { x: 50, y: 80, z: 30 },
         ambientColor: 0xB0C4DE, ambientIntensity: 0.4,
         hemiSkyColor: 0x87CEEB, hemiGroundColor: 0x8B7355, hemiIntensity: 0.3,
-        fogColor: 0xC8DFF0, fogNear: 60, fogFar: 180,
+        fogColor: 0xC8DFF0, fogNear: 60, fogFar: 250,
         skyColor: 0x87CEEB,
+    },
+
+    MOBILE: {
+        pixelRatio: 1,
+        shadowMapSize: 512,
+        fogFar: 150,
+        fogNear: 40,
+        disableAntiAlias: true,
     },
 
     PETS: {
@@ -1219,19 +1477,71 @@ export const CONFIG = {
         desert: { minX: 50, maxX: 90, minZ: -10, maxZ: 30, groundColor: 0xC2B280, fogColor: 0xD4C8A0, fogFar: 120 },
         swamp:  { minX: -60, maxX: -30, minZ: 25, maxZ: 55, groundColor: 0x3B5323, fogColor: 0x556B2F, fogFar: 80 },
         ice:    { minX: -20, maxX: 30, minZ: -110, maxZ: -75, groundColor: 0xE8E8F0, fogColor: 0xC8D8E8, fogFar: 100 },
+        volcanic: { minX: 85, maxX: 140, minZ: -30, maxZ: 30, groundColor: 0x3D1F0F, fogColor: 0x443322, fogFar: 100 },
+        underwater: { minX: -15, maxX: 15, minZ: -15, maxZ: 15, y: -15, groundColor: 0x0D3D5C, fogColor: 0x0A3C64, fogFar: 25 },
+    },
+
+    GRAND_EXCHANGE: {
+        basePrices: {
+            // Resources
+            logs: 5, oak_logs: 15, willow_logs: 30,
+            copper_ore: 8, tin_ore: 8, iron_ore: 20, coal: 30,
+            mithril_ore: 80, adamantite_ore: 200, runite_ore: 500,
+            // Bars
+            bronze_bar: 20, iron_bar: 45, steel_bar: 80,
+            mithril_bar: 200, adamant_bar: 500, rune_bar: 1200,
+            // Food
+            raw_shrimp: 5, raw_trout: 25, raw_lobster: 60,
+            cooked_shrimp: 10, cooked_trout: 40, cooked_lobster: 100,
+            raw_chicken: 3, raw_beef: 5, cooked_chicken: 8, cooked_beef: 12,
+            // Runes
+            air_rune: 4, fire_rune: 5, water_rune: 5, earth_rune: 5,
+            mind_rune: 6, chaos_rune: 20, rune_essence: 5,
+            // Ammo
+            bronze_arrow: 3, iron_arrow: 8, steel_arrow: 15,
+            // Herbs & potions
+            herb: 15, vial: 8,
+            attack_potion: 40, strength_potion: 50, defence_potion: 50,
+            stamina_potion: 35, antipoison: 25,
+            // Misc
+            feather: 4, bones: 3, dragon_bones: 40, cowhide: 8,
+            // Equipment
+            bronze_sword: 25, iron_sword: 80, steel_sword: 200,
+            mithril_sword: 500, adamant_sword: 1200, rune_sword: 3000,
+            bronze_platebody: 60, iron_platebody: 150, steel_platebody: 400,
+            mithril_platebody: 1000, adamant_platebody: 2500, rune_platebody: 6000,
+            shortbow: 60, oak_shortbow: 200, staff_of_air: 250,
+            // Batch 6 items
+            obsidian_ore: 150, palm_logs: 25, pearl: 300, raw_seaweed: 8,
+        },
     },
 
     WORLD_OBJECTS: {
         trees: [
-            { type: 'normal', x: 15, z: 10 }, { type: 'normal', x: 18, z: 14 },
-            { type: 'normal', x: 12, z: 18 }, { type: 'normal', x: 20, z: 8 },
-            { type: 'normal', x: -10, z: 15 }, { type: 'normal', x: -14, z: 20 },
-            { type: 'normal', x: -8, z: 22 },
-            { type: 'oak', x: 30, z: -5 }, { type: 'oak', x: 34, z: -2 }, { type: 'oak', x: 28, z: -8 },
-            { type: 'normal', x: -25, z: -15 }, { type: 'normal', x: -30, z: -10 },
-            { type: 'normal', x: 40, z: 25 }, { type: 'normal', x: 45, z: 30 },
-            { type: 'normal', x: -35, z: 30 },
-            { type: 'willow', x: 22, z: 15 }, { type: 'willow', x: 27, z: 18 },
+            // Normal trees — northwest cluster (spread out to avoid canopy clipping)
+            { type: 'normal', x: 13, z: 8 }, { type: 'normal', x: 18, z: 5 },
+            { type: 'normal', x: 10, z: 14 }, { type: 'normal', x: 16, z: 13 },
+            // Normal trees — west cluster
+            { type: 'normal', x: -10, z: 15 }, { type: 'normal', x: -15, z: 20 },
+            { type: 'normal', x: -7, z: 23 }, { type: 'normal', x: -12, z: 27 },
+            // Oak trees — southeast area (spaced for larger canopies)
+            { type: 'oak', x: 30, z: -5 }, { type: 'oak', x: 36, z: -2 }, { type: 'oak', x: 27, z: -10 },
+            { type: 'oak', x: 33, z: -10 },
+            // Normal trees — scattered far areas
+            { type: 'normal', x: -25, z: -14 }, { type: 'normal', x: -31, z: -9 },
+            { type: 'normal', x: 42, z: 26 }, { type: 'normal', x: 47, z: 32 },
+            { type: 'normal', x: -36, z: 31 }, { type: 'normal', x: -40, z: 25 },
+            // Willow trees — near pond edge (NOT inside water; pond center 25,20 radius 12)
+            { type: 'willow', x: 14, z: 14 }, { type: 'willow', x: 37, z: 26 },
+            { type: 'willow', x: 20, z: 33 },
+            // Additional scattered trees for a fuller world
+            { type: 'normal', x: 5, z: -10 }, { type: 'normal', x: -5, z: -18 },
+            { type: 'normal', x: 50, z: 10 }, { type: 'normal', x: -20, z: 35 },
+            { type: 'oak', x: 40, z: -15 }, { type: 'normal', x: -45, z: 15 },
+            // Palm trees — desert city area
+            { type: 'palm', x: 72, z: 12 }, { type: 'palm', x: 78, z: 8 },
+            { type: 'palm', x: 75, z: 18 }, { type: 'palm', x: 80, z: 15 },
+            { type: 'palm', x: 68, z: 5 },
         ],
         rocks: [
             { type: 'copper', x: -20, z: -5 }, { type: 'copper', x: -22, z: -3 }, { type: 'copper', x: -19, z: -3 },
@@ -1244,35 +1554,39 @@ export const CONFIG = {
             { type: 'adamant', x: -50, z: -42 }, { type: 'adamant', x: -53, z: -45 },
             // Runite rock — wilderness (dangerous!)
             { type: 'runite', x: -5, z: -65 },
+            // Obsidian rocks — volcanic biome
+            { type: 'obsidian', x: 100, z: 5 }, { type: 'obsidian', x: 105, z: -5 }, { type: 'obsidian', x: 110, z: 10 },
         ],
         monsters: [
-            { type: 'chicken', x: 5, z: 25 }, { type: 'chicken', x: 8, z: 28 },
-            { type: 'chicken', x: 3, z: 30 }, { type: 'chicken', x: 10, z: 26 },
-            { type: 'cow', x: 18, z: 35 }, { type: 'cow', x: 22, z: 38 },
+            { id: 'm0', type: 'chicken', x: 5, z: 25 }, { id: 'm1', type: 'chicken', x: 8, z: 28 },
+            { id: 'm2', type: 'chicken', x: 3, z: 30 }, { type: 'chicken', x: 10, z: 26 },
+            { id: 'm3', type: 'cow', x: 18, z: 35 }, { id: 'm4', type: 'cow', x: 22, z: 38 },
             { type: 'cow', x: 16, z: 40 },
-            { type: 'rat', x: -5, z: -25 }, { type: 'rat', x: -3, z: -28 },
-            { type: 'goblin', x: -35, z: 5 }, { type: 'goblin', x: -38, z: 8 }, { type: 'goblin', x: -40, z: 3 },
+            { id: 'm5', type: 'rat', x: -5, z: -25 }, { id: 'm6', type: 'rat', x: -3, z: -28 },
+            { id: 'm7', type: 'goblin', x: -35, z: 5 }, { id: 'm8', type: 'goblin', x: -38, z: 8 }, { id: 'm9', type: 'goblin', x: -40, z: 3 },
+            { type: 'giant_crab', x: 22, z: 17 }, { type: 'giant_crab', x: 27, z: 16 },
+            { type: 'giant_crab', x: 24, z: 23 }, { type: 'giant_crab', x: 29, z: 21 },
         ],
         dungeonFloors: {
             floor1: { y: -20, monsters: [
                 { type: 'skeleton', x: -47, z: -38 }, { type: 'skeleton', x: -53, z: -42 },
-                { type: 'skeleton', x: -43, z: -45 }, { type: 'moss_giant', x: -55, z: -40 },
-                { type: 'moss_giant', x: -48, z: -48 },
+                { type: 'skeleton', x: -43, z: -45 }, { id: 'm15', type: 'moss_giant', x: -55, z: -40 },
+                { id: 'm16', type: 'moss_giant', x: -48, z: -48 },
             ]},
             floor2: { y: -45, monsters: [
                 { type: 'giant_spider', x: -47, z: -38 }, { type: 'giant_spider', x: -53, z: -42 },
                 { type: 'shadow_warrior', x: -48, z: -45 }, { type: 'shadow_warrior', x: -55, z: -48 },
-                { type: 'lesser_demon', x: -50, z: -50 },
+                { id: 'm14', type: 'lesser_demon', x: -50, z: -50 },
             ]},
             floor3: { y: -70, monsters: [
                 { type: 'demon_lord', x: -50, z: -45 },
-                { type: 'kbd', x: -50, z: -52 },
+                { id: 'm17', type: 'kbd', x: -50, z: -52 },
             ]},
         },
         wildernessMonsters: [
-            { type: 'dark_wizard', x: -5, z: -65 }, { type: 'dark_wizard', x: 5, z: -68 },
+            { id: 'm12', type: 'dark_wizard', x: -5, z: -65 }, { id: 'm13', type: 'dark_wizard', x: 5, z: -68 },
             { type: 'dark_wizard', x: 0, z: -72 },
-            { type: 'skeleton', x: -10, z: -75 }, { type: 'skeleton', x: 10, z: -75 },
+            { id: 'm10', type: 'skeleton', x: -10, z: -75 }, { id: 'm11', type: 'skeleton', x: 10, z: -75 },
         ],
         sheep: [
             { x: 22, z: 33 }, { x: 25, z: 35 }, { x: 20, z: 36 },
@@ -1283,6 +1597,13 @@ export const CONFIG = {
             { type: 'trout',  x: 30, z: 22 },
             { type: 'lobster', x: 20, z: 24 },
         ],
+        // Pool of valid positions inside the pond for roaming fishing spots
+        fishingSpotPool: [
+            { x: 18, z: 16 }, { x: 20, z: 24 }, { x: 25, z: 14 },
+            { x: 30, z: 22 }, { x: 32, z: 18 }, { x: 22, z: 28 },
+            { x: 28, z: 26 }, { x: 16, z: 22 },
+        ],
+        fishingSpotMoveInterval: 90, // seconds between spot relocations
         buildings: [
             { type: 'castle', x: 0, z: -15 },
             { type: 'house', x: -8, z: -3 },
@@ -1291,6 +1612,22 @@ export const CONFIG = {
             { type: 'church', x: 15, z: -15 },
             { type: 'shop', x: 10, z: -5 },
             { type: 'tavern', x: 25, z: -5 },
+            // Desert city buildings
+            { type: 'desert_house', x: 73, z: 10 },
+            { type: 'desert_house', x: 79, z: 16 },
+            { type: 'desert_palace', x: 76, z: 14 },
+        ],
+    },
+
+    WORLD_EVENTS: {
+        fishermans_woe_complete: [
+            { type: 'spawnNPC', data: { id: 'fisherman_apprentice', name: 'Fishing Apprentice', x: 25, z: 20, dialogues: { default: [{ text: "The fishing is so much better now that those crabs are gone! Thanks to you!" }] } } }
+        ],
+        lost_artifact_p3_complete: [
+            { type: 'spawnNPC', data: { id: 'artifact_scholar', name: 'Artifact Scholar', x: 2, z: -12, dialogues: { default: [{ text: "I heard about your discovery in the desert. Fascinating work!" }] } } }
+        ],
+        witchs_bargain_p1_complete: [
+            { type: 'spawnPortal', data: { x: -55, z: 42, name: 'Portal to Hidden Grove', targetX: -60, targetZ: 50 } }
         ],
     },
 };

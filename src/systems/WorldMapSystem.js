@@ -64,8 +64,47 @@ export class WorldMapSystem {
         ctx.textAlign = 'center';
         ctx.fillText('WILDERNESS', offset, offset - 62 * scale);
 
+        // Volcanic biome (x > 85)
+        ctx.fillStyle = 'rgba(180, 60, 20, 0.3)';
+        ctx.fillRect(offset + 85 * scale, offset - 30 * scale, 55 * scale, 60 * scale);
+        ctx.fillStyle = '#FF6633';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('VOLCANIC', offset + 107 * scale, offset - 20 * scale);
+
+        // Desert city (x 65-85, z 0-25)
+        ctx.fillStyle = 'rgba(210, 180, 100, 0.25)';
+        ctx.fillRect(offset + 65 * scale, offset, 20 * scale, 25 * scale);
+        ctx.fillStyle = '#D4AA55';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.fillText('DESERT CITY', offset + 75 * scale, offset + 5 * scale);
+
+        // Underwater cave entrance marker (18, 14)
+        ctx.fillStyle = '#2288FF';
+        ctx.beginPath();
+        ctx.arc(offset + 18 * scale, offset + 14 * scale, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#44AAFF';
+        ctx.font = '9px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('Cave Portal', offset + 18 * scale + 6, offset + 14 * scale + 3);
+
+        // Volcano landmark (110, 0)
+        ctx.fillStyle = '#FF4400';
+        ctx.beginPath();
+        ctx.moveTo(offset + 110 * scale, offset - 5);
+        ctx.lineTo(offset + 110 * scale - 4, offset + 3);
+        ctx.lineTo(offset + 110 * scale + 4, offset + 3);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#FF6622';
+        ctx.font = '9px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('Volcano', offset + 110 * scale + 5, offset + 2);
+
         // Water (pond)
         ctx.fillStyle = '#3388BB';
+        ctx.textAlign = 'center';
         ctx.beginPath();
         ctx.arc(offset + 25 * scale, offset + 20 * scale, 5 * scale, 0, Math.PI * 2);
         ctx.fill();

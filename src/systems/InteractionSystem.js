@@ -10,10 +10,36 @@ export class InteractionSystem {
         this.hoveredMesh = null;
         this._crosshair = document.getElementById('crosshair');
         this._targetInfo = document.getElementById('target-info');
+        this._raycastCounter = 0;
+
+        // Tap-to-interact: NDC override for mobile raycasting
+        this._tapNDC = null;
+    }
+
+    /** Set a tap NDC position to override the default center-screen raycast */
+    setTapNDC(ndc) {
+        this._tapNDC = ndc;
+        // Force raycast next frame by resetting counter
+        this._raycastCounter = 999;
     }
 
     update() {
-        this.raycaster.setFromCamera({ x: 0, y: 0 }, this.game.engine.camera);
+        if (++this._raycastCounter < 3) return; // ~20fps raycasting
+        this._raycastCounter = 0;
+
+        // Use tap NDC if available (mobile), otherwise center screen
+        const ndc = this._tapNDC || { x: 0, y: 0 };
+        const wasTap = this._tapNDC !== null;
+        this._tapNDC = null;
+
+        // For tap raycasts, extend the range so player can tap distant objects and walk to them
+        if (wasTap) {
+            this.raycaster.far = CONFIG.PLAYER.interactionRange * 4;
+        } else {
+            this.raycaster.far = CONFIG.PLAYER.interactionRange;
+        }
+
+        this.raycaster.setFromCamera(ndc, this.game.engine.camera);
         const hits = this.raycaster.intersectObjects(this.game.environment.interactables, true);
         this.hoveredEntity = null;
         this.hoveredMesh = null;
@@ -65,6 +91,7 @@ export class InteractionSystem {
         if (data.type === 'rune_altar') { infoText = 'Craft Runes'; color = '#CC88FF'; }
         if (data.type === 'church') { infoText = 'Pray at Church'; color = '#33DDDD'; }
         if (data.type === 'gravestone') { infoText = 'Reclaim items from gravestone'; color = '#AAAAAA'; }
+        if (data.type === 'portal') { infoText = `Enter ${data.name || 'Portal'}`; color = '#9933FF'; }
 
         this._targetInfo.textContent = infoText;
         this._targetInfo.style.color = color;
@@ -93,6 +120,7 @@ export class InteractionSystem {
         else if (data.type === 'rune_altar') this._handleRuneAltarClick();
         else if (data.type === 'church') this._handleChurchClick();
         else if (data.type === 'gravestone') this._handleGravestoneClick();
+        else if (data.type === 'portal') this._handlePortalClick(data);
         else if (data.type === 'ladder') this._handleLadderClick(this.hoveredEntity);
     }
 
@@ -108,7 +136,23 @@ export class InteractionSystem {
         const player = this.game.player;
         player.stopActions();
         const dist = this.game.distanceToPlayer(monster.position);
-        if (dist > CONFIG.COMBAT.meleeRange) { this.game.addChatMessage("You're too far away to attack that.", 'system'); return; }
+        const maxRange = this.game.combatSystem._getMaxRange(this.game.player);
+        if (dist > maxRange) {
+            // Mobile: auto-walk to monster then attack
+            player.walkToTarget = {
+                position: monster.position,
+                range: maxRange,
+                onArrive: () => {
+                    if (!monster.alive) return;
+                    player.inCombat = true;
+                    player.combatTarget = monster;
+                    player.attackTimer = 0;
+                    monster.startCombat();
+                    this.game.addChatMessage(`You attack the ${monster.name}.`);
+                }
+            };
+            return;
+        }
         player.inCombat = true;
         player.combatTarget = monster;
         player.attackTimer = 0;
@@ -121,7 +165,26 @@ export class InteractionSystem {
         const player = this.game.player;
         player.stopActions();
         const dist = this.game.distanceToPlayer(node.mesh.position);
-        if (dist > CONFIG.PLAYER.interactionRange) { this.game.addChatMessage("You're too far away.", 'system'); return; }
+        if (dist > CONFIG.PLAYER.interactionRange) {
+            // Auto-walk to resource
+            player.walkToTarget = {
+                position: node.mesh.position,
+                range: CONFIG.PLAYER.interactionRange * 0.9,
+                onArrive: () => {
+                    if (node.depleted) return;
+                    const skillLevel = player.skills[skillType].level;
+                    if (skillLevel < node.requiredLevel) {
+                        this.game.addChatMessage(`You need level ${node.requiredLevel} ${CONFIG.SKILLS[skillType].name} to do that.`, 'system');
+                        return;
+                    }
+                    player.skilling = true;
+                    player.skillingTarget = node;
+                    player.skillingType = skillType;
+                    this.game.addChatMessage(`You swing your ${skillType === 'woodcutting' ? 'axe' : 'pickaxe'} at the ${node.name}.`);
+                }
+            };
+            return;
+        }
         const skillLevel = player.skills[skillType].level;
         if (skillLevel < node.requiredLevel) {
             this.game.addChatMessage(`You need level ${node.requiredLevel} ${CONFIG.SKILLS[skillType].name} to do that.`, 'system');
@@ -135,7 +198,25 @@ export class InteractionSystem {
 
     _handleGroundItemClick(mesh, entity) {
         const dist = this.game.distanceToPlayer(mesh.position);
-        if (dist > CONFIG.PLAYER.interactionRange) { this.game.addChatMessage("You're too far away.", 'system'); return; }
+        if (dist > CONFIG.PLAYER.interactionRange) {
+            // Auto-walk to ground item
+            const player = this.game.player;
+            player.walkToTarget = {
+                position: mesh.position,
+                range: CONFIG.PLAYER.interactionRange * 0.9,
+                onArrive: () => {
+                    this._handleGroundItemClick(mesh, entity);
+                }
+            };
+            return;
+        }
+        // Server-tracked loot: ask server for pickup instead of local add
+        if (entity.serverId && this.game.networkManager?.connected) {
+            this.game.networkManager.sendPickupItem(entity.serverId);
+            this._animatePickup(mesh);
+            return;
+        }
+
         const added = this.game.inventorySystem.addItem(entity.itemId, entity.qty);
         if (added) {
             const itemDef = CONFIG.ITEMS[entity.itemId];
@@ -231,7 +312,19 @@ export class InteractionSystem {
         if (!npcConfig) return;
         const npcPos = this._getNPCPosition(npcId, npcConfig);
         const dist = this.game.distanceToPlayer(npcPos);
-        if (dist > CONFIG.PLAYER.interactionRange) { this.game.addChatMessage("You're too far away.", 'system'); return; }
+        if (dist > CONFIG.PLAYER.interactionRange) {
+            // Auto-walk to NPC
+            const player = this.game.player;
+            player.walkToTarget = {
+                position: npcPos,
+                range: CONFIG.PLAYER.interactionRange * 0.9,
+                onArrive: () => {
+                    player.stopActions();
+                    this.game.questSystem.openDialogue(npcId);
+                }
+            };
+            return;
+        }
         this.game.player.stopActions();
         this.game.questSystem.openDialogue(npcId);
     }
@@ -686,35 +779,86 @@ export class InteractionSystem {
 
     // ── Fletching: Craft arrows/bows from logs ──
     _handleFletching(logId) {
-        const player = this.game.player;
+        this._openFletchingUI(logId);
+    }
+
+    _openFletchingUI(logId) {
+        const overlay = document.getElementById('fletching-overlay');
+        const grid = document.getElementById('fletching-grid');
+        grid.textContent = '';
+
         const inv = this.game.inventorySystem;
-        const fletchLevel = player.skills.fletching?.level || 1;
+        const level = this.game.player.skills.fletching?.level || 1;
 
-        // Find all recipes that use this log type and the player can make
-        const candidates = [];
         for (const [productId, recipe] of Object.entries(CONFIG.FLETCHING)) {
-            if (recipe.logs === logId && fletchLevel >= recipe.level) {
-                candidates.push({ productId, recipe });
+            if (logId && recipe.logs !== logId) continue;
+
+            const itemDef = CONFIG.ITEMS[productId];
+            const logDef = CONFIG.ITEMS[recipe.logs];
+            const hasLevel = level >= recipe.level;
+            const hasLogs = inv.hasItem(recipe.logs);
+            const hasFeathers = recipe.feathers === 0 || inv.hasItem('feather', recipe.feathers);
+            const canFletch = hasLevel && hasLogs && hasFeathers;
+
+            const el = document.createElement('div');
+            el.className = `smelt-item${canFletch ? '' : ' disabled'}`;
+
+            const iconDiv = document.createElement('div');
+            iconDiv.className = 'smelt-item-icon';
+            iconDiv.textContent = itemDef?.icon || '?';
+            el.appendChild(iconDiv);
+
+            const nameDiv = document.createElement('div');
+            nameDiv.className = 'smelt-item-name';
+            nameDiv.textContent = `${recipe.name} (x${recipe.qty})`;
+            el.appendChild(nameDiv);
+
+            const oresDiv = document.createElement('div');
+            oresDiv.className = 'smelt-item-ores';
+            const logSpan = document.createElement('span');
+            logSpan.className = hasLogs ? 'has-ore' : 'no-ore';
+            logSpan.textContent = `1x ${logDef?.name || recipe.logs}`;
+            oresDiv.appendChild(logSpan);
+            if (recipe.feathers > 0) {
+                oresDiv.appendChild(document.createTextNode(', '));
+                const featherSpan = document.createElement('span');
+                featherSpan.className = hasFeathers ? 'has-ore' : 'no-ore';
+                featherSpan.textContent = `${recipe.feathers}x Feather`;
+                oresDiv.appendChild(featherSpan);
             }
+            el.appendChild(oresDiv);
+
+            if (!hasLevel) {
+                const lvlDiv = document.createElement('div');
+                lvlDiv.className = 'smelt-item-level';
+                lvlDiv.textContent = `Lvl ${recipe.level}`;
+                el.appendChild(lvlDiv);
+            }
+
+            if (canFletch) {
+                el.addEventListener('click', () => {
+                    this._doFletch(productId, recipe);
+                    this._openFletchingUI(logId); // Refresh
+                });
+            }
+            grid.appendChild(el);
         }
 
-        if (candidates.length === 0) {
-            this.game.addChatMessage("You don't have the Fletching level to make anything with those logs.", 'system');
-            return;
+        overlay.classList.remove('hidden');
+        this.game.input.cursorMode = true;
+        document.exitPointerLock();
+        document.getElementById('fletching-close').onclick = () => this._closeFletchingUI();
+        document.addEventListener('keydown', this._fletchingEscHandler = (e) => {
+            if (e.key === 'Escape') this._closeFletchingUI();
+        });
+    }
+
+    _closeFletchingUI() {
+        document.getElementById('fletching-overlay')?.classList.add('hidden');
+        if (this._fletchingEscHandler) {
+            document.removeEventListener('keydown', this._fletchingEscHandler);
+            this._fletchingEscHandler = null;
         }
-
-        // Prefer the highest-level arrow recipe, then bows
-        const arrowRecipes = candidates.filter(c => c.recipe.feathers > 0);
-        const bowRecipes = candidates.filter(c => c.recipe.feathers === 0);
-
-        // Try arrows first (higher priority), then bows
-        const ordered = [...arrowRecipes.reverse(), ...bowRecipes.reverse()];
-
-        for (const { productId, recipe } of ordered) {
-            if (this._doFletch(productId, recipe)) return;
-        }
-
-        this.game.addChatMessage("You don't have the required materials.", 'system');
     }
 
     _doFletch(productId, recipe) {
@@ -777,8 +921,10 @@ export class InteractionSystem {
             return;
         }
 
-        // Success/fail roll
-        const successChance = thievingData.successBase + (level - thievingData.requiredLevel) * 0.02;
+        // Success/fail roll (diminishing returns)
+        const thievDiff = Math.max(0, level - thievingData.requiredLevel);
+        const thievBonus = 0.5 * (1 - thievingData.successBase) * (thievDiff / (thievDiff + 30));
+        const successChance = Math.min(0.85, thievingData.successBase + thievBonus);
         if (Math.random() < successChance) {
             // Success!
             const inv = this.game.inventorySystem;
@@ -835,49 +981,122 @@ export class InteractionSystem {
         }
     }
 
+    _handlePortalClick(data) {
+        if (!this.hoveredMesh) return;
+        const dist = this.game.distanceToPlayer(this.hoveredMesh.position);
+        if (dist > CONFIG.PLAYER.interactionRange + 4) { this.game.addChatMessage("You're too far away.", 'system'); return; }
+
+        // Also check _entityRef for target data (Groups may store data there)
+        const ref = this.hoveredMesh._entityRef || {};
+        const targetX = data.targetX !== undefined ? data.targetX : ref.targetX;
+        const targetZ = data.targetZ !== undefined ? data.targetZ : ref.targetZ;
+        const targetY = data.targetY !== undefined ? data.targetY : ref.targetY;
+        if (targetX === undefined || targetZ === undefined) { this.game.addChatMessage("The portal seems unstable...", 'system'); return; }
+
+        // Teleport player
+        this.game.audio.playCast?.();
+        const y = targetY !== undefined ? targetY : this.game.terrain.getHeightAt(targetX, targetZ) + 1.6;
+        this.game.player.position.set(targetX, y, targetZ);
+        this.game.player.velocity.set(0, 0, 0);
+        this.game.player.onGround = true;
+        this.game.addChatMessage('You step through the portal...', 'system');
+    }
+
     // ── Herblore: Brew potions at campfire ──
     handlePotionBrew() {
-        const player = this.game.player;
         const campfirePos = this.game.environment.campfirePosition;
         if (!campfirePos) { this.game.addChatMessage("You need to be near a campfire.", 'system'); return; }
         const dist = this.game.distanceToPlayer(campfirePos);
         if (dist > CONFIG.PLAYER.interactionRange) { this.game.addChatMessage("You need to be near a campfire.", 'system'); return; }
+        this._openHerbloreUI();
+    }
+
+    _openHerbloreUI() {
+        const overlay = document.getElementById('herblore-overlay');
+        const grid = document.getElementById('herblore-grid');
+        grid.textContent = '';
 
         const inv = this.game.inventorySystem;
-        const herbloreLevel = player.skills.herblore?.level || 1;
+        const level = this.game.player.skills.herblore?.level || 1;
 
-        // Find highest-level potion the player can make
-        let bestPotion = null;
-        let bestPotionId = null;
         for (const [potionId, recipe] of Object.entries(CONFIG.HERBLORE)) {
-            if (herbloreLevel >= recipe.level) {
-                if (inv.countItem('herb') >= recipe.herb && inv.countItem('vial') >= recipe.vial) {
-                    if (!bestPotion || recipe.level > bestPotion.level) {
-                        bestPotion = recipe;
-                        bestPotionId = potionId;
-                    }
-                }
+            const itemDef = CONFIG.ITEMS[potionId];
+            const hasLevel = level >= recipe.level;
+            const herbCount = inv.countItem('herb');
+            const vialCount = inv.countItem('vial');
+            const hasHerbs = herbCount >= recipe.herb;
+            const hasVials = vialCount >= recipe.vial;
+            const canBrew = hasLevel && hasHerbs && hasVials;
+
+            const el = document.createElement('div');
+            el.className = `smelt-item${canBrew ? '' : ' disabled'}`;
+
+            const iconDiv = document.createElement('div');
+            iconDiv.className = 'smelt-item-icon';
+            iconDiv.textContent = itemDef?.icon || '\u2697\uFE0F';
+            el.appendChild(iconDiv);
+
+            const nameDiv = document.createElement('div');
+            nameDiv.className = 'smelt-item-name';
+            nameDiv.textContent = recipe.name;
+            el.appendChild(nameDiv);
+
+            const oresDiv = document.createElement('div');
+            oresDiv.className = 'smelt-item-ores';
+            const herbSpan = document.createElement('span');
+            herbSpan.className = hasHerbs ? 'has-ore' : 'no-ore';
+            herbSpan.textContent = `${recipe.herb}x Herb`;
+            oresDiv.appendChild(herbSpan);
+            oresDiv.appendChild(document.createTextNode(', '));
+            const vialSpan = document.createElement('span');
+            vialSpan.className = hasVials ? 'has-ore' : 'no-ore';
+            vialSpan.textContent = `${recipe.vial}x Vial`;
+            oresDiv.appendChild(vialSpan);
+            el.appendChild(oresDiv);
+
+            if (!hasLevel) {
+                const lvlDiv = document.createElement('div');
+                lvlDiv.className = 'smelt-item-level';
+                lvlDiv.textContent = `Lvl ${recipe.level}`;
+                el.appendChild(lvlDiv);
             }
+
+            if (canBrew) {
+                el.addEventListener('click', () => this._doHerblore(potionId, recipe));
+            }
+            grid.appendChild(el);
         }
 
-        if (!bestPotion) {
-            this.game.addChatMessage("You don't have the herbs and vials, or your Herblore level is too low.", 'system');
-            return;
-        }
+        overlay.classList.remove('hidden');
+        this.game.input.cursorMode = true;
+        document.exitPointerLock();
+        document.getElementById('herblore-close').onclick = () => this._closeHerbloreUI();
+        document.addEventListener('keydown', this._herbloreEscHandler = (e) => {
+            if (e.key === 'Escape') this._closeHerbloreUI();
+        });
+    }
 
-        // Remove ingredients first (frees slots for the potion)
-        inv.removeItem('herb', bestPotion.herb);
-        inv.removeItem('vial', bestPotion.vial);
-        // Try to add the potion
-        if (!inv.addItem(bestPotionId, 1)) {
-            // Safety: give ingredients back if somehow still full
-            inv.addItem('herb', bestPotion.herb);
-            inv.addItem('vial', bestPotion.vial);
+    _closeHerbloreUI() {
+        document.getElementById('herblore-overlay')?.classList.add('hidden');
+        if (this._herbloreEscHandler) {
+            document.removeEventListener('keydown', this._herbloreEscHandler);
+            this._herbloreEscHandler = null;
+        }
+    }
+
+    _doHerblore(potionId, recipe) {
+        const inv = this.game.inventorySystem;
+        inv.removeItem('herb', recipe.herb);
+        inv.removeItem('vial', recipe.vial);
+        if (!inv.addItem(potionId, 1)) {
+            inv.addItem('herb', recipe.herb);
+            inv.addItem('vial', recipe.vial);
             this.game.addChatMessage("Your inventory is full!", 'system');
             return;
         }
-        this.game.skillSystem.addXP('herblore', bestPotion.xp);
-        this.game.addChatMessage(`You brew a ${bestPotion.name}.`, 'level-up');
+        this.game.skillSystem.addXP('herblore', recipe.xp);
+        this.game.addChatMessage(`You brew a ${recipe.name}.`);
+        this._openHerbloreUI(); // Refresh
     }
 
     // ── Clue Scroll Actions ──

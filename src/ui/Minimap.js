@@ -9,9 +9,12 @@ export class Minimap {
 
         this.scale = 2; // pixels per world unit
         this.size = 152;
+        this._frameCounter = 0;
     }
 
     update() {
+        if (++this._frameCounter < 15) return; // ~4fps redraw
+        this._frameCounter = 0;
         const ctx = this.ctx;
         const player = this.game.player;
         const input = this.game.input;
@@ -22,9 +25,10 @@ export class Minimap {
         let bgColor = '#2D5A1E';
         if (!inDungeon && CONFIG.BIOMES) {
             const px = player.position.x, pz = player.position.z;
-            if (px > 50) bgColor = '#C2B280';
-            else if (px < -30 && pz > 25) bgColor = '#3B5323';
-            else if (pz < -75) bgColor = '#D0D8E8';
+            if (px > 85) bgColor = '#3D1F0F';       // volcanic
+            else if (px > 50) bgColor = '#C2B280';  // desert
+            else if (px < -30 && pz > 25) bgColor = '#3B5323'; // swamp
+            else if (pz < -75) bgColor = '#D0D8E8'; // ice
         }
         ctx.fillStyle = inDungeon ? '#222222' : bgColor;
         ctx.fillRect(0, 0, this.size, this.size);
@@ -49,18 +53,19 @@ export class Minimap {
         ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
         ctx.lineWidth = 0.5;
         const gridSize = 10 * this.scale;
-        for (let x = -200; x <= 200; x += gridSize) {
+        const gridBound = CONFIG.WORLD.size * this.scale;
+        for (let x = -gridBound; x <= gridBound; x += gridSize) {
             const wx = (x - player.position.x * this.scale);
             ctx.beginPath();
-            ctx.moveTo(wx, -200);
-            ctx.lineTo(wx, 200);
+            ctx.moveTo(wx, -gridBound);
+            ctx.lineTo(wx, gridBound);
             ctx.stroke();
         }
-        for (let z = -200; z <= 200; z += gridSize) {
+        for (let z = -gridBound; z <= gridBound; z += gridSize) {
             const wz = (z - player.position.z * this.scale);
             ctx.beginPath();
-            ctx.moveTo(-200, wz);
-            ctx.lineTo(200, wz);
+            ctx.moveTo(-gridBound, wz);
+            ctx.lineTo(gridBound, wz);
             ctx.stroke();
         }
 

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>FPScape</title>
     <link rel="stylesheet" href="style.css">
     <script type="importmap">
@@ -15,7 +15,7 @@
     </script>
 </head>
 <body>
-    <canvas id="game-canvas"></canvas>
+    <canvas id="game-canvas" tabindex="-1"></canvas>
 
     <div id="hud">
         <div id="crosshair">+</div>
@@ -65,6 +65,7 @@
                         <div class="equip-title">Equipment</div>
                         <div id="equipment-slots"></div>
                         <div id="equipment-stats"></div>
+                        <div id="ammo-display" class="hidden"></div>
                     </div>
                 </div>
                 <div id="tab-prayer" class="tab-panel">
@@ -150,6 +151,9 @@
         <!-- Wilderness atmosphere vignette -->
         <div id="wilderness-vignette" class="wilderness-vignette"></div>
 
+        <!-- Underwater cave overlay -->
+        <div id="underwater-overlay"></div>
+
         <!-- Death overlay -->
         <div id="death-overlay">
             <div style="text-align: center">
@@ -211,6 +215,24 @@
             <div id="smelting-grid"></div>
         </div>
 
+        <!-- Herblore overlay -->
+        <div id="herblore-overlay" class="overlay-panel hidden">
+            <div class="overlay-header">
+                <span>Brew Potion</span>
+                <button id="herblore-close" class="overlay-btn">X</button>
+            </div>
+            <div id="herblore-grid"></div>
+        </div>
+
+        <!-- Fletching overlay -->
+        <div id="fletching-overlay" class="overlay-panel hidden">
+            <div class="overlay-header">
+                <span>Fletch</span>
+                <button id="fletching-close" class="overlay-btn">X</button>
+            </div>
+            <div id="fletching-grid"></div>
+        </div>
+
         <!-- Shop overlay -->
         <div id="shop-overlay" class="overlay-panel hidden">
             <div class="overlay-header">
@@ -218,6 +240,52 @@
                 <button id="shop-close" class="overlay-btn">X</button>
             </div>
             <div id="shop-grid" class="overlay-grid"></div>
+        </div>
+
+        <!-- Grand Exchange overlay -->
+        <div id="ge-overlay" class="overlay-panel hidden">
+            <div class="overlay-header">
+                <span>Grand Exchange</span>
+                <div id="ge-mode-buttons">
+                    <button class="ge-mode-btn active" data-mode="buy">Buy</button>
+                    <button class="ge-mode-btn" data-mode="sell">Sell</button>
+                </div>
+                <button id="ge-close" class="overlay-btn">X</button>
+            </div>
+            <input type="text" id="ge-search" placeholder="Search items..." autocomplete="off">
+            <div id="ge-grid" class="ge-grid"></div>
+        </div>
+
+        <!-- Trade overlay -->
+        <div id="trade-overlay" class="overlay-panel hidden">
+            <div class="overlay-header">
+                <span>Trading with <span id="trade-partner-name">Player</span></span>
+                <button id="trade-decline-btn" class="overlay-btn">Decline</button>
+            </div>
+            <div id="trade-columns">
+                <div class="trade-column">
+                    <div class="trade-col-title">Your Offer <span id="trade-my-status" class="trade-status">⏳ Waiting...</span></div>
+                    <div id="trade-my-grid" class="trade-grid"></div>
+                </div>
+                <div class="trade-column">
+                    <div class="trade-col-title">Their Offer <span id="trade-their-status" class="trade-status">⏳ Waiting...</span></div>
+                    <div id="trade-their-grid" class="trade-grid"></div>
+                </div>
+            </div>
+            <div id="trade-buttons">
+                <button id="trade-accept-btn" class="overlay-btn trade-accept">Accept</button>
+            </div>
+        </div>
+
+        <!-- Trade request popup -->
+        <div id="trade-request-popup" class="hidden">
+            <div class="trade-req-box">
+                <div><span id="trade-req-name">Player</span> wants to trade with you</div>
+                <div class="trade-req-btns">
+                    <button id="trade-req-accept" class="overlay-btn">Accept</button>
+                    <button id="trade-req-decline" class="overlay-btn">Decline</button>
+                </div>
+            </div>
         </div>
 
         <!-- World map overlay -->
@@ -277,6 +345,30 @@
 
         <!-- Clue scroll overlay -->
         <div id="clue-overlay" class="hidden"></div>
+
+        <!-- Cutscene overlay -->
+        <div id="cutscene-overlay" class="hidden">
+            <div id="cutscene-bar-top"></div>
+            <div id="cutscene-text" class="hidden"></div>
+            <div id="cutscene-bar-bottom"></div>
+        </div>
+
+        <!-- Mobile touch joystick -->
+        <div id="touch-joystick" class="hidden">
+            <div id="joystick-base">
+                <div id="joystick-thumb"></div>
+            </div>
+        </div>
+
+        <!-- Mobile action bar -->
+        <div id="mobile-action-bar" class="hidden">
+            <button class="action-btn" data-action="attack" title="Attack">&#9876;</button>
+            <button class="action-btn" data-action="eat" title="Eat">&#127836;</button>
+            <button class="action-btn" data-action="pray" title="Pray">&#10024;</button>
+            <button class="action-btn" data-action="run" title="Run">&#127939;</button>
+            <button class="action-btn" data-action="inventory" title="Inventory">&#128188;</button>
+            <button class="action-btn" data-action="map" title="Map">&#128506;</button>
+        </div>
 
         <!-- Click to start overlay -->
         <div id="start-overlay" class="menu-mode">

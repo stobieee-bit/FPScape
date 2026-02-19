@@ -16,6 +16,7 @@ export class InventorySystem {
             const existing = this.slots.findIndex(s => s && s.itemId === itemId);
             if (existing >= 0) {
                 this.slots[existing].quantity += quantity;
+                if (this.game.ui) this.game.ui.markDirty('inventory');
                 return true;
             }
         }
@@ -25,10 +26,12 @@ export class InventorySystem {
         if (empty < 0) return false; // Inventory full
 
         this.slots[empty] = { itemId, quantity };
+        if (this.game.ui) this.game.ui.markDirty('inventory');
         return true;
     }
 
     removeItem(itemId, quantity = 1) {
+        let removed = false;
         for (let i = 0; i < this.slots.length; i++) {
             const slot = this.slots[i];
             if (!slot || slot.itemId !== itemId) continue;
@@ -36,13 +39,16 @@ export class InventorySystem {
             if (slot.quantity <= quantity) {
                 this.slots[i] = null;
                 quantity -= slot.quantity;
-                if (quantity <= 0) return true;
+                removed = true;
+                if (quantity <= 0) break;
             } else {
                 slot.quantity -= quantity;
-                return true;
+                removed = true;
+                break;
             }
         }
-        return false;
+        if (removed && this.game.ui) this.game.ui.markDirty('inventory');
+        return removed;
     }
 
     hasItem(itemId, quantity = 1) {
@@ -68,6 +74,28 @@ export class InventorySystem {
 
     countItem(itemId) { return this.getItemCount(itemId); }
 
+    /** Eat the best food item in inventory (mobile action bar helper) */
+    eatBestFood() {
+        for (let i = 0; i < this.slots.length; i++) {
+            const slot = this.slots[i];
+            if (!slot) continue;
+            const def = CONFIG.ITEMS[slot.itemId];
+            if (def && def.healAmount) {
+                const player = this.game.player;
+                if (player.hp >= player.maxHp) {
+                    this.game.addChatMessage('You are already at full health.', 'system');
+                    return;
+                }
+                player.hp = Math.min(player.maxHp, player.hp + def.healAmount);
+                this.removeItem(slot.itemId, 1);
+                this.game.addChatMessage(`You eat the ${def.name}. It heals ${def.healAmount}.`, 'system');
+                this.game.audio.playEat?.();
+                return;
+            }
+        }
+        this.game.addChatMessage('You have no food to eat.', 'system');
+    }
+
     isFull() {
         return this.slots.every(s => s !== null);
     }
@@ -85,6 +113,14 @@ export class InventorySystem {
         this.game.environment.spawnGroundItem(slot.itemId, slot.quantity, playerPos);
 
         this.slots[slotIndex] = null;
+    }
+
+    swapSlots(fromIndex, toIndex) {
+        if (fromIndex < 0 || fromIndex >= 28 || toIndex < 0 || toIndex >= 28) return;
+        if (fromIndex === toIndex) return;
+        const temp = this.slots[fromIndex];
+        this.slots[fromIndex] = this.slots[toIndex];
+        this.slots[toIndex] = temp;
     }
 
     getSlot(index) {

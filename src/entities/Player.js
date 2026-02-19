@@ -85,6 +85,13 @@ export class Player {
         // Pet tracking
         this.activePet = null;
 
+        // Magic auto-cast
+        this.autoCast = false;
+
+        // Walk-to-target for tap-to-interact (mobile auto-walk)
+        this.walkToTarget = null; // { position, range, onArrive }
+        this._autoWalking = false;
+
         // Cached vectors for movement calc
         this._forward = new THREE.Vector3();
         this._right = new THREE.Vector3();
@@ -209,6 +216,9 @@ export class Player {
         this.combatTarget = null;
         this.currentDungeonFloor = -1;
         this.activePet = null;
+        this.autoCast = false;
+        this.walkToTarget = null;
+        this._autoWalking = false;
     }
 
     stopActions() {
@@ -218,6 +228,8 @@ export class Player {
         this.skilling = false;
         this.skillingTarget = null;
         this.skillingType = null;
+        this.walkToTarget = null;
+        this._autoWalking = false;
     }
 
     eat(itemId) {

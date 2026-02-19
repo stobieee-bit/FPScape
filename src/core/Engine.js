@@ -5,12 +5,20 @@ export class Engine {
     constructor(canvas) {
         this.canvas = canvas;
 
+        // Mobile detection
+        this.isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+        const mob = this.isMobile ? CONFIG.MOBILE : null;
+
         // Renderer
-        this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+        this.renderer = new THREE.WebGLRenderer({
+            canvas,
+            antialias: mob ? !mob.disableAntiAlias : true,
+            powerPreference: this.isMobile ? 'low-power' : 'high-performance',
+        });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
-        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        this.renderer.setPixelRatio(mob ? mob.pixelRatio : Math.min(window.devicePixelRatio, 2));
         this.renderer.shadowMap.enabled = true;
-        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        this.renderer.shadowMap.type = this.isMobile ? THREE.BasicShadowMap : THREE.PCFShadowMap;
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
         this.renderer.toneMappingExposure = 1.0;
 
@@ -19,8 +27,8 @@ export class Engine {
         this.scene.background = new THREE.Color(CONFIG.VISUAL.skyColor);
         this.scene.fog = new THREE.Fog(
             CONFIG.VISUAL.fogColor,
-            CONFIG.VISUAL.fogNear,
-            CONFIG.VISUAL.fogFar
+            mob ? mob.fogNear : CONFIG.VISUAL.fogNear,
+            mob ? mob.fogFar : CONFIG.VISUAL.fogFar
         );
 
         // Camera
@@ -64,19 +72,20 @@ export class Engine {
 
     _setupLighting() {
         const v = CONFIG.VISUAL;
+        const shadowSize = this.isMobile && CONFIG.MOBILE ? CONFIG.MOBILE.shadowMapSize : 1024;
 
         // Directional light (sun)
         this.sunLight = new THREE.DirectionalLight(v.sunColor, v.sunIntensity);
         this.sunLight.position.set(v.sunPosition.x, v.sunPosition.y, v.sunPosition.z);
         this.sunLight.castShadow = true;
-        this.sunLight.shadow.mapSize.width = 2048;
-        this.sunLight.shadow.mapSize.height = 2048;
+        this.sunLight.shadow.mapSize.width = shadowSize;
+        this.sunLight.shadow.mapSize.height = shadowSize;
         this.sunLight.shadow.camera.near = 1;
         this.sunLight.shadow.camera.far = 200;
-        this.sunLight.shadow.camera.left = -60;
-        this.sunLight.shadow.camera.right = 60;
-        this.sunLight.shadow.camera.top = 60;
-        this.sunLight.shadow.camera.bottom = -60;
+        this.sunLight.shadow.camera.left = -30;
+        this.sunLight.shadow.camera.right = 30;
+        this.sunLight.shadow.camera.top = 30;
+        this.sunLight.shadow.camera.bottom = -30;
         this.sunLight.shadow.bias = -0.001;
         this.scene.add(this.sunLight);
 
@@ -620,6 +629,47 @@ export class Engine {
         // Store sun base offset for updateSunTarget
         this._sunBaseX = sunX;
         this._sunBaseY = Math.max(5, sunY); // keep above horizon for shadow
+    }
+
+    /**
+     * Dynamic shadow culling — toggle castShadow based on distance to player.
+     * Objects within 30u cast shadows; beyond 35u they stop (hysteresis band to avoid flicker).
+     * Called once per second from the game loop for performance.
+     */
+    updateShadowCasters(playerPos) {
+        const SHADOW_ON = 30;
+        const SHADOW_OFF = 35;
+        this.scene.traverse((obj) => {
+            if (!obj.isMesh) return;
+            // Skip ground plane / terrain (always receive, never cast per Three.js default)
+            if (obj.userData && obj.userData.isTerrain) return;
+            // Only manage objects that were originally set to cast shadows
+            if (obj._shadowOriginal === undefined) {
+                // First time: record whether this mesh was originally a shadow caster
+                obj._shadowOriginal = obj.castShadow;
+            }
+            if (!obj._shadowOriginal) return; // was never a caster, skip
+
+            const dx = obj.position.x - playerPos.x;
+            const dz = obj.position.z - playerPos.z;
+            // Use world position for grouped objects
+            let wx = dx, wz = dz;
+            if (obj.parent && obj.parent !== this.scene) {
+                // Object is inside a group — use the group's world position
+                const wp = new THREE.Vector3();
+                obj.getWorldPosition(wp);
+                wx = wp.x - playerPos.x;
+                wz = wp.z - playerPos.z;
+            }
+            const distSq = wx * wx + wz * wz;
+
+            if (distSq < SHADOW_ON * SHADOW_ON) {
+                obj.castShadow = true;
+            } else if (distSq > SHADOW_OFF * SHADOW_OFF) {
+                obj.castShadow = false;
+            }
+            // Between 30-35: keep current state (hysteresis)
+        });
     }
 
     // Update sun shadow camera to follow player for nearby shadow detail

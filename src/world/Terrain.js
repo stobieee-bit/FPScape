@@ -80,6 +80,13 @@ export class Terrain {
                     g = g + (0.91 - g) * t;
                     b = b + (0.94 - b) * t;
                 }
+                // Volcanic (x > 85): blend toward dark red-brown charred ground
+                if (x > 85) {
+                    const t = Math.min(1, (x - 85) / 20);
+                    r = r + (0.25 - r) * t;
+                    g = g + (0.12 - g) * t;
+                    b = b + (0.08 - b) * t;
+                }
             }
 
             colors[i * 3] = r;

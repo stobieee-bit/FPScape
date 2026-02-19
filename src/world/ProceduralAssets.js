@@ -5,6 +5,38 @@ function at(obj, x, y, z) { obj.position.set(x, y, z); return obj; }
 
 export class ProceduralAssets {
     constructor() {
+        // ── Material cache: avoids creating duplicate MeshStandardMaterials ──
+        this._matCache = new Map();
+
+        // Pre-generate varied leaf materials (12 per type) to avoid per-tree allocation
+        this._leafMaterials = {};
+        for (const type of ['normal', 'oak', 'willow']) {
+            this._leafMaterials[type] = [];
+            const baseColors = {
+                normal: { h: 0.36, s: 0.65, l: 0.35 },
+                oak:    { h: 0.38, s: 0.70, l: 0.26 },
+                willow: { h: 0.34, s: 0.55, l: 0.47 },
+            };
+            const base = baseColors[type];
+            for (let i = 0; i < 12; i++) {
+                const h = base.h + (Math.random() - 0.5) * 0.08;
+                const s = Math.max(0.3, Math.min(0.9, base.s + (Math.random() - 0.5) * 0.2));
+                const l = Math.max(0.18, Math.min(0.55, base.l + (Math.random() - 0.5) * 0.12));
+                const color = new THREE.Color().setHSL(h, s, l);
+                this._leafMaterials[type].push(new THREE.MeshStandardMaterial({ color, roughness: 0.8 }));
+            }
+        }
+
+        // Add palm leaf materials
+        this._leafMaterials['palm'] = [];
+        for (let i = 0; i < 12; i++) {
+            const h = 0.35 + (Math.random() - 0.5) * 0.06;
+            const s = Math.max(0.3, Math.min(0.8, 0.6 + (Math.random() - 0.5) * 0.2));
+            const l = Math.max(0.2, Math.min(0.5, 0.35 + (Math.random() - 0.5) * 0.1));
+            const color = new THREE.Color().setHSL(h, s, l);
+            this._leafMaterials['palm'].push(new THREE.MeshStandardMaterial({ color, roughness: 0.8, side: THREE.DoubleSide }));
+        }
+
         this.materials = {
             trunk: new THREE.MeshStandardMaterial({ color: 0x6B4226, roughness: 0.9 }),
             leaves: new THREE.MeshStandardMaterial({ color: 0x2D8C3C, roughness: 0.8 }),
@@ -53,68 +85,231 @@ export class ProceduralAssets {
             agilityLog: new THREE.MeshStandardMaterial({ color: 0x6B4226, roughness: 0.9 }),
             agilityNet: new THREE.MeshStandardMaterial({ color: 0xCCBB88, roughness: 0.9, wireframe: true }),
             altarStone: new THREE.MeshStandardMaterial({ color: 0x7777AA, roughness: 0.7, metalness: 0.2 }),
+            // Shared materials previously created inline in monster builders
+            redEyes: new THREE.MeshStandardMaterial({ color: 0xFF0000 }),
+            redGlowEyes: new THREE.MeshStandardMaterial({ color: 0xFF0000, emissive: 0xFF0000, emissiveIntensity: 0.3 }),
+            demonHorn: new THREE.MeshStandardMaterial({ color: 0x333333 }),
+            skeletonEyes: new THREE.MeshStandardMaterial({ color: 0x220000, emissive: 0x440000, emissiveIntensity: 0.5 }),
+            skeletonSword: new THREE.MeshStandardMaterial({ color: 0x999999, metalness: 0.6, roughness: 0.3 }),
+            wizardOrb: new THREE.MeshStandardMaterial({ color: 0x8800FF, emissive: 0x4400AA, emissiveIntensity: 0.5 }),
+            wizardRedEyes: new THREE.MeshStandardMaterial({ color: 0xFF0000, emissive: 0xFF0000, emissiveIntensity: 0.6 }),
+            demonYellowEyes: new THREE.MeshStandardMaterial({ color: 0xFFFF00, emissive: 0xFF8800, emissiveIntensity: 0.8 }),
+            kbdRedEyes: new THREE.MeshStandardMaterial({ color: 0xFF0000, emissive: 0xFF0000, emissiveIntensity: 1.0 }),
+            mossGiant: new THREE.MeshStandardMaterial({ color: 0x3B6B2A, roughness: 0.85 }),
+            shadowWarrior: new THREE.MeshStandardMaterial({ color: 0x1A1A2E, roughness: 0.7, emissive: 0x110022, emissiveIntensity: 0.3 }),
+            shadowEyes: new THREE.MeshStandardMaterial({ color: 0xAA00FF, emissive: 0x8800CC, emissiveIntensity: 1.0 }),
+            shadowBlade: new THREE.MeshStandardMaterial({ color: 0x333344, metalness: 0.8 }),
+            demonLord: new THREE.MeshStandardMaterial({ color: 0x8B0000, roughness: 0.6, emissive: 0x330000, emissiveIntensity: 0.4 }),
+            demonLordEyes: new THREE.MeshStandardMaterial({ color: 0xFF4400, emissive: 0xFF2200, emissiveIntensity: 1.0 }),
+            demonLordHorn: new THREE.MeshStandardMaterial({ color: 0x222222 }),
+            demonLordWing: new THREE.MeshStandardMaterial({ color: 0x440000, side: THREE.DoubleSide }),
+            pinkNose: new THREE.MeshStandardMaterial({ color: 0xFF8888 }),
+            flameMat: new THREE.MeshBasicMaterial({ color: 0xFF6600, transparent: true, opacity: 0.8 }),
+            eyeBlack: new THREE.MeshStandardMaterial({ color: 0x222222 }),
+            sandstone: new THREE.MeshStandardMaterial({ color: 0xD2B48C, roughness: 0.85 }),
+            sandstoneRoof: new THREE.MeshStandardMaterial({ color: 0xBFA77A, roughness: 0.9 }),
+            palmTrunk: new THREE.MeshStandardMaterial({ color: 0x8B7355, roughness: 0.9 }),
+            palmLeaf: new THREE.MeshStandardMaterial({ color: 0x3B7A35, roughness: 0.8, side: THREE.DoubleSide }),
+            obsidianOre: new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.3, metalness: 0.5 }),
+            volcanicRock: new THREE.MeshStandardMaterial({ color: 0x3A2A1A, roughness: 0.95 }),
+            fireElementalBody: new THREE.MeshStandardMaterial({ color: 0xFF6600, emissive: 0xFF4400, emissiveIntensity: 0.9 }),
+            fireElementalCore: new THREE.MeshStandardMaterial({ color: 0xFFAA00, emissive: 0xFF8800, emissiveIntensity: 0.8 }),
+            desertGuardArmor: new THREE.MeshStandardMaterial({ color: 0xC2A060, roughness: 0.7, metalness: 0.3 }),
+            seaSerpentBody: new THREE.MeshStandardMaterial({ color: 0x1A6B5A, roughness: 0.6 }),
+            seaSerpentEye: new THREE.MeshStandardMaterial({ color: 0xFF0000, emissive: 0xFF0000, emissiveIntensity: 0.5 }),
+            caveMushroom: new THREE.MeshStandardMaterial({ color: 0x00CCAA, emissive: 0x00AA88, emissiveIntensity: 0.8 }),
+            caveFloor: new THREE.MeshStandardMaterial({ color: 0x2A3A4A, roughness: 0.95 }),
+            portalBlue: new THREE.MeshStandardMaterial({ color: 0x2288FF, emissive: 0x1166CC, emissiveIntensity: 0.6, transparent: true, opacity: 0.7 }),
+            scorpionBody: new THREE.MeshStandardMaterial({ color: 0x8B5A2B, roughness: 0.7 }),
+            giantFrogBody: new THREE.MeshStandardMaterial({ color: 0x4CAF50, roughness: 0.8 }),
+            giantFrogEye: new THREE.MeshStandardMaterial({ color: 0xFFFF00 }),
+            iceWolfBody: new THREE.MeshStandardMaterial({ color: 0xCCDDEE, roughness: 0.5, emissive: 0x223344, emissiveIntensity: 0.2 }),
+            iceWolfEye: new THREE.MeshStandardMaterial({ color: 0x44AAFF, emissive: 0x2288FF, emissiveIntensity: 1.0 }),
+            crabBody: new THREE.MeshStandardMaterial({ color: 0xCC4422, roughness: 0.8 }),
+            crabLeg: new THREE.MeshStandardMaterial({ color: 0xAA3322, roughness: 0.7 }),
+            crabClaw: new THREE.MeshStandardMaterial({ color: 0xDD5533, roughness: 0.6 }),
+            crabStalk: new THREE.MeshStandardMaterial({ color: 0xBB4422 }),
         };
     }
 
     createTree(type = 'normal') {
+        if (type === 'palm') return this._buildPalmTree();
+
         const group = new THREE.Group();
-        const trunkH = type === 'willow' ? 4 : 3;
-        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.25, trunkH, 6), this.materials.trunk);
+
+        // --- Per-tree random variation for visual distinction ---
+        const scaleVar = 0.75 + Math.random() * 0.5; // 0.75–1.25
+        const heightVar = 0.85 + Math.random() * 0.3; // 0.85–1.15
+        const trunkThickVar = 0.8 + Math.random() * 0.4; // 0.8–1.2
+
+        const trunkH = (type === 'willow' ? 4 : 3) * heightVar;
+        const trunkTop = 0.15 * trunkThickVar;
+        const trunkBot = 0.25 * trunkThickVar;
+        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(trunkTop, trunkBot, trunkH, 6), this.materials.trunk);
         trunk.position.y = trunkH / 2; trunk.castShadow = true;
         // Slight random lean for natural variation
-        trunk.rotation.z = (Math.random() - 0.5) * 0.1;
-        trunk.rotation.x = (Math.random() - 0.5) * 0.06;
+        trunk.rotation.z = (Math.random() - 0.5) * 0.15;
+        trunk.rotation.x = (Math.random() - 0.5) * 0.1;
         group.add(trunk);
 
-        let leafMat = this.materials.leaves, radius = 1.6, canopyY = 3.5;
-        if (type === 'oak') { leafMat = this.materials.oakLeaves; radius = 2.2; canopyY = 4.0; }
-        if (type === 'willow') { leafMat = this.materials.willowLeaves; radius = 2.5; canopyY = 5.0; }
+        // Per-tree leaf color variation — hue-shift the base color for uniqueness
+        const leafMat = this._getVariedLeafMaterial(type);
+        let radius = 1.6, canopyY = 3.5;
+        if (type === 'oak') { radius = 2.2; canopyY = 4.0; }
+        if (type === 'willow') { radius = 2.5; canopyY = 5.0; }
+        radius *= scaleVar;
+        canopyY *= heightVar;
 
         // Main canopy with vertex displacement for organic look
         const canopyGeo = new THREE.IcosahedronGeometry(radius, 1);
-        this._displaceVertices(canopyGeo, type === 'willow' ? 0.3 : type === 'oak' ? 0.25 : 0.2);
+        this._displaceVertices(canopyGeo, type === 'willow' ? 0.35 : type === 'oak' ? 0.3 : 0.25);
         const canopy = new THREE.Mesh(canopyGeo, leafMat);
         canopy.position.y = canopyY; canopy.castShadow = true; group.add(canopy);
 
         // Secondary canopy blob offset to break the sphere silhouette
-        const subRadius = radius * (0.55 + Math.random() * 0.15);
+        const subRadius = radius * (0.5 + Math.random() * 0.2);
         const subGeo = new THREE.IcosahedronGeometry(subRadius, 1);
-        this._displaceVertices(subGeo, 0.15);
+        this._displaceVertices(subGeo, 0.2);
         const subCanopy = new THREE.Mesh(subGeo, leafMat);
+        const subAngle = Math.random() * Math.PI * 2;
         subCanopy.position.set(
-            (Math.random() - 0.5) * radius * 0.7,
-            canopyY - 0.5 - Math.random() * 0.3,
-            (Math.random() - 0.5) * radius * 0.7
+            Math.cos(subAngle) * radius * 0.5,
+            canopyY - 0.3 - Math.random() * 0.5,
+            Math.sin(subAngle) * radius * 0.5
         );
         subCanopy.castShadow = true; group.add(subCanopy);
 
-        // Root bumps at the base
-        for (let i = 0; i < 3; i++) {
-            const angle = (i / 3) * Math.PI * 2 + Math.random() * 0.5;
+        // Third canopy blob for fuller, more distinct silhouette
+        const sub2Radius = radius * (0.35 + Math.random() * 0.2);
+        const sub2Geo = new THREE.IcosahedronGeometry(sub2Radius, 1);
+        this._displaceVertices(sub2Geo, 0.18);
+        const sub2Canopy = new THREE.Mesh(sub2Geo, leafMat);
+        const sub2Angle = subAngle + Math.PI * (0.6 + Math.random() * 0.8);
+        sub2Canopy.position.set(
+            Math.cos(sub2Angle) * radius * 0.45,
+            canopyY + 0.2 + Math.random() * 0.4,
+            Math.sin(sub2Angle) * radius * 0.45
+        );
+        sub2Canopy.castShadow = true; group.add(sub2Canopy);
+
+        // Root bumps at the base (vary count 2-4)
+        const rootCount = 2 + Math.floor(Math.random() * 3);
+        for (let i = 0; i < rootCount; i++) {
+            const angle = (i / rootCount) * Math.PI * 2 + Math.random() * 0.6;
+            const rootLen = 0.4 + Math.random() * 0.3;
             const root = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.04, 0.09, 0.6, 4), this.materials.trunk
+                new THREE.CylinderGeometry(0.04, 0.09 * trunkThickVar, rootLen, 4), this.materials.trunk
             );
-            root.position.set(Math.cos(angle) * 0.2, 0.1, Math.sin(angle) * 0.2);
+            root.position.set(Math.cos(angle) * 0.22, 0.1, Math.sin(angle) * 0.22);
             root.rotation.z = Math.cos(angle) * 0.7;
             root.rotation.x = Math.sin(angle) * 0.7;
             group.add(root);
         }
 
         if (type === 'willow') {
-            for (let i = 0; i < 8; i++) {
-                const a = (i / 8) * Math.PI * 2;
-                const b = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.01, 2, 3), this.materials.willowLeaves);
-                b.position.set(Math.cos(a) * 1.8, 3.5, Math.sin(a) * 1.8);
-                b.rotation.z = Math.cos(a) * 0.3; b.rotation.x = Math.sin(a) * 0.3; group.add(b);
+            const strandCount = 6 + Math.floor(Math.random() * 5); // 6-10 strands
+            for (let i = 0; i < strandCount; i++) {
+                const a = (i / strandCount) * Math.PI * 2 + Math.random() * 0.3;
+                const strandLen = 1.5 + Math.random() * 1.2;
+                const b = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.008, strandLen, 3), leafMat);
+                b.position.set(Math.cos(a) * radius * 0.72, canopyY - 0.5, Math.sin(a) * radius * 0.72);
+                b.rotation.z = Math.cos(a) * 0.35; b.rotation.x = Math.sin(a) * 0.35; group.add(b);
             }
         }
 
-        const stump = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.3, 0.5, 6), this.materials.stump);
+        if (type === 'oak') {
+            // Oak gets low branches for character
+            for (let i = 0; i < 2; i++) {
+                const brAngle = Math.random() * Math.PI * 2;
+                const brLen = 0.8 + Math.random() * 0.6;
+                const branch = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.04, 0.08, brLen, 4), this.materials.trunk
+                );
+                branch.position.set(
+                    Math.cos(brAngle) * 0.15, trunkH * 0.6 + Math.random() * 0.5, Math.sin(brAngle) * 0.15
+                );
+                branch.rotation.z = Math.cos(brAngle) * 0.8;
+                branch.rotation.x = Math.sin(brAngle) * 0.8;
+                group.add(branch);
+            }
+        }
+
+        const stump = new THREE.Mesh(new THREE.CylinderGeometry(0.25 * trunkThickVar, 0.3 * trunkThickVar, 0.5, 6), this.materials.stump);
         stump.position.y = 0.25; stump.visible = false; stump.name = 'stump'; group.add(stump);
 
         const names = { normal: 'Tree', oak: 'Oak tree', willow: 'Willow tree' };
         group.userData = { type: 'tree', subType: type, interactable: true, name: names[type] || 'Tree' };
         return group;
+    }
+
+    _buildPalmTree() {
+        const group = new THREE.Group();
+        const trunkH = 5 + Math.random() * 1.5;
+        // Curved trunk — 5 segments with slight lean
+        const segments = 5;
+        for (let i = 0; i < segments; i++) {
+            const t = i / segments;
+            const segH = trunkH / segments;
+            const topR = 0.12 - t * 0.03;
+            const botR = 0.16 - t * 0.03;
+            const seg = new THREE.Mesh(
+                new THREE.CylinderGeometry(topR, botR, segH, 5),
+                this.materials.palmTrunk
+            );
+            seg.position.y = t * trunkH + segH / 2;
+            seg.rotation.z = Math.sin(t * 1.5) * 0.12;
+            seg.castShadow = true;
+            group.add(seg);
+        }
+        // Fronds from top
+        const frondCount = 5 + Math.floor(Math.random() * 3);
+        for (let i = 0; i < frondCount; i++) {
+            const angle = (i / frondCount) * Math.PI * 2 + Math.random() * 0.3;
+            const frond = new THREE.Mesh(
+                new THREE.PlaneGeometry(0.6, 2.8),
+                this.materials.palmLeaf
+            );
+            frond.position.set(
+                Math.cos(angle) * 0.6,
+                trunkH,
+                Math.sin(angle) * 0.6
+            );
+            frond.rotation.set(-0.7 - Math.random() * 0.3, angle, 0);
+            frond.castShadow = true;
+            group.add(frond);
+        }
+        // Small coconut cluster at top
+        for (let i = 0; i < 2; i++) {
+            const coconut = new THREE.Mesh(
+                new THREE.SphereGeometry(0.08, 4, 3),
+                this.materials.palmTrunk
+            );
+            const a = Math.random() * Math.PI * 2;
+            coconut.position.set(Math.cos(a) * 0.15, trunkH - 0.2, Math.sin(a) * 0.15);
+            group.add(coconut);
+        }
+        group.userData = { type: 'tree', subType: 'palm', interactable: true, name: 'Palm tree' };
+        return group;
+    }
+
+    /** Returns a cached material instance for the given properties. Avoids duplicate allocations. */
+    getCachedMaterial(color, roughness = 0.8, metalness = 0, extras = {}) {
+        const key = `${color}_${roughness}_${metalness}_${extras.emissive || 0}_${extras.emissiveIntensity || 0}_${extras.side || 0}_${extras.wireframe || 0}_${extras.transparent || 0}_${extras.opacity || 1}`;
+        if (this._matCache.has(key)) return this._matCache.get(key);
+        const opts = { color, roughness, metalness };
+        if (extras.emissive) { opts.emissive = extras.emissive; opts.emissiveIntensity = extras.emissiveIntensity || 1; }
+        if (extras.side) opts.side = extras.side;
+        if (extras.wireframe) opts.wireframe = true;
+        if (extras.transparent) { opts.transparent = true; opts.opacity = extras.opacity ?? 0.8; }
+        const mat = new THREE.MeshStandardMaterial(opts);
+        this._matCache.set(key, mat);
+        return mat;
+    }
+
+    /** Pick a pre-generated leaf material from the pool — avoids per-tree allocation */
+    _getVariedLeafMaterial(type) {
+        const pool = this._leafMaterials[type] || this._leafMaterials.normal;
+        return pool[Math.floor(Math.random() * pool.length)];
     }
 
     /** Randomly displace vertices for organic look */
@@ -134,7 +329,7 @@ export class ProceduralAssets {
         rock.position.y = 0.5; rock.castShadow = true; rock.scale.y = 0.7;
         rock.name = 'mainRock'; group.add(rock);
 
-        const oreNames = { copper: 'copperOre', tin: 'tinOre', iron: 'ironOre', coal: 'coalOre', mithril: 'mithrilOre', adamant: 'adamantOre', runite: 'runiteOre' };
+        const oreNames = { copper: 'copperOre', tin: 'tinOre', iron: 'ironOre', coal: 'coalOre', mithril: 'mithrilOre', adamant: 'adamantOre', runite: 'runiteOre', obsidian: 'obsidianOre' };
         const oreMat = this.materials[oreNames[type]] || this.materials[type + 'Ore'] || this.materials.copperOre;
         for (let i = 0; i < 4; i++) {
             const vein = new THREE.Mesh(new THREE.SphereGeometry(0.12, 4, 3), oreMat);
@@ -170,9 +365,196 @@ export class ProceduralAssets {
         const depleted = new THREE.Mesh(new THREE.DodecahedronGeometry(0.6, 0), this.materials.depletedRock);
         depleted.position.y = 0.3; depleted.scale.y = 0.5; depleted.visible = false; depleted.name = 'depleted'; group.add(depleted);
 
-        const names = { copper: 'Copper rock', tin: 'Tin rock', iron: 'Iron rock', coal: 'Coal rock', mithril: 'Mithril rock', adamant: 'Adamantite rock', runite: 'Runite rock' };
+        const names = { copper: 'Copper rock', tin: 'Tin rock', iron: 'Iron rock', coal: 'Coal rock', mithril: 'Mithril rock', adamant: 'Adamantite rock', runite: 'Runite rock', obsidian: 'Obsidian rock' };
         group.userData = { type: 'rock', subType: type, interactable: true, name: names[type] || 'Rock' };
         return group;
+    }
+
+    // ── LOD Creators ──────────────────────────────────────────────────
+
+    /**
+     * Creates a THREE.LOD for trees:
+     *   LOD 0 (0-30u):  full tree (createTree)
+     *   LOD 1 (30-80u): single trunk + single canopy blob
+     *   LOD 2 (80+u):   flat billboard quad
+     */
+    createTreeLOD(type = 'normal') {
+        if (type === 'palm') {
+            const lod = new THREE.LOD();
+            const full = this._buildPalmTree();
+            lod.addLevel(full, 0);
+            // LOD 1 — simple trunk + green blob
+            const mid = new THREE.Group();
+            const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.15, 5, 4), this.materials.palmTrunk);
+            trunk.position.y = 2.5; trunk.castShadow = true; mid.add(trunk);
+            const canopy = new THREE.Mesh(new THREE.SphereGeometry(1.5, 4, 3), this.materials.palmLeaf);
+            canopy.position.y = 5; canopy.scale.y = 0.5; mid.add(canopy);
+            mid.userData = { ...full.userData };
+            lod.addLevel(mid, 30);
+            // LOD 2 — billboard
+            const far = new THREE.Group();
+            const billboard = new THREE.Mesh(
+                new THREE.PlaneGeometry(3, 6),
+                new THREE.MeshBasicMaterial({ color: 0x3B7A35, transparent: true, opacity: 0.6, side: THREE.DoubleSide })
+            );
+            billboard.position.y = 3; far.add(billboard);
+            far.userData = { ...full.userData };
+            lod.addLevel(far, 80);
+            lod.userData = { ...full.userData };
+            return lod;
+        }
+
+        const lod = new THREE.LOD();
+
+        // LOD 0 — full detail
+        const full = this.createTree(type);
+        lod.addLevel(full, 0);
+
+        // LOD 1 — simplified: trunk + 1 canopy
+        const mid = new THREE.Group();
+        const trunkH = type === 'willow' ? 4 : 3;
+        const trunk = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.12, 0.22, trunkH, 4),
+            this.materials.trunk
+        );
+        trunk.position.y = trunkH / 2;
+        trunk.castShadow = true;
+        mid.add(trunk);
+
+        const leafMat = this._getVariedLeafMaterial(type);
+        const r = type === 'oak' ? 2.2 : type === 'willow' ? 2.5 : 1.6;
+        const cy = type === 'oak' ? 4 : type === 'willow' ? 5 : 3.5;
+        const canopy = new THREE.Mesh(
+            new THREE.IcosahedronGeometry(r, 0), // detail 0 for fewer tris
+            leafMat
+        );
+        canopy.position.y = cy;
+        canopy.castShadow = true;
+        mid.add(canopy);
+
+        // Stump (hidden, needed for resource interaction)
+        const stump = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.25, 0.3, 0.5, 4),
+            this.materials.stump
+        );
+        stump.position.y = 0.25;
+        stump.visible = false;
+        stump.name = 'stump';
+        mid.add(stump);
+
+        // Copy userData from full tree
+        mid.userData = { ...full.userData };
+        lod.addLevel(mid, 30);
+
+        // LOD 2 — billboard quad
+        const far = new THREE.Group();
+        const billColor = type === 'oak' ? 0x1B6B2A : type === 'willow' ? 0x4AA84C : 0x2D8C3C;
+        const billboard = new THREE.Mesh(
+            new THREE.PlaneGeometry(r * 2.2, trunkH + r * 1.4),
+            new THREE.MeshBasicMaterial({ color: billColor, transparent: true, opacity: 0.7, side: THREE.DoubleSide })
+        );
+        billboard.position.y = (trunkH + r) / 2 + 0.5;
+        far.add(billboard);
+
+        // Hidden stump for resource node
+        const stumpFar = stump.clone();
+        far.add(stumpFar);
+        far.userData = { ...full.userData };
+        lod.addLevel(far, 80);
+
+        // Propagate userData to LOD itself for entity system
+        lod.userData = { ...full.userData };
+        return lod;
+    }
+
+    /**
+     * Creates a THREE.LOD for rocks:
+     *   LOD 0 (0-30u):  full rock (createRock)
+     *   LOD 1 (30+u):   single dodecahedron with ore tint
+     */
+    createRockLOD(type = 'copper') {
+        const lod = new THREE.LOD();
+
+        // LOD 0 — full detail
+        const full = this.createRock(type);
+        lod.addLevel(full, 0);
+
+        // LOD 1 — single simplified rock
+        const mid = new THREE.Group();
+        const oreColors = {
+            copper: 0x997755, tin: 0xAAAA99, iron: 0x887766, coal: 0x444444,
+            mithril: 0x445577, adamant: 0x447744, runite: 0x559999,
+            obsidian: 0x333333,
+        };
+        const blendColor = oreColors[type] || 0x888888;
+        const simpleRock = new THREE.Mesh(
+            new THREE.DodecahedronGeometry(0.8, 0),
+            this.getCachedMaterial(blendColor, 0.9)
+        );
+        simpleRock.position.y = 0.5;
+        simpleRock.scale.y = 0.7;
+        simpleRock.castShadow = true;
+        mid.add(simpleRock);
+
+        // Depleted state mesh (hidden)
+        const depleted = new THREE.Mesh(
+            new THREE.DodecahedronGeometry(0.6, 0),
+            this.materials.depletedRock
+        );
+        depleted.position.y = 0.3;
+        depleted.scale.y = 0.5;
+        depleted.visible = false;
+        depleted.name = 'depleted';
+        mid.add(depleted);
+
+        mid.userData = { ...full.userData };
+        lod.addLevel(mid, 30);
+
+        lod.userData = { ...full.userData };
+        return lod;
+    }
+
+    /**
+     * Creates a THREE.LOD for buildings:
+     *   LOD 0 (0-40u):  full building (createBuilding)
+     *   LOD 1 (40+u):   single tinted box
+     */
+    createBuildingLOD(type) {
+        const lod = new THREE.LOD();
+
+        // LOD 0 — full detail
+        const full = this.createBuilding(type);
+        lod.addLevel(full, 0);
+
+        // LOD 1 — simple box
+        const buildingDims = {
+            house:   { w: 6, h: 4, d: 5, color: 0x8B6914 },
+            shop:    { w: 6, h: 4, d: 5, color: 0x8B6914 },
+            castle:  { w: 12, h: 10, d: 10, color: 0xAAAAAA },
+            tavern:  { w: 8, h: 4, d: 7, color: 0x8B6914 },
+            church:  { w: 5, h: 6, d: 7, color: 0xEEEEDD },
+            furnace: { w: 2, h: 3, d: 2, color: 0x8B4513 },
+            anvil:   { w: 1, h: 0.8, d: 0.6, color: 0x555555 },
+            desert_house:  { w: 5, h: 3, d: 4, color: 0xD2B48C },
+            desert_palace: { w: 10, h: 5, d: 8, color: 0xD2B48C },
+        };
+        const dims = buildingDims[type] || { w: 6, h: 4, d: 5, color: 0x8B6914 };
+
+        const simple = new THREE.Mesh(
+            new THREE.BoxGeometry(dims.w, dims.h, dims.d),
+            this.getCachedMaterial(dims.color, 0.9)
+        );
+        simple.position.y = dims.h / 2;
+        simple.castShadow = true;
+        simple.receiveShadow = true;
+
+        const simpleGroup = new THREE.Group();
+        simpleGroup.add(simple);
+        simpleGroup.userData = { ...full.userData };
+        lod.addLevel(simpleGroup, 40);
+
+        lod.userData = { ...full.userData };
+        return lod;
     }
 
     createMonster(type = 'chicken') {
@@ -181,14 +563,18 @@ export class ProceduralAssets {
             skeleton: '_buildSkeleton', giant_spider: '_buildSpider', dark_wizard: '_buildDarkWizard',
             lesser_demon: '_buildDemon', kbd: '_buildKBD',
             moss_giant: '_buildMossGiant', shadow_warrior: '_buildShadowWarrior', demon_lord: '_buildDemonLord',
-            scorpion: '_buildScorpion', giant_frog: '_buildGiantFrog', ice_wolf: '_buildIceWolf' };
+            scorpion: '_buildScorpion', giant_frog: '_buildGiantFrog', ice_wolf: '_buildIceWolf',
+            giant_crab: '_buildGiantCrab',
+            fire_elemental: '_buildFireElemental', desert_guard: '_buildDesertGuard', sea_serpent: '_buildSeaSerpent' };
         if (b[type]) this[b[type]](group);
 
         const names = { chicken: 'Chicken', cow: 'Cow', rat: 'Giant Rat', goblin: 'Goblin',
             skeleton: 'Skeleton', giant_spider: 'Giant Spider', dark_wizard: 'Dark Wizard',
             lesser_demon: 'Lesser Demon', kbd: 'King Black Dragon',
             moss_giant: 'Moss Giant', shadow_warrior: 'Shadow Warrior', demon_lord: 'Demon Lord',
-            scorpion: 'Scorpion', giant_frog: 'Giant Frog', ice_wolf: 'Ice Wolf' };
+            scorpion: 'Scorpion', giant_frog: 'Giant Frog', ice_wolf: 'Ice Wolf',
+            giant_crab: 'Giant Crab',
+            fire_elemental: 'Fire Elemental', desert_guard: 'Desert Guard', sea_serpent: 'Sea Serpent' };
         group.userData = { type: 'monster', subType: type, interactable: true, name: names[type] || type };
         return group;
     }
@@ -232,11 +618,11 @@ export class ProceduralAssets {
         body.position.set(0, 0.35, 0); body.scale.set(1, 0.7, 1.4); body.castShadow = true; g.add(body);
         const head = new THREE.Mesh(new THREE.SphereGeometry(0.15, 5, 4), this.materials.ratBody);
         head.position.set(0, 0.35, -0.4); g.add(head);
-        const nose = new THREE.Mesh(new THREE.SphereGeometry(0.04, 3, 2), new THREE.MeshStandardMaterial({ color: 0xFF8888 }));
+        const nose = new THREE.Mesh(new THREE.SphereGeometry(0.04, 3, 2), this.materials.pinkNose);
         nose.position.set(0, 0.32, -0.55); g.add(nose);
         const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.01, 0.5, 4), this.materials.ratBody);
         tail.position.set(0, 0.3, 0.5); tail.rotation.x = 0.5; g.add(tail);
-        const em = new THREE.MeshStandardMaterial({ color: 0xFF0000 });
+        const em = this.materials.redEyes;
         for (let s = -1; s <= 1; s += 2) {
             const eye = new THREE.Mesh(new THREE.SphereGeometry(0.03, 3, 2), em);
             eye.position.set(s * 0.08, 0.4, -0.48); g.add(eye);
@@ -248,7 +634,7 @@ export class ProceduralAssets {
         body.position.y = 0.8; body.castShadow = true; g.add(body);
         const head = new THREE.Mesh(new THREE.SphereGeometry(0.25, 6, 5), this.materials.goblinSkin);
         head.position.y = 1.4; head.scale.set(1, 0.9, 0.9); g.add(head);
-        const em = new THREE.MeshStandardMaterial({ color: 0xFF0000 });
+        const em = this.materials.redEyes;
         for (let s = -1; s <= 1; s += 2) {
             g.add(at(new THREE.Mesh(new THREE.SphereGeometry(0.04, 4, 3), em), s * 0.1, 1.45, -0.22));
             const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.05, 0.5, 5), this.materials.goblinSkin);
@@ -269,7 +655,7 @@ export class ProceduralAssets {
         const m = this.materials.skeletonMat;
         const skull = new THREE.Mesh(new THREE.SphereGeometry(0.22, 6, 5), m);
         skull.position.y = 1.8; skull.scale.set(1, 1.1, 0.9); g.add(skull);
-        const em = new THREE.MeshStandardMaterial({ color: 0x220000, emissive: 0x440000, emissiveIntensity: 0.5 });
+        const em = this.materials.skeletonEyes;
         for (let s = -1; s <= 1; s += 2) g.add(at(new THREE.Mesh(new THREE.SphereGeometry(0.05, 4, 3), em), s * 0.08, 1.83, -0.18));
         g.add(at(new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.8, 4), m), 0, 1.2, 0));
         const ribs = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.4, 0.25), m);
@@ -285,8 +671,7 @@ export class ProceduralAssets {
             g.add(at(new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.4, 4), m), s * 0.12, 0.45, 0));
             g.add(at(new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.35, 4), m), s * 0.12, 0.1, 0));
         }
-        const sm = new THREE.MeshStandardMaterial({ color: 0x999999, metalness: 0.6, roughness: 0.3 });
-        const blade = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.6, 0.02), sm);
+        const blade = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.6, 0.02), this.materials.skeletonSword);
         blade.position.set(0.55, 1.0, -0.1); blade.rotation.z = -0.4; g.add(blade);
     }
 
@@ -313,10 +698,10 @@ export class ProceduralAssets {
         body.position.y = 0.6; body.castShadow = true; g.add(body);
         g.add(at(new THREE.Mesh(new THREE.SphereGeometry(0.2, 6, 5), this.materials.npcSkin), 0, 1.5, 0));
         g.add(at(new THREE.Mesh(new THREE.ConeGeometry(0.25, 0.5, 6), this.materials.wizardRobe), 0, 1.9, 0));
-        const em = new THREE.MeshStandardMaterial({ color: 0xFF0000, emissive: 0xFF0000, emissiveIntensity: 0.6 });
+        const em = this.materials.wizardRedEyes;
         for (let s = -1; s <= 1; s += 2) g.add(at(new THREE.Mesh(new THREE.SphereGeometry(0.03, 3, 2), em), s * 0.07, 1.52, -0.17));
         g.add(at(new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.8, 5), this.materials.trunk), 0.4, 0.9, 0));
-        g.add(at(new THREE.Mesh(new THREE.SphereGeometry(0.1, 6, 4), new THREE.MeshStandardMaterial({ color: 0x8800FF, emissive: 0x4400AA, emissiveIntensity: 0.5 })), 0.4, 1.9, 0));
+        g.add(at(new THREE.Mesh(new THREE.SphereGeometry(0.1, 6, 4), this.materials.wizardOrb), 0.4, 1.9, 0));
     }
 
     _buildDemon(g) {
@@ -324,13 +709,11 @@ export class ProceduralAssets {
         const body = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.2, 0.5), m);
         body.position.y = 1.4; body.castShadow = true; g.add(body);
         g.add(at(new THREE.Mesh(new THREE.SphereGeometry(0.3, 6, 5), m), 0, 2.3, 0));
-        const hm = new THREE.MeshStandardMaterial({ color: 0x333333 });
         for (let s = -1; s <= 1; s += 2) {
-            const horn = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.4, 4), hm);
+            const horn = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.4, 4), this.materials.demonHorn);
             horn.position.set(s * 0.15, 2.6, 0); horn.rotation.z = s * -0.3; g.add(horn);
         }
-        const em = new THREE.MeshStandardMaterial({ color: 0xFFFF00, emissive: 0xFF8800, emissiveIntensity: 0.8 });
-        for (let s = -1; s <= 1; s += 2) g.add(at(new THREE.Mesh(new THREE.SphereGeometry(0.05, 4, 3), em), s * 0.1, 2.35, -0.25));
+        for (let s = -1; s <= 1; s += 2) g.add(at(new THREE.Mesh(new THREE.SphereGeometry(0.05, 4, 3), this.materials.demonYellowEyes), s * 0.1, 2.35, -0.25));
         for (let s = -1; s <= 1; s += 2) {
             const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.06, 0.8, 5), m);
             arm.position.set(s * 0.55, 1.4, 0); arm.rotation.z = s * 0.3; g.add(arm);
@@ -349,8 +732,7 @@ export class ProceduralAssets {
         head.position.set(0, 2.5, -1.8); g.add(head);
         const snout = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.5, 5), m);
         snout.position.set(0, 2.3, -2.3); snout.rotation.x = -Math.PI / 2; g.add(snout);
-        const em = new THREE.MeshStandardMaterial({ color: 0xFF0000, emissive: 0xFF0000, emissiveIntensity: 1.0 });
-        for (let s = -1; s <= 1; s += 2) g.add(at(new THREE.Mesh(new THREE.SphereGeometry(0.08, 4, 3), em), s * 0.15, 2.6, -2.0));
+        for (let s = -1; s <= 1; s += 2) g.add(at(new THREE.Mesh(new THREE.SphereGeometry(0.08, 4, 3), this.materials.kbdRedEyes), s * 0.15, 2.6, -2.0));
         for (let s = -1; s <= 1; s += 2) g.add(at(new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.5, 4), this.materials.boneMat), s * 0.25, 3.0, -1.7));
         for (let s = -1; s <= 1; s += 2) {
             const ws = new THREE.Shape(); ws.moveTo(0, 0); ws.lineTo(2, 1.5); ws.lineTo(1.5, 0.5); ws.lineTo(2.5, 0); ws.lineTo(0, -0.5);
@@ -362,11 +744,10 @@ export class ProceduralAssets {
         }
         const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.04, 2.5, 5), m);
         tail.position.set(0, 1.5, 2.0); tail.rotation.x = -0.4; g.add(tail);
-        g.add(at(new THREE.PointLight(0xFF4400, 1, 8), 0, 2.3, -2.5));
     }
 
     _buildMossGiant(g) {
-        const m = new THREE.MeshStandardMaterial({ color: 0x3B6B2A, roughness: 0.85 });
+        const m = this.materials.mossGiant;
         const body = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.5, 0.7), m);
         body.position.y = 1.8; body.castShadow = true; g.add(body);
         const head = new THREE.Mesh(new THREE.SphereGeometry(0.4, 6, 5), m);
@@ -383,13 +764,12 @@ export class ProceduralAssets {
     }
 
     _buildShadowWarrior(g) {
-        const m = new THREE.MeshStandardMaterial({ color: 0x1A1A2E, roughness: 0.7, emissive: 0x110022, emissiveIntensity: 0.3 });
+        const m = this.materials.shadowWarrior;
         const body = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.0, 0.3), m);
         body.position.y = 1.3; body.castShadow = true; g.add(body);
         const head = new THREE.Mesh(new THREE.SphereGeometry(0.25, 6, 5), m);
         head.position.y = 2.1; g.add(head);
-        const em = new THREE.MeshStandardMaterial({ color: 0xAA00FF, emissive: 0x8800CC, emissiveIntensity: 1.0 });
-        for (let s = -1; s <= 1; s += 2) g.add(at(new THREE.Mesh(new THREE.SphereGeometry(0.04, 4, 3), em), s * 0.09, 2.15, -0.2));
+        for (let s = -1; s <= 1; s += 2) g.add(at(new THREE.Mesh(new THREE.SphereGeometry(0.04, 4, 3), this.materials.shadowEyes), s * 0.09, 2.15, -0.2));
         for (let s = -1; s <= 1; s += 2) {
             const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.05, 0.7, 5), m);
             arm.position.set(s * 0.4, 1.2, 0); arm.rotation.z = s * 0.2; g.add(arm);
@@ -397,24 +777,22 @@ export class ProceduralAssets {
             leg.position.set(s * 0.15, 0.45, 0); g.add(leg);
         }
         // Dark blade
-        const blade = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.9, 0.02), new THREE.MeshStandardMaterial({ color: 0x333344, metalness: 0.8 }));
+        const blade = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.9, 0.02), this.materials.shadowBlade);
         blade.position.set(0.45, 1.5, -0.1); blade.rotation.z = -0.3; g.add(blade);
     }
 
     _buildDemonLord(g) {
-        const m = new THREE.MeshStandardMaterial({ color: 0x8B0000, roughness: 0.6, emissive: 0x330000, emissiveIntensity: 0.4 });
+        const m = this.materials.demonLord;
         const body = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.4, 0.6), m);
         body.position.y = 1.8; body.castShadow = true; g.add(body);
         g.add(at(new THREE.Mesh(new THREE.SphereGeometry(0.35, 6, 5), m), 0, 2.8, 0));
         // Horns
-        const hm = new THREE.MeshStandardMaterial({ color: 0x222222 });
         for (let s = -1; s <= 1; s += 2) {
-            const horn = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.6, 4), hm);
+            const horn = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.6, 4), this.materials.demonLordHorn);
             horn.position.set(s * 0.2, 3.2, 0); horn.rotation.z = s * -0.3; g.add(horn);
         }
         // Glowing eyes
-        const em = new THREE.MeshStandardMaterial({ color: 0xFF4400, emissive: 0xFF2200, emissiveIntensity: 1.0 });
-        for (let s = -1; s <= 1; s += 2) g.add(at(new THREE.Mesh(new THREE.SphereGeometry(0.06, 4, 3), em), s * 0.12, 2.85, -0.3));
+        for (let s = -1; s <= 1; s += 2) g.add(at(new THREE.Mesh(new THREE.SphereGeometry(0.06, 4, 3), this.materials.demonLordEyes), s * 0.12, 2.85, -0.3));
         // Arms and legs
         for (let s = -1; s <= 1; s += 2) {
             const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.08, 1.0, 5), m);
@@ -425,7 +803,7 @@ export class ProceduralAssets {
         // Wings (smaller than KBD)
         for (let s = -1; s <= 1; s += 2) {
             const ws = new THREE.Shape(); ws.moveTo(0, 0); ws.lineTo(1.2, 0.8); ws.lineTo(0.8, 0.2); ws.lineTo(1.5, 0); ws.lineTo(0, -0.3);
-            const wing = new THREE.Mesh(new THREE.ShapeGeometry(ws), new THREE.MeshStandardMaterial({ color: 0x440000, side: THREE.DoubleSide }));
+            const wing = new THREE.Mesh(new THREE.ShapeGeometry(ws), this.materials.demonLordWing);
             wing.position.set(s * 0.5, 2.2, 0.2); wing.rotation.y = s * -Math.PI / 2; wing.scale.x = s; g.add(wing);
         }
         // Tail
@@ -436,7 +814,7 @@ export class ProceduralAssets {
     }
 
     _buildScorpion(g) {
-        const m = new THREE.MeshStandardMaterial({ color: 0x8B5A2B, roughness: 0.7 });
+        const m = this.materials.scorpionBody;
         // Body
         const body = new THREE.Mesh(new THREE.SphereGeometry(0.4, 5, 4), m);
         body.position.y = 0.3; body.scale.set(1, 0.6, 1.2); g.add(body);
@@ -446,7 +824,7 @@ export class ProceduralAssets {
             seg.position.set(0, 0.5 + i * 0.25, -0.3 - i * 0.15); g.add(seg);
         }
         // Stinger
-        const sting = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.15, 4), new THREE.MeshStandardMaterial({ color: 0x333333 }));
+        const sting = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.15, 4), this.materials.demonHorn);
         sting.position.set(0, 1.45, -0.75); sting.rotation.x = Math.PI; g.add(sting);
         // Pincers
         for (let s = -1; s <= 1; s += 2) {
@@ -456,12 +834,12 @@ export class ProceduralAssets {
     }
 
     _buildGiantFrog(g) {
-        const m = new THREE.MeshStandardMaterial({ color: 0x4CAF50, roughness: 0.8 });
+        const m = this.materials.giantFrogBody;
         // Body (round)
         const body = new THREE.Mesh(new THREE.SphereGeometry(0.5, 6, 5), m);
         body.position.y = 0.5; body.scale.set(1, 0.8, 1.1); g.add(body);
         // Eyes (on top)
-        const eyeMat = new THREE.MeshStandardMaterial({ color: 0xFFFF00 });
+        const eyeMat = this.materials.giantFrogEye;
         for (let s = -1; s <= 1; s += 2) {
             const eye = new THREE.Mesh(new THREE.SphereGeometry(0.1, 4, 3), eyeMat);
             eye.position.set(s * 0.2, 0.95, -0.3); g.add(eye);
@@ -474,7 +852,7 @@ export class ProceduralAssets {
     }
 
     _buildIceWolf(g) {
-        const m = new THREE.MeshStandardMaterial({ color: 0xCCDDEE, roughness: 0.5, emissive: 0x223344, emissiveIntensity: 0.2 });
+        const m = this.materials.iceWolfBody;
         // Body (horizontal)
         const body = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 1.0), m);
         body.position.set(0, 0.6, 0); g.add(body);
@@ -484,7 +862,7 @@ export class ProceduralAssets {
         // Snout
         g.add(at(new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.15, 0.2), m), 0, 0.65, -0.85));
         // Eyes (blue glow)
-        const em = new THREE.MeshStandardMaterial({ color: 0x44AAFF, emissive: 0x2288FF, emissiveIntensity: 1.0 });
+        const em = this.materials.iceWolfEye;
         for (let s = -1; s <= 1; s += 2) g.add(at(new THREE.Mesh(new THREE.SphereGeometry(0.04, 3, 2), em), s * 0.1, 0.8, -0.75));
         // Legs
         for (let s = -1; s <= 1; s += 2) {
@@ -496,6 +874,137 @@ export class ProceduralAssets {
         // Tail
         const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.02, 0.5, 4), m);
         tail.position.set(0, 0.7, 0.6); tail.rotation.x = -0.7; g.add(tail);
+    }
+
+    _buildGiantCrab(g) {
+        // Flattened sphere body
+        const bodyMat = this.materials.crabBody;
+        const body = new THREE.Mesh(new THREE.SphereGeometry(0.5, 8, 6), bodyMat);
+        body.scale.y = 0.5;
+        body.position.y = 0.4;
+        body.castShadow = true;
+        g.add(body);
+
+        // 6 legs (3 per side)
+        const legMat = this.materials.crabLeg;
+        for (let side = -1; side <= 1; side += 2) {
+            for (let i = 0; i < 3; i++) {
+                const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.02, 0.4, 4), legMat);
+                const angle = (i - 1) * 0.5;
+                leg.position.set(side * 0.4, 0.2, angle * 0.3);
+                leg.rotation.z = side * 0.6;
+                g.add(leg);
+            }
+        }
+
+        // 2 claws
+        const clawMat = this.materials.crabClaw;
+        for (let side = -1; side <= 1; side += 2) {
+            // Claw arm
+            const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.03, 0.35, 4), clawMat);
+            arm.position.set(side * 0.35, 0.35, 0.35);
+            arm.rotation.z = side * 0.3;
+            g.add(arm);
+
+            // Claw pincer (upper)
+            const pincer1 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.04, 0.15), clawMat);
+            pincer1.position.set(side * 0.4, 0.45, 0.5);
+            g.add(pincer1);
+
+            // Claw pincer (lower)
+            const pincer2 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.03, 0.12), clawMat);
+            pincer2.position.set(side * 0.4, 0.38, 0.48);
+            g.add(pincer2);
+        }
+
+        // Eye stalks
+        const eyeMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
+        const stalkMat = this.materials.crabStalk;
+        for (let side = -1; side <= 1; side += 2) {
+            const stalk = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.15, 4), stalkMat);
+            stalk.position.set(side * 0.12, 0.55, 0.2);
+            g.add(stalk);
+            const eye = new THREE.Mesh(new THREE.SphereGeometry(0.03, 4, 3), eyeMat);
+            eye.position.set(side * 0.12, 0.63, 0.2);
+            g.add(eye);
+        }
+    }
+
+    _buildFireElemental(g) {
+        // Floating body
+        const body = new THREE.Mesh(new THREE.SphereGeometry(0.5, 8, 6), this.materials.fireElementalBody);
+        body.position.y = 1.2; body.castShadow = true; g.add(body);
+        // Inner core
+        const core = new THREE.Mesh(new THREE.SphereGeometry(0.25, 6, 5), this.materials.fireElementalCore);
+        core.position.y = 1.2; g.add(core);
+        // Flame cones
+        for (let i = 0; i < 4; i++) {
+            const angle = (i / 4) * Math.PI * 2;
+            const flame = new THREE.Mesh(
+                new THREE.ConeGeometry(0.15, 0.5, 4),
+                this.materials.flameMat
+            );
+            flame.position.set(Math.cos(angle) * 0.4, 1.0 + Math.random() * 0.4, Math.sin(angle) * 0.4);
+            flame.rotation.z = Math.cos(angle) * 0.5;
+            flame.rotation.x = Math.sin(angle) * 0.5;
+            g.add(flame);
+        }
+        // Eyes
+        for (let s = -1; s <= 1; s += 2) {
+            const eye = new THREE.Mesh(new THREE.SphereGeometry(0.06, 4, 3), this.materials.redEyes);
+            eye.position.set(s * 0.15, 1.35, -0.4); g.add(eye);
+        }
+    }
+
+    _buildDesertGuard(g) {
+        // Body/armor
+        const body = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.8, 0.35), this.materials.desertGuardArmor);
+        body.position.y = 1.0; body.castShadow = true; g.add(body);
+        // Head
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 6, 5), this.materials.npcSkin);
+        head.position.y = 1.7; g.add(head);
+        // Helmet
+        const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.22, 6, 4, 0, Math.PI * 2, 0, Math.PI / 2), this.materials.desertGuardArmor);
+        helmet.position.y = 1.75; g.add(helmet);
+        // Legs
+        for (let s = -1; s <= 1; s += 2) {
+            const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.07, 0.6, 5), this.materials.npcPants);
+            leg.position.set(s * 0.15, 0.3, 0); g.add(leg);
+        }
+        // Arms
+        for (let s = -1; s <= 1; s += 2) {
+            const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.5, 5), this.materials.npcSkin);
+            arm.position.set(s * 0.4, 1.0, 0); g.add(arm);
+        }
+        // Sword
+        const sword = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.6, 0.02), this.materials.metalDark);
+        sword.position.set(0.45, 0.8, -0.05); g.add(sword);
+    }
+
+    _buildSeaSerpent(g) {
+        // Head
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.45, 7, 5), this.materials.seaSerpentBody);
+        head.position.set(0, 0.8, -0.5); head.castShadow = true; g.add(head);
+        // Body segment 1
+        const seg1 = new THREE.Mesh(new THREE.SphereGeometry(0.5, 7, 5), this.materials.seaSerpentBody);
+        seg1.position.set(0, 0.6, 0.3); seg1.scale.set(1, 0.8, 1.2); g.add(seg1);
+        // Body segment 2 (tail)
+        const seg2 = new THREE.Mesh(new THREE.SphereGeometry(0.35, 6, 4), this.materials.seaSerpentBody);
+        seg2.position.set(0, 0.5, 1.1); seg2.scale.set(0.8, 0.7, 1.3); g.add(seg2);
+        // Tail fin
+        const fin = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.5, 3), this.materials.seaSerpentBody);
+        fin.position.set(0, 0.5, 1.7); fin.rotation.x = Math.PI / 2; g.add(fin);
+        // Dorsal crest
+        for (let i = 0; i < 3; i++) {
+            const spike = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.2, 3), this.materials.seaSerpentBody);
+            spike.position.set(0, 1.0 - i * 0.1, -0.2 + i * 0.5);
+            g.add(spike);
+        }
+        // Eyes
+        for (let s = -1; s <= 1; s += 2) {
+            const eye = new THREE.Mesh(new THREE.SphereGeometry(0.06, 4, 3), this.materials.seaSerpentEye);
+            eye.position.set(s * 0.2, 0.95, -0.85); g.add(eye);
+        }
     }
 
     // ── Pet Meshes ──
@@ -542,7 +1051,6 @@ export class ProceduralAssets {
         const m = new THREE.MeshStandardMaterial({ color: 0xFF4400, emissive: 0xFF2200, emissiveIntensity: 0.6 });
         g.add(at(new THREE.Mesh(new THREE.SphereGeometry(0.12, 5, 4), m), 0, 0.5, 0));
         g.add(at(new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.2, 4), m), 0, 0.7, 0));
-        g.add(at(new THREE.PointLight(0xFF4400, 0.4, 3), 0, 0.5, 0));
     }
 
     _buildRockyPet(g) {
@@ -608,6 +1116,7 @@ export class ProceduralAssets {
             swamp_witch: [new THREE.MeshStandardMaterial({ color: 0x2D4A2D }), new THREE.MeshStandardMaterial({ color: 0x1A3A1A }), new THREE.MeshStandardMaterial({ color: 0x555555 })],
             ice_hermit: [new THREE.MeshStandardMaterial({ color: 0xAABBCC }), new THREE.MeshStandardMaterial({ color: 0x8899AA }), new THREE.MeshStandardMaterial({ color: 0xCCCCCC })],
             desert_merchant: [new THREE.MeshStandardMaterial({ color: 0xC2A050 }), new THREE.MeshStandardMaterial({ color: 0x8B6914 }), new THREE.MeshStandardMaterial({ color: 0x222222 })],
+            archaeologist: [new THREE.MeshStandardMaterial({ color: 0x886644 }), new THREE.MeshStandardMaterial({ color: 0x554422 }), new THREE.MeshStandardMaterial({ color: 0x6B4226 })],
         };
         const [shirt, pants, hair] = mats[npcId] || [this.materials.npcShirt, this.materials.npcPants, this.materials.npcHair];
         this._buildHumanoidNPC(group, shirt, pants, hair);
@@ -643,7 +1152,9 @@ export class ProceduralAssets {
     _buildHumanoidNPC(g, shirtMat, pantsMat, hairMat) {
         const skin = this.materials.npcSkin;
         // Head
-        g.add(at(new THREE.Mesh(new THREE.SphereGeometry(0.22, 6, 5), skin), 0, 1.7, 0));
+        const head = at(new THREE.Mesh(new THREE.SphereGeometry(0.22, 6, 5), skin), 0, 1.7, 0);
+        head.userData.part = 'head';
+        g.add(head);
         g.add(at(new THREE.Mesh(new THREE.SphereGeometry(0.23, 6, 5, 0, Math.PI * 2, 0, Math.PI * 0.6), hairMat), 0, 1.72, 0));
         // Neck
         const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.12, 5), skin);
@@ -660,13 +1171,18 @@ export class ProceduralAssets {
         // Body
         const body = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 0.25), shirtMat);
         body.position.y = 1.15; body.castShadow = true; body.userData.part = 'torso'; g.add(body);
+        let armL = null, armR = null;
         for (let s = -1; s <= 1; s += 2) {
             const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.07, 0.6, 5), pantsMat);
             leg.position.set(s * 0.12, 0.5, 0); g.add(leg);
             const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.05, 0.5, 5), skin);
-            arm.position.set(s * 0.35, 1.1, 0); arm.rotation.z = s * 0.15; g.add(arm);
+            arm.position.set(s * 0.35, 1.1, 0); arm.rotation.z = s * 0.15;
+            arm.userData.part = s === -1 ? 'armL' : 'armR';
+            if (s === -1) armL = arm; else armR = arm;
+            g.add(arm);
             g.add(at(new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.06, 0.18), this.materials.trunk), s * 0.12, 0.17, -0.02));
         }
+        g.userData._parts = { head, armL, armR, torso: body };
     }
 
     // ── Multiplayer: create a remote player mesh ──
@@ -721,7 +1237,6 @@ export class ProceduralAssets {
         for (let s = -1; s <= 1; s += 2) {
             const p = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.5, 4, 6), this.materials.dungeonStone);
             p.position.set(s * 2.8, 2, 0); p.castShadow = true; g.add(p);
-            const light = new THREE.PointLight(0xFF4400, 0.8, 8); light.position.set(s * 2.8, 3.5, 0.5); g.add(light);
             const fl = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.3, 4), new THREE.MeshBasicMaterial({ color: 0xFF6600, transparent: true, opacity: 0.8 }));
             fl.position.set(s * 2.8, 3.2, 0.5); g.add(fl);
         }
@@ -878,8 +1393,52 @@ export class ProceduralAssets {
             // Hanging sign outside
             const signMat = new THREE.MeshStandardMaterial({ color: 0x6B4226 });
             g.add(at(new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.8, 0.06), signMat), 0, 3.8, -3.8));
+        } else if (type === 'desert_house') {
+            const walls = new THREE.Mesh(new THREE.BoxGeometry(5, 3, 4), this.materials.sandstone);
+            walls.position.y = 1.5; walls.castShadow = true; walls.receiveShadow = true; g.add(walls);
+            // Flat roof
+            const roof = new THREE.Mesh(new THREE.BoxGeometry(5.4, 0.2, 4.4), this.materials.sandstoneRoof);
+            roof.position.y = 3.1; g.add(roof);
+            // Door
+            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(1, 2, 0.1), this.materials.door), 0, 1, -2.05));
+            // Windows
+            for (const side of [-1, 1]) {
+                const win = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.12), windowMat);
+                win.position.set(side * 1.5, 2.0, -2.05); g.add(win);
+            }
+            // Foundation
+            const base = new THREE.Mesh(new THREE.BoxGeometry(5.3, 0.3, 4.3), foundationMat);
+            base.position.y = 0.15; g.add(base);
+        } else if (type === 'desert_palace') {
+            const walls = new THREE.Mesh(new THREE.BoxGeometry(10, 4, 8), this.materials.sandstone);
+            walls.position.y = 2; walls.castShadow = true; walls.receiveShadow = true; g.add(walls);
+            // Dome
+            const dome = new THREE.Mesh(
+                new THREE.SphereGeometry(3, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2),
+                this.materials.sandstoneRoof
+            );
+            dome.position.y = 4; g.add(dome);
+            // Pillars at corners
+            for (const [px, pz] of [[-5, -4], [5, -4], [-5, 4], [5, 4]]) {
+                const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.35, 4.5, 6), this.materials.sandstone);
+                pillar.position.set(px, 2.25, pz); pillar.castShadow = true; g.add(pillar);
+            }
+            // Door
+            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(2, 3, 0.1), this.materials.door), 0, 1.5, -4.05));
+            // Windows (arched effect with circles)
+            for (const side of [-1, 1]) {
+                for (const face of [-1, 1]) {
+                    const win = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.2, 0.12), windowMat);
+                    win.position.set(side * 3, 2.5, face * 4.05); g.add(win);
+                }
+            }
+            // Foundation
+            const base = new THREE.Mesh(new THREE.BoxGeometry(10.5, 0.4, 8.5), foundationMat);
+            base.position.y = 0.2; g.add(base);
+            // Interior warm light
+            g.add(at(new THREE.PointLight(0xFFAA44, 0.6, 12), 0, 3.5, 0));
         }
-        const names = { castle: 'Lumbridge Castle', house: 'House', shop: 'General Store', tavern: 'Blue Moon Inn' };
+        const names = { castle: 'Lumbridge Castle', house: 'House', shop: 'General Store', tavern: 'Blue Moon Inn', desert_house: 'Desert House', desert_palace: 'Desert Palace' };
         g.userData = { type: 'building', subType: type, interactable: false, name: names[type] || 'Building' };
         return g;
     }
@@ -904,10 +1463,97 @@ export class ProceduralAssets {
         const g = new THREE.Group();
         g.add(at(new THREE.Mesh(new THREE.CylinderGeometry(1.5, 2, 0.5, 8), this.materials.altarStone), 0, 0.25, 0));
         g.add(at(new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 1.5, 6), this.materials.altarStone), 0, 1, 0));
-        g.add(at(new THREE.Mesh(new THREE.OctahedronGeometry(0.3, 0), new THREE.MeshStandardMaterial({ color: 0x6666FF, emissive: 0x3333AA, emissiveIntensity: 0.4, transparent: true, opacity: 0.8 })), 0, 2.0, 0));
-        g.add(at(new THREE.PointLight(0x6666FF, 0.5, 5), 0, 2, 0));
+        g.add(at(new THREE.Mesh(new THREE.OctahedronGeometry(0.3, 0), new THREE.MeshStandardMaterial({ color: 0x6666FF, emissive: 0x3333AA, emissiveIntensity: 0.7, transparent: true, opacity: 0.8 })), 0, 2.0, 0));
         g.userData = { type: 'rune_altar', interactable: true, name: 'Rune Altar' };
         g._entityRef = { type: 'rune_altar' };
+        return g;
+    }
+
+    createVolcano() {
+        const g = new THREE.Group();
+        // Main cone
+        const cone = new THREE.Mesh(
+            new THREE.ConeGeometry(8, 15, 12),
+            this.materials.volcanicRock
+        );
+        cone.position.y = 7.5; cone.castShadow = true; g.add(cone);
+        // Crater rim
+        const crater = new THREE.Mesh(
+            new THREE.TorusGeometry(3, 0.6, 6, 12),
+            this.materials.volcanicRock
+        );
+        crater.position.y = 14.5; crater.rotation.x = Math.PI / 2; g.add(crater);
+        // Lava glow inside crater
+        const craterGlow = new THREE.Mesh(
+            new THREE.CircleGeometry(2.5, 12),
+            new THREE.MeshBasicMaterial({ color: 0xFF4400, transparent: true, opacity: 0.6 })
+        );
+        craterGlow.position.y = 14.2; craterGlow.rotation.x = -Math.PI / 2; g.add(craterGlow);
+        g.userData = { type: 'scenery', name: 'Volcano' };
+        return g;
+    }
+
+    createVolcanicRock() {
+        const g = new THREE.Group();
+        const count = 2 + Math.floor(Math.random() * 2);
+        for (let i = 0; i < count; i++) {
+            const size = 0.4 + Math.random() * 0.6;
+            const rock = new THREE.Mesh(
+                new THREE.DodecahedronGeometry(size, 0),
+                this.materials.volcanicRock
+            );
+            rock.position.set(
+                (Math.random() - 0.5) * 1.5,
+                size * 0.4,
+                (Math.random() - 0.5) * 1.5
+            );
+            rock.scale.y = 0.5 + Math.random() * 0.3;
+            rock.rotation.y = Math.random() * Math.PI;
+            rock.castShadow = true;
+            g.add(rock);
+        }
+        return g;
+    }
+
+    createGlowingMushroom() {
+        const g = new THREE.Group();
+        // Stem
+        const stem = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.04, 0.06, 0.4, 4),
+            this.getCachedMaterial(0x888877, 0.9)
+        );
+        stem.position.y = 0.2; g.add(stem);
+        // Cap (half sphere)
+        const cap = new THREE.Mesh(
+            new THREE.SphereGeometry(0.15, 6, 4, 0, Math.PI * 2, 0, Math.PI / 2),
+            this.materials.caveMushroom
+        );
+        cap.position.y = 0.4; g.add(cap);
+        return g;
+    }
+
+    createPortal(color = 0x2288FF) {
+        const g = new THREE.Group();
+        // Ring
+        const ring = new THREE.Mesh(
+            new THREE.TorusGeometry(1.5, 0.12, 8, 24),
+            this.materials.stoneGray
+        );
+        ring.position.y = 1.5; g.add(ring);
+        // Inner surface
+        const portalMat = new THREE.MeshStandardMaterial({
+            color: color,
+            emissive: color,
+            emissiveIntensity: 0.9,
+            transparent: true,
+            opacity: 0.6,
+            side: THREE.DoubleSide,
+        });
+        const inner = new THREE.Mesh(
+            new THREE.CircleGeometry(1.3, 24),
+            portalMat
+        );
+        inner.position.y = 1.5; g.add(inner);
         return g;
     }
 
@@ -956,9 +1602,6 @@ export class ProceduralAssets {
         const flameMat = new THREE.MeshBasicMaterial({ color: 0xFF6600, transparent: true, opacity: 0.8 });
         const flame = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.2, 4), flameMat);
         flame.position.set(0.2, 2.0, 0); g.add(flame);
-        // Light
-        const light = new THREE.PointLight(0xFF4400, 0.6, 8);
-        light.position.set(0.2, 2.0, 0); g.add(light);
         return g;
     }
 

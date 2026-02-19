@@ -19,6 +19,20 @@ export class UIManager {
         this._coordsDisplay = document.getElementById('coords');
         this._lastInvSnapshot = '';
 
+        // Cached DOM element maps (avoid querySelector per frame)
+        this._skillLvlEls = {};   // skillId → .skill-lvl element
+        this._skillCellEls = {};  // skillId → .skill-cell element
+        this._equipSlotEls = {};  // slot → .equip-item element
+        this._spellEntryEls = null; // NodeList cached on first use
+
+        // Dirty flags (skip updates when nothing changed)
+        this._skillsDirty = true;
+        this._equipDirty = true;
+        this._spellbookDirty = true;
+        this._questsDirty = true;
+        this._combatPanelDirty = true;
+        this._cachedCombatLevel = -1;
+
         // Special attack orb
         this._orbSpecFill = document.getElementById('orb-spec-fill');
         this._orbSpecText = document.getElementById('orb-spec-text');
@@ -32,6 +46,18 @@ export class UIManager {
         this._buildSpellbookPanel();
         this._buildQuestPanel();
         this._buildSettingsPanel();
+
+        // Cache skill and equipment DOM refs (avoid querySelector per frame)
+        for (const skillId of Object.keys(CONFIG.SKILLS)) {
+            this._skillLvlEls[skillId] = this._skillsGrid.querySelector(`.skill-lvl[data-skill="${skillId}"]`);
+            this._skillCellEls[skillId] = this._skillsGrid.querySelector(`.skill-cell[data-skill="${skillId}"]`);
+        }
+        const eqContainer = document.getElementById('equipment-slots');
+        if (eqContainer) {
+            for (const slot of CONFIG.EQUIPMENT_SLOTS) {
+                this._equipSlotEls[slot] = eqContainer.querySelector(`[data-slot="${slot}"] .equip-item`);
+            }
+        }
 
         // Tab switching (mousedown for instant response in cursor mode)
         document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -81,10 +107,14 @@ export class UIManager {
 
         // Inventory click handling — use mousedown for instant response.
         this._inventoryGrid.addEventListener('mousedown', e => {
-            if (e.button === 0) this._onInventoryClick(e);
+            if (e.button === 0 && !this._dragState) this._onInventoryClick(e);
             if (e.button === 2) this._onInventoryRightClick(e);
         });
         this._inventoryGrid.addEventListener('contextmenu', e => e.preventDefault());
+
+        // Inventory drag-and-drop
+        this._dragState = null; // { fromIndex, ghost }
+        this._setupInventoryDrag();
 
         // Inventory hover tooltip
         this._invTooltip = document.getElementById('inv-tooltip');
@@ -275,7 +305,23 @@ export class UIManager {
             el.addEventListener('mousedown', (e) => { if (e.button !== 0) return;
                 this.game.player.selectedSpell = spellId;
                 this.game.player.attackStyle = 'magic';
+                this.game.player.autoCast = false;
                 this.game.addChatMessage(`Selected spell: ${spell.name}`, 'system');
+                this._updateSpellbook();
+            });
+            el.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const p = this.game.player;
+                if (p.selectedSpell === spellId && p.autoCast) {
+                    p.autoCast = false;
+                    this.game.addChatMessage('Auto-cast disabled.', 'system');
+                } else {
+                    p.selectedSpell = spellId;
+                    p.attackStyle = 'magic';
+                    p.autoCast = true;
+                    this.game.addChatMessage(`Auto-casting: ${spell.name}`, 'system');
+                }
                 this._updateSpellbook();
             });
             container.appendChild(el);
@@ -502,6 +548,96 @@ export class UIManager {
         if (this._invTooltip) this._invTooltip.classList.add('hidden');
     }
 
+    _setupInventoryDrag() {
+        const DRAG_THRESHOLD = 5;
+        let startX = 0, startY = 0, pending = false, fromSlot = null;
+
+        this._inventoryGrid.addEventListener('mousedown', e => {
+            if (e.button !== 0) return;
+            const slot = e.target.closest('.inv-slot');
+            if (!slot) return;
+            const idx = parseInt(slot.dataset.index);
+            if (!this.game.inventorySystem.slots[idx]) return;
+            startX = e.clientX;
+            startY = e.clientY;
+            pending = true;
+            fromSlot = idx;
+        });
+
+        document.addEventListener('mousemove', e => {
+            if (pending && !this._dragState) {
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                if (dx * dx + dy * dy > DRAG_THRESHOLD * DRAG_THRESHOLD) {
+                    this._startDrag(fromSlot, e.clientX, e.clientY);
+                    pending = false;
+                }
+            }
+            if (this._dragState) {
+                this._dragState.ghost.style.left = (e.clientX - 24) + 'px';
+                this._dragState.ghost.style.top = (e.clientY - 24) + 'px';
+                this._hideInvTooltip();
+                // Highlight drop target
+                const target = document.elementFromPoint(e.clientX, e.clientY)?.closest('.inv-slot');
+                if (this._dragOverSlot && this._dragOverSlot !== target) {
+                    this._dragOverSlot.classList.remove('inv-drag-over');
+                }
+                if (target && target !== this._dragOverSlot) {
+                    target.classList.add('inv-drag-over');
+                }
+                this._dragOverSlot = target || null;
+            }
+        });
+
+        document.addEventListener('mouseup', e => {
+            if (e.button !== 0) return;
+            pending = false;
+            if (!this._dragState) return;
+            const target = document.elementFromPoint(e.clientX, e.clientY)?.closest('.inv-slot');
+            if (target) {
+                const toIndex = parseInt(target.dataset.index);
+                this.game.inventorySystem.swapSlots(this._dragState.fromIndex, toIndex);
+                this._lastInvSnapshot = null; // force re-render
+            }
+            this._endDrag();
+        });
+    }
+
+    _startDrag(fromIndex, x, y) {
+        const inv = this.game.inventorySystem;
+        const item = inv.slots[fromIndex];
+        if (!item) return;
+        const itemDef = CONFIG.ITEMS[item.itemId];
+
+        const ghost = document.createElement('div');
+        ghost.className = 'inv-drag-ghost';
+        const icon = document.createElement('span');
+        icon.className = 'inv-icon';
+        icon.textContent = itemDef?.icon || '\u25A0';
+        ghost.appendChild(icon);
+        ghost.style.left = (x - 24) + 'px';
+        ghost.style.top = (y - 24) + 'px';
+        document.body.appendChild(ghost);
+
+        const sourceSlot = this._inventoryGrid.querySelector(`.inv-slot[data-index="${fromIndex}"]`);
+        if (sourceSlot) sourceSlot.classList.add('inv-drag-source');
+
+        this._dragState = { fromIndex, ghost };
+        this._dragOverSlot = null;
+    }
+
+    _endDrag() {
+        if (!this._dragState) return;
+        this._dragState.ghost.remove();
+        const source = this._inventoryGrid.querySelector('.inv-drag-source');
+        if (source) source.classList.remove('inv-drag-source');
+        if (this._dragOverSlot) {
+            this._dragOverSlot.classList.remove('inv-drag-over');
+            this._dragOverSlot = null;
+        }
+        this._dragState = null;
+    }
+
     _onInventoryClick(e) {
         const slot = e.target.closest('.inv-slot');
         if (!slot) return;
@@ -554,6 +690,7 @@ export class UIManager {
             if (current) inv.addItem(current);
             player.equipment[eqSlot] = item.itemId;
             inv.removeItem(item.itemId, 1);
+            this.markDirty('equipment');
             this.game.addChatMessage(`You equip the ${itemDef.name}.`);
             // Auto-switch attack style if weapon has one
             if (itemDef.attackStyle) {
@@ -669,6 +806,7 @@ export class UIManager {
                 if (current) inv.addItem(current);
                 player.equipment[eqSlot] = item.itemId;
                 inv.removeItem(item.itemId, 1);
+                this.markDirty('equipment');
                 this.game.addChatMessage(`You equip the ${itemDef.name}.`);
                 if (itemDef.attackStyle) player.attackStyle = itemDef.attackStyle;
                 menu.remove();
@@ -760,6 +898,7 @@ export class UIManager {
         }
         player.equipment[slot] = null;
         inv.addItem(itemId);
+        this.markDirty('equipment');
         this.game.addChatMessage(`You unequip the ${CONFIG.ITEMS[itemId]?.name || itemId}.`);
     }
 
@@ -810,6 +949,17 @@ export class UIManager {
         if (tooltip) tooltip.classList.add('hidden');
     }
 
+    /** Mark a UI section dirty so it updates next frame. Call from game systems. */
+    markDirty(section) {
+        if (section === 'skills') this._skillsDirty = true;
+        else if (section === 'equipment') { this._equipDirty = true; this._combatPanelDirty = true; }
+        else if (section === 'inventory') { this._spellbookDirty = true; this._questsDirty = true; }
+        else if (section === 'quests') this._questsDirty = true;
+        else if (section === 'all') {
+            this._skillsDirty = this._equipDirty = this._spellbookDirty = this._questsDirty = this._combatPanelDirty = true;
+        }
+    }
+
     // ── Main Update Loop ──
     update(dt) {
         const player = this.game.player;
@@ -858,29 +1008,42 @@ export class UIManager {
             }
         }
 
-        // Combat level
-        this._combatLevel.textContent = 'Combat: ' + player.getCombatLevel();
+        // Combat level (cached — only recompute when skills change)
+        const cl = player.getCombatLevel();
+        if (cl !== this._cachedCombatLevel) {
+            this._cachedCombatLevel = cl;
+            this._combatLevel.textContent = 'Combat: ' + cl;
+        }
 
-        // Coords — hidden, no longer displayed
-        this._coordsDisplay.textContent = '';
-
-        // Inventory
+        // Inventory (has its own snapshot check inside)
         this._updateInventory();
 
-        // Skills
-        this._updateSkills();
+        // Skills (only when dirty)
+        if (this._skillsDirty) {
+            this._updateSkills();
+            this._skillsDirty = false;
+        }
 
-        // Equipment
-        this._updateEquipment();
+        // Equipment (only when dirty)
+        if (this._equipDirty) {
+            this._updateEquipment();
+            this._equipDirty = false;
+        }
 
-        // Combat panel (weapon name, style sync, equipment stats)
-        this._updateCombatPanel();
+        // Combat panel (only when dirty)
+        if (this._combatPanelDirty) {
+            this._updateCombatPanel();
+            this._combatPanelDirty = false;
+        }
 
         // Prayer panel
         this._updatePrayer();
 
-        // Spellbook
-        this._updateSpellbook();
+        // Spellbook (only when dirty)
+        if (this._spellbookDirty) {
+            this._updateSpellbook();
+            this._spellbookDirty = false;
+        }
 
         // Auto-retaliate button text sync
         const arBtn = document.getElementById('auto-retaliate-btn');
@@ -889,8 +1052,11 @@ export class UIManager {
             arBtn.textContent = `Auto-Retaliate: ${player.autoRetaliate ? 'ON' : 'OFF'}`;
         }
 
-        // Quest log
-        this._updateQuests();
+        // Quest log (only when dirty)
+        if (this._questsDirty) {
+            this._updateQuests();
+            this._questsDirty = false;
+        }
 
         // Wilderness warning
         this._checkWilderness(player);
@@ -952,8 +1118,8 @@ export class UIManager {
     _updateSkills() {
         const player = this.game.player;
         for (const [skillId, info] of Object.entries(CONFIG.SKILLS)) {
-            const lvlEl = this._skillsGrid.querySelector(`.skill-lvl[data-skill="${skillId}"]`);
-            const cellEl = this._skillsGrid.querySelector(`.skill-cell[data-skill="${skillId}"]`);
+            const lvlEl = this._skillLvlEls[skillId];
+            const cellEl = this._skillCellEls[skillId];
             if (lvlEl && player.skills[skillId]) {
                 const lvl = player.skills[skillId].level;
                 lvlEl.textContent = lvl;
@@ -966,10 +1132,8 @@ export class UIManager {
 
     _updateEquipment() {
         const player = this.game.player;
-        const container = document.getElementById('equipment-slots');
-        if (!container) return;
         for (const slot of CONFIG.EQUIPMENT_SLOTS) {
-            const el = container.querySelector(`[data-slot="${slot}"] .equip-item`);
+            const el = this._equipSlotEls[slot];
             if (!el) continue;
             const itemId = player.equipment[slot];
             if (itemId) {
@@ -1004,19 +1168,75 @@ export class UIManager {
             this._updateSubstyleButtons();
         }
 
-        // Equipment stats
+        // Equipment stats — enhanced with buffs and max hit
         const statsEl = document.getElementById('equipment-stats');
         if (statsEl) {
-            const bonuses = [
-                ['Atk', player.getEquipmentBonus('attackBonus')],
-                ['Str', player.getEquipmentBonus('strengthBonus')],
-                ['Def', player.getEquipmentBonus('defenceBonus')],
-                ['Rng', player.getEquipmentBonus('rangedBonus') || 0],
-                ['Mag', player.getEquipmentBonus('magicBonus') || 0],
+            statsEl.textContent = '';
+            const bonusList = [
+                ['Attack', 'attackBonus', '#FF4444'],
+                ['Strength', 'strengthBonus', '#00CC00'],
+                ['Defence', 'defenceBonus', '#6699FF'],
+                ['Ranged', 'rangedBonus', '#00CC00'],
+                ['Magic', 'magicBonus', '#CC88FF'],
             ];
-            statsEl.innerHTML = bonuses.map(([label, val]) =>
-                `<div class="equip-stat">${label}: <span class="stat-val ${val > 0 ? 'pos' : 'zero'}">+${val}</span></div>`
-            ).join('');
+            for (const [label, stat, color] of bonusList) {
+                const val = player.getEquipmentBonus(stat) || 0;
+                const buffKey = label.toLowerCase();
+                const buffVal = player.activeBuffs[buffKey]?.boost || 0;
+                const row = document.createElement('div');
+                row.className = 'equip-stat-row';
+                const lbl = document.createElement('span');
+                lbl.className = 'stat-label';
+                lbl.textContent = label;
+                row.appendChild(lbl);
+                const base = document.createElement('span');
+                base.className = 'stat-base';
+                base.style.color = color;
+                base.textContent = `+${val}`;
+                row.appendChild(base);
+                if (buffVal > 0) {
+                    const bonus = document.createElement('span');
+                    bonus.className = 'stat-bonus';
+                    bonus.textContent = `(+${buffVal})`;
+                    row.appendChild(bonus);
+                }
+                statsEl.appendChild(row);
+            }
+            // Max hit
+            const strBonus = player.getEquipmentBonus('strengthBonus') || 0;
+            const strBuff = player.activeBuffs.strength?.boost || 0;
+            const maxHit = Math.max(1, Math.floor(0.5 + (player.skills.strength.level + strBuff) * 0.15 + 1 + strBonus * 0.2));
+            const hitRow = document.createElement('div');
+            hitRow.className = 'equip-stat-row highlight';
+            const hitLabel = document.createElement('span');
+            hitLabel.className = 'stat-label';
+            hitLabel.textContent = 'Max Hit';
+            hitRow.appendChild(hitLabel);
+            const hitVal = document.createElement('span');
+            hitVal.className = 'stat-val-big';
+            hitVal.textContent = maxHit;
+            hitRow.appendChild(hitVal);
+            statsEl.appendChild(hitRow);
+        }
+
+        // Ammo display for ranged
+        const ammoEl = document.getElementById('ammo-display');
+        if (ammoEl) {
+            if (player.attackStyle === 'ranged') {
+                const arrowTypes = ['steel_arrow', 'iron_arrow', 'bronze_arrow'];
+                let text = '';
+                for (const at of arrowTypes) {
+                    const count = this.game.inventorySystem.getItemCount(at);
+                    if (count > 0) {
+                        const def = CONFIG.ITEMS[at];
+                        text += `${def?.icon || ''} ${def?.name || at}: ${count}  `;
+                    }
+                }
+                ammoEl.textContent = text || 'No arrows!';
+                ammoEl.classList.remove('hidden');
+            } else {
+                ammoEl.classList.add('hidden');
+            }
         }
     }
 
@@ -1041,13 +1261,30 @@ export class UIManager {
         const container = document.getElementById('spell-list');
         if (!container) return;
         const player = this.game.player;
+        const weapon = player.equipment.weapon;
+        const weaponDef = weapon ? CONFIG.ITEMS[weapon] : null;
+        const providesRune = weaponDef?.providesRune;
+
         for (const el of container.querySelectorAll('.spell-entry')) {
             const id = el.dataset.spell;
             const spell = CONFIG.SPELLS[id];
             const canCast = player.skills.magic.level >= spell.level;
             const selected = player.selectedSpell === id;
+            const isAutocast = player.autoCast && selected;
+
+            // Check rune availability
+            let hasRunes = true;
+            if (canCast) {
+                for (const [runeId, qty] of Object.entries(spell.runes)) {
+                    if (runeId === providesRune) continue;
+                    if (!this.game.inventorySystem.hasItem(runeId, qty)) { hasRunes = false; break; }
+                }
+            }
+
             el.classList.toggle('selected', selected);
             el.classList.toggle('disabled', !canCast);
+            el.classList.toggle('no-runes', canCast && !hasRunes);
+            el.classList.toggle('autocast', isAutocast);
         }
     }
 

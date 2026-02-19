@@ -38,7 +38,7 @@ export class SaveSystem {
     save() {
         const player = this.game.player;
         const data = {
-            version: 2,
+            version: 4,
             timestamp: Date.now(),
             player: {
                 position: { x: player.position.x, y: player.position.y, z: player.position.z },
@@ -52,6 +52,7 @@ export class SaveSystem {
                 rangedStyle: player.rangedStyle,
                 magicStyle: player.magicStyle,
                 selectedSpell: player.selectedSpell,
+                autoCast: player.autoCast,
                 killCounts: player.killCounts || {},
                 currentDungeonFloor: player.currentDungeonFloor,
             },
@@ -110,6 +111,12 @@ export class SaveSystem {
             };
         }
 
+        // Save quest flags and world events
+        if (this.game.questSystem) {
+            data.questFlags = this.game.questSystem.questFlags || {};
+            data.triggeredEvents = this.game.questSystem.triggeredEvents || [];
+        }
+
         try {
             localStorage.setItem(this.SAVE_KEY, JSON.stringify(data));
             // silent save — no chat spam
@@ -125,6 +132,16 @@ export class SaveSystem {
 
             const data = JSON.parse(raw);
             if (!data) return false;
+
+            // Migration: v3 → v4 (new biome monsters)
+            if ((data.version || 0) < 4) {
+                const kc = data.player?.killCounts || {};
+                if (!kc.fire_elemental) kc.fire_elemental = 0;
+                if (!kc.desert_guard) kc.desert_guard = 0;
+                if (!kc.sea_serpent) kc.sea_serpent = 0;
+                if (data.player) data.player.killCounts = kc;
+                data.version = 4;
+            }
 
             const player = this.game.player;
 
@@ -155,6 +172,7 @@ export class SaveSystem {
             if (data.player.rangedStyle) player.rangedStyle = data.player.rangedStyle;
             if (data.player.magicStyle) player.magicStyle = data.player.magicStyle;
             if (data.player.selectedSpell) player.selectedSpell = data.player.selectedSpell;
+            if (data.player.autoCast) player.autoCast = data.player.autoCast;
 
             // Restore kill counts
             if (data.player.killCounts) player.killCounts = data.player.killCounts;
@@ -215,6 +233,21 @@ export class SaveSystem {
                 this.game.clueScrollSystem.activeClue = data.clues.activeClue || null;
                 this.game.clueScrollSystem.completedClues = data.clues.completedClues || { easy: 0, medium: 0, hard: 0 };
             }
+
+            // Restore quest flags and world events
+            if (this.game.questSystem) {
+                if (data.questFlags) {
+                    this.game.questSystem.questFlags = data.questFlags;
+                }
+                if (data.triggeredEvents) {
+                    this.game.questSystem.triggeredEvents = data.triggeredEvents;
+                    // Replay world events to restore spawned NPCs/portals
+                    this.game.questSystem.replayWorldEvents();
+                }
+            }
+
+            // Mark all UI dirty after loading
+            if (this.game.ui) this.game.ui.markDirty('all');
 
             this.game.addChatMessage('Game loaded!', 'system');
             return true;

@@ -25,6 +25,8 @@ import { AchievementSystem } from './systems/AchievementSystem.js';
 import { WorldMapSystem } from './systems/WorldMapSystem.js';
 import { PetSystem } from './systems/PetSystem.js';
 import { ClueScrollSystem } from './systems/ClueScrollSystem.js';
+import { GrandExchangeSystem } from './systems/GrandExchangeSystem.js';
+import { TradeSystem } from './systems/TradeSystem.js';
 import { UIManager } from './ui/UIManager.js';
 import { Minimap } from './ui/Minimap.js';
 import { ContextMenu } from './ui/ContextMenu.js';
@@ -46,6 +48,14 @@ class Game {
         this.skybox = new Skybox(this.engine.scene);
         this.assets = new ProceduralAssets();
         this.environment = new Environment(this.engine.scene, this.assets, this.terrain);
+        this.environment._game = this; // back-reference for roaming fishing spots
+
+        // Pre-compute bounding spheres for frustum culling (Three.js does this lazily otherwise)
+        this.engine.scene.traverse((obj) => {
+            if (obj.isMesh && obj.geometry) {
+                obj.geometry.computeBoundingSphere();
+            }
+        });
 
         // Core systems
         this.skillSystem = new SkillSystem(this);
@@ -67,10 +77,12 @@ class Game {
         this.worldMapSystem = new WorldMapSystem(this);
         this.petSystem = new PetSystem(this);
         this.clueScrollSystem = new ClueScrollSystem(this);
+        this.grandExchangeSystem = new GrandExchangeSystem(this);
 
         // Multiplayer
         this.remotePlayerManager = new RemotePlayerManager(this);
         this.networkManager = new NetworkManager(this);
+        this.tradeSystem = new TradeSystem(this);
 
         // Create smoke emitter at campfire
         if (this.environment.campfirePosition) {
@@ -86,6 +98,15 @@ class Game {
             this.particleSystem.createSmokeEmitter(fPos);
         }
 
+        // Torch smoke + ember emitters at each torch
+        const _torchTempVec = new THREE.Vector3();
+        for (const torch of this.environment.torches) {
+            _torchTempVec.copy(torch.mesh.position);
+            _torchTempVec.y += 1.75;
+            this.particleSystem.createTorchSmokeEmitter(_torchTempVec);
+            this.particleSystem.createEmberEmitter(_torchTempVec);
+        }
+
         // Create rain system
         this._rainEmitter = this.particleSystem.createRainSystem(this.player.position);
         this.weatherSystem.setRainEmitter(this._rainEmitter);
@@ -97,6 +118,19 @@ class Game {
         // Create firefly system near trees
         if (this.environment.fireflyPositions) {
             this.particleSystem.createFireflySystem(this.environment.fireflyPositions);
+        }
+
+        // Dungeon dust motes
+        this._dustMoteSystems = [];
+        if (this.environment.dungeonFloors) {
+            for (const floor of this.environment.dungeonFloors) {
+                if (floor.bounds) {
+                    const dustEmitter = this.particleSystem.createDustMoteSystem(
+                        floor.bounds, floor.y + 0.5, 2.5
+                    );
+                    this._dustMoteSystems.push(dustEmitter);
+                }
+            }
         }
 
         // Hook into level-up for sparkle burst + banner
@@ -116,8 +150,17 @@ class Game {
             this._showLevelUpBanner(skillName, newLevel);
         };
 
+        // Player shadow proxy (invisible mesh that casts a shadow for the first-person player)
+        this._shadowProxy = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.3, 0.3, 1.6, 6),
+            new THREE.MeshStandardMaterial({ visible: false })
+        );
+        this._shadowProxy.castShadow = true;
+        this.engine.scene.add(this._shadowProxy);
+
         // UI
         this.uiManager = new UIManager(this);
+        this.ui = this.uiManager; // alias for markDirty() calls from systems
         this.minimap = new Minimap(this);
         this.contextMenu = new ContextMenu(this);
 
@@ -129,6 +172,7 @@ class Game {
 
         this._setupInputCallbacks();
         this._setupOverlayButtons();
+        this._setupMobileActionBar();
         this._setupStartOverlay();
         this._setupLoop();
 
@@ -229,6 +273,87 @@ class Game {
         }
     }
 
+    _setupMobileActionBar() {
+        const bar = document.getElementById('mobile-action-bar');
+        if (!bar) return;
+        bar.addEventListener('click', (e) => {
+            const btn = e.target.closest('.action-btn');
+            if (!btn) return;
+            e.preventDefault();
+            e.stopPropagation();
+            const action = btn.dataset.action;
+            switch (action) {
+                case 'attack':
+                    this.player.attackStyle = 'melee';
+                    this.addChatMessage('Attack mode ready. Tap a monster.', 'system');
+                    break;
+                case 'eat':
+                    this.inventorySystem.eatBestFood();
+                    break;
+                case 'pray':
+                    if (this.prayerSystem) this.prayerSystem.quickPray();
+                    break;
+                case 'run':
+                    this.input.toggleRun();
+                    btn.classList.toggle('active-toggle', this.input._runToggled);
+                    break;
+                case 'inventory':
+                    document.querySelector('.tab-btn[data-tab="tab-inventory"]')?.click();
+                    break;
+                case 'map':
+                    this.worldMapSystem.toggle();
+                    break;
+            }
+        });
+    }
+
+    _processAutoWalk(dt) {
+        const player = this.player;
+        const target = player.walkToTarget;
+        if (!target) {
+            player._autoWalking = false;
+            return;
+        }
+
+        // Cancel auto-walk if player gives manual input (WASD or joystick)
+        const move = this.input.getMoveDirection();
+        if (move.x !== 0 || move.z !== 0) {
+            player.walkToTarget = null;
+            player._autoWalking = false;
+            return;
+        }
+
+        // Calculate distance to target
+        const dx = target.position.x - player.position.x;
+        const dz = target.position.z - player.position.z;
+        const dist = Math.sqrt(dx * dx + dz * dz);
+        const range = target.range || CONFIG.PLAYER.interactionRange * 0.9;
+
+        if (dist <= range) {
+            // Arrived! Execute callback and stop
+            player.walkToTarget = null;
+            player._autoWalking = false;
+            if (target.onArrive) target.onArrive();
+            return;
+        }
+
+        // Walk toward target
+        player._autoWalking = true;
+        const speed = player.isRunning ? CONFIG.PLAYER.runSpeed : CONFIG.PLAYER.walkSpeed;
+
+        // Normalize direction
+        const invDist = 1 / dist;
+        const dirX = dx * invDist;
+        const dirZ = dz * invDist;
+
+        // Apply movement
+        player.velocity.x = dirX * speed;
+        player.velocity.z = dirZ * speed;
+
+        // Face toward target (update yaw)
+        this.input.yaw = Math.atan2(-dirX, -dirZ);
+    }
+
     _setupOverlayButtons() {
         // Close buttons for overlays
         const closeBtn = (id, overlayId) => {
@@ -242,6 +367,9 @@ class Game {
         closeBtn('shop-close', 'shop-overlay');
         closeBtn('worldmap-close', 'worldmap-overlay');
         closeBtn('skill-guide-close', 'skill-guide-overlay');
+        closeBtn('herblore-close', 'herblore-overlay');
+        closeBtn('fletching-close', 'fletching-overlay');
+        closeBtn('ge-close', 'ge-overlay');
 
         // Bank deposit all
         const depositAll = document.getElementById('bank-deposit-all');
@@ -355,15 +483,28 @@ class Game {
     _update(dt) {
         if (this.state !== 'playing') return;
 
-        // Monster AI updates always run (smooth movement)
+        // Cutscene system update
+        if (this.questSystem._cutsceneActive) {
+            this.questSystem.updateCutscene(dt);
+            this.particleSystem.update(dt);
+            return; // Skip all other updates during cutscene
+        }
+
+        // Monster visual animation updates — skip if > 60u from player (AI tick still runs)
+        const px = this.player.position.x;
+        const pz = this.player.position.z;
         for (const monster of this.environment.monsters) {
             if (monster.alive || monster._dying) {
-                monster.updateMovement(dt);
+                const mx = monster.mesh.position.x - px;
+                const mz = monster.mesh.position.z - pz;
+                if (mx * mx + mz * mz < 3600) { // 60u squared
+                    monster.updateMovement(dt);
+                }
             }
         }
 
         // Environment animations (fire, water, ground items)
-        this.environment.updateAnimations(dt);
+        this.environment.updateAnimations(dt, this.player.position);
 
         // Multiplayer: interpolate remote players + send state
         this.remotePlayerManager.update(dt);
@@ -372,9 +513,11 @@ class Game {
         // Day/night cycle
         this.engine.updateDayNight(dt, this.skybox);
 
-        // Torch lighting based on time of day
-        if (this.environment.torches.length > 0) {
-            this.environment.updateTorchLighting(this.engine.timeOfDay || 0.5);
+        // Torch lighting based on time of day (throttled — only update when timeOfDay changes significantly)
+        const tod = this.engine.timeOfDay || 0.5;
+        if (this.environment.torches.length > 0 && Math.abs(tod - (this._lastTorchTOD || -1)) > 0.005) {
+            this._lastTorchTOD = tod;
+            this.environment.updateTorchLighting(tod);
         }
 
         // Screen shake
@@ -397,8 +540,31 @@ class Game {
         const isNight = timeOfDay < 0.25 || timeOfDay > 0.75;
         this.particleSystem.setFirefliesActive(isNight);
 
+        // Night ambience toggle
+        if (isNight && !this._nightAmbienceActive) {
+            this._nightAmbienceActive = true;
+            this.audio.startNightAmbience();
+        } else if (!isNight && this._nightAmbienceActive) {
+            this._nightAmbienceActive = false;
+            this.audio.stopNightAmbience();
+        }
+
+        // Water ambient by proximity to pond
+        if (this.environment.pondCenter) {
+            const dx = this.player.position.x - this.environment.pondCenter.x;
+            const dz = this.player.position.z - this.environment.pondCenter.z;
+            const distToPond = Math.sqrt(dx * dx + dz * dz);
+            if (distToPond < 15 && !this._waterAmbientActive) {
+                this._waterAmbientActive = true;
+                this.audio.startWaterAmbient();
+            } else if (distToPond >= 15 && this._waterAmbientActive) {
+                this._waterAmbientActive = false;
+                this.audio.stopWaterAmbient();
+            }
+        }
+
         // Weather fog modifier (surface only)
-        if (!this.engine._inDungeon) {
+        if (!this.engine._inDungeon && !this._inUnderwaterCave) {
             const fogMod = this.weatherSystem.getWeatherFogModifier();
             if (this.engine.scene.fog) {
                 this.engine.scene.fog.far = CONFIG.VISUAL.fogFar * fogMod;
@@ -417,10 +583,16 @@ class Game {
             const px = this.player.position.x;
             if (this.player.inCombat) {
                 this.audio.setMusicArea('combat');
+            } else if (this._inUnderwaterCave) {
+                this.audio.setMusicArea('underwater');
             } else if (pz < -50) {
                 this.audio.setMusicArea('wilderness');
             } else if (px < -40 && pz < -30) {
                 this.audio.setMusicArea('dungeon');
+            } else if (px > 85) {
+                this.audio.setMusicArea('volcanic');
+            } else if (px > 65 && pz > 0 && pz < 25) {
+                this.audio.setMusicArea('desert');
             } else {
                 this.audio.setMusicArea('peaceful');
             }
@@ -432,11 +604,15 @@ class Game {
         // Skip player controls when pointer is unlocked (cursor mode or paused)
         if (!this.input.locked) return;
 
-        // Player movement (override terrain height when in dungeon)
+        // Player movement (override terrain height when in dungeon or underwater cave)
         this.player.update(dt, this.input, this.engine.camera, (x, z) => {
             if (this.player.currentDungeonFloor >= 0) {
                 const floorData = this.environment.dungeonFloors?.[this.player.currentDungeonFloor];
                 return floorData ? floorData.y : this.terrain.getHeightAt(x, z);
+            }
+            const cave = this.environment.underwaterCave;
+            if (cave && this.player.position.y < cave.y + (cave.caveH || 6) + 2) {
+                return cave.y;
             }
             return this.terrain.getHeightAt(x, z);
         });
@@ -451,6 +627,14 @@ class Game {
             }
         }
 
+        // Underwater cave bounds clamping
+        const caveData = this.environment.underwaterCave;
+        if (caveData && this.player.position.y < caveData.y + (caveData.caveH || 6) + 2) {
+            const cb = caveData.bounds;
+            this.player.position.x = Math.max(cb.minX, Math.min(cb.maxX, this.player.position.x));
+            this.player.position.z = Math.max(cb.minZ, Math.min(cb.maxZ, this.player.position.z));
+        }
+
         // Dungeon fog/lighting override
         const inDungeon = this.player.currentDungeonFloor >= 0;
         this.engine._inDungeon = inDungeon;
@@ -463,10 +647,86 @@ class Game {
         }
         this._wasDungeon = inDungeon;
 
+        // Underwater cave fog override
+        const cave = this.environment.underwaterCave;
+        const inCave = cave && this.player.position.y < cave.y + (cave.caveH || 6) + 2 &&
+            this.player.position.x > cave.bounds.minX - 5 && this.player.position.x < cave.bounds.maxX + 5 &&
+            this.player.position.z > cave.bounds.minZ - 5 && this.player.position.z < cave.bounds.maxZ + 5;
+        this._inUnderwaterCave = inCave;
+        if (inCave && !this._wasInCave) {
+            this.engine.scene.fog = new THREE.Fog(0x0A3C64, 2, 25);
+            this.engine.scene.background = new THREE.Color(0x0A3C64);
+        } else if (!inCave && this._wasInCave && !inDungeon) {
+            this.engine.scene.fog = new THREE.Fog(CONFIG.VISUAL.fogColor, CONFIG.VISUAL.fogNear, CONFIG.VISUAL.fogFar);
+            this.engine.scene.background = new THREE.Color(CONFIG.VISUAL.skyColor);
+        }
+
+        // Underwater overlay
+        const uwOverlay = document.getElementById('underwater-overlay');
+        if (uwOverlay) {
+            if (inCave && !this._wasInCave) uwOverlay.classList.add('active');
+            else if (!inCave && this._wasInCave) uwOverlay.classList.remove('active');
+        }
+
+        // Underwater FOV oscillation
+        if (inCave) {
+            this._caveFovTime = (this._caveFovTime || 0) + dt;
+            const fovOffset = Math.sin(this._caveFovTime * 1.5) * 1.0;
+            this.engine.camera.fov = CONFIG.CAMERA.fov + fovOffset;
+            this.engine.camera.updateProjectionMatrix();
+        } else if (this._wasInCave && !inCave) {
+            this.engine.camera.fov = CONFIG.CAMERA.fov;
+            this.engine.camera.updateProjectionMatrix();
+            this._caveFovTime = 0;
+        }
+
+        // Underwater bubble emitters
+        if (inCave && !this._wasInCave && cave) {
+            this._bubbleEmitters = [];
+            for (let i = 0; i < 3; i++) {
+                const bx = cave.bounds.minX + Math.random() * (cave.bounds.maxX - cave.bounds.minX);
+                const bz = cave.bounds.minZ + Math.random() * (cave.bounds.maxZ - cave.bounds.minZ);
+                const pos = new THREE.Vector3(bx, cave.y, bz);
+                const em = this.particleSystem.createBubbleEmitter(pos);
+                this._bubbleEmitters.push(em);
+            }
+        } else if (!inCave && this._wasInCave && this._bubbleEmitters) {
+            for (const em of this._bubbleEmitters) {
+                em.active = false;
+            }
+            this._bubbleEmitters = null;
+        }
+
+        this._wasInCave = inCave;
+
+        // Dust mote visibility — only show when inside dungeon
+        if (this._dustMoteSystems) {
+            for (const dustEm of this._dustMoteSystems) {
+                if (dustEm.points) {
+                    dustEm.points.visible = inDungeon;
+                }
+                dustEm.active = inDungeon;
+            }
+        }
+
+        // Detect surface type for footsteps
+        let surface = 'grass';
+        if (this.player.currentDungeonFloor >= 0) surface = 'stone';
+        else if (this._inUnderwaterCave) surface = 'stone';
+        else {
+            const px = this.player.position.x;
+            const pz = this.player.position.z;
+            // Desert area
+            if (px > 45 || (px > 35 && pz > 10)) surface = 'sand';
+            // Buildings / paths
+            else if (Math.abs(px) < 5 && Math.abs(pz + 15) < 8) surface = 'stone'; // castle area
+        }
+        this.player._currentSurface = surface;
+
         // Footstep sounds
         const move = this.input.getMoveDirection();
         const isMoving = move.x !== 0 || move.z !== 0;
-        this.audio.updateFootsteps(dt, isMoving, this.player.isRunning);
+        this.audio.updateFootsteps(dt, isMoving, this.player.isRunning, surface);
 
         // Sprint dust particles
         if (isMoving && this.player.isRunning) {
@@ -491,6 +751,31 @@ class Game {
         // Update sun shadow to follow player
         this.engine.updateSunTarget(this.player.position);
 
+        // Dynamic shadow culling (once per second)
+        if (!this._shadowCullTimer) this._shadowCullTimer = 0;
+        this._shadowCullTimer += dt;
+        if (this._shadowCullTimer >= 1.0) {
+            this._shadowCullTimer = 0;
+            this.engine.updateShadowCasters(this.player.position);
+        }
+
+        // Update player shadow proxy position
+        if (this._shadowProxy) {
+            this._shadowProxy.position.set(
+                this.player.position.x,
+                this.player.position.y - 0.2,
+                this.player.position.z
+            );
+        }
+
+        // ── Tap-to-interact: convert screen tap to NDC for raycasting ──
+        const tapPos = this.input.consumeTapScreenPos();
+        if (tapPos) {
+            const ndcX = (tapPos.x / window.innerWidth) * 2 - 1;
+            const ndcY = -(tapPos.y / window.innerHeight) * 2 + 1;
+            this.interactionSystem.setTapNDC({ x: ndcX, y: ndcY });
+        }
+
         // Interaction system (raycasting)
         this.interactionSystem.update();
 
@@ -503,6 +788,9 @@ class Game {
         if (rightClick) {
             this.interactionSystem.onRightClick(rightClick.x, rightClick.y);
         }
+
+        // ── Auto-walk to target (tap-to-interact) ──
+        this._processAutoWalk(dt);
 
         // Low HP warning vignette + heartbeat sound
         const hpPct = this.player.hp / this.player.maxHp;

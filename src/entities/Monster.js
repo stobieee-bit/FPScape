@@ -6,6 +6,7 @@ export class Monster {
         this.mesh = mesh;
         this.config = config;
         this.name = config.name;
+        this.id = null; // multiplayer sync ID (set by Environment if data.id exists)
         this.spawnPos = spawnPos.clone();
         this.position = spawnPos.clone();
 

@@ -1,5 +1,5 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { overflow: hidden; background: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; cursor: default; }
+body { overflow: hidden; background: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; cursor: default; user-select: none; -webkit-user-select: none; -ms-user-select: none; -webkit-touch-callout: none; touch-action: manipulation; }
 #game-canvas { display: block; width: 100vw; height: 100vh; }
 
 #hud { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
@@ -44,6 +44,42 @@ body { overflow: hidden; background: #000; font-family: 'Segoe UI', Tahoma, Gene
 .inv-slot:active { transform: scale(0.92); background: rgba(255,215,0,0.2); }
 .inv-icon { font-size: 22px; }
 .inv-qty { position: absolute; top: 1px; left: 3px; font-size: 10px; color: #FFD700; text-shadow: 1px 1px 1px #000; }
+.inv-drag-ghost { position: fixed; width: 48px; height: 48px; background: rgba(0,0,0,0.6); border: 2px solid #FFD700; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 22px; pointer-events: none; z-index: 200; opacity: 0.9; }
+.inv-drag-source { opacity: 0.3; border-color: #888 !important; }
+.inv-drag-over { border-color: #FFD700 !important; background: rgba(255,215,0,0.25) !important; box-shadow: inset 0 0 8px rgba(255,215,0,0.3); }
+
+/* Spellbook auto-cast + rune availability */
+.spell-entry.autocast { border-color: #FF8800; background: rgba(255,136,0,0.2); box-shadow: 0 0 12px rgba(255,136,0,0.5); }
+.spell-entry.no-runes { opacity: 0.45; }
+
+/* Equipment stats enhanced */
+#equipment-stats { display: flex; flex-direction: column; gap: 1px; margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(139,115,85,0.3); }
+.equip-stat-row { display: flex; justify-content: space-between; padding: 1px 4px; font-size: 10px; color: #C0A875; }
+.equip-stat-row .stat-label { flex: 1; }
+.equip-stat-row .stat-base { font-weight: bold; min-width: 30px; text-align: right; }
+.equip-stat-row .stat-bonus { color: #FFD700; font-size: 9px; margin-left: 2px; }
+.equip-stat-row.highlight { border-top: 1px solid rgba(139,115,85,0.3); margin-top: 2px; padding-top: 3px; }
+.equip-stat-row .stat-val-big { color: #FF4444; font-weight: bold; font-size: 12px; }
+
+/* Ammo display */
+#ammo-display { color: #00CC00; font-size: 10px; text-align: center; padding: 3px 0; margin-top: 4px; border-top: 1px solid rgba(139,115,85,0.3); }
+
+/* Grand Exchange */
+#ge-overlay { width: 520px; }
+#ge-search { width: calc(100% - 16px); margin: 0 8px 6px; background: rgba(0,0,0,0.5); border: 1px solid #5C4A36; border-radius: 3px; color: #FFD700; font-size: 12px; padding: 4px 8px; outline: none; font-family: inherit; }
+#ge-search::placeholder { color: #5C4A36; }
+#ge-search:focus { border-color: #FFD700; }
+.ge-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; padding: 4px 8px; max-height: 400px; overflow-y: auto; }
+.ge-item { display: flex; flex-direction: column; align-items: center; background: rgba(0,0,0,0.3); border: 1px solid #5C4A36; border-radius: 4px; padding: 6px 4px; cursor: pointer; transition: all 0.15s; }
+.ge-item:hover { border-color: #FFD700; background: rgba(255,215,0,0.1); }
+.ge-icon { font-size: 22px; }
+.ge-name { color: #FFD700; font-size: 10px; text-align: center; margin-top: 2px; }
+.ge-price { color: #C0A875; font-size: 9px; }
+.ge-qty { color: #00CC00; font-size: 9px; }
+.ge-empty { color: #5C4A36; font-size: 12px; text-align: center; padding: 20px; grid-column: 1 / -1; }
+#ge-mode-buttons { display: flex; gap: 3px; }
+.ge-mode-btn { padding: 2px 10px; background: rgba(0,0,0,0.4); border: 1px solid #5C4A36; border-radius: 3px; color: #C0A875; font-size: 11px; cursor: pointer; font-family: inherit; }
+.ge-mode-btn.active { border-color: #FFD700; color: #FFD700; background: rgba(255,215,0,0.2); }
 
 /* Skills Grid - RS-style compact 3-col */
 #skills-grid { display: flex; flex-direction: column; }
@@ -354,6 +390,10 @@ body { overflow: hidden; background: #000; font-family: 'Segoe UI', Tahoma, Gene
 .wilderness-vignette { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 11; opacity: 0; background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.5) 100%); transition: opacity 1s; }
 .wilderness-vignette.active { opacity: 1; }
 
+/* Underwater Cave Overlay */
+#underwater-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; opacity: 0; background: radial-gradient(ellipse at center, rgba(10,60,100,0.15) 0%, rgba(5,40,80,0.35) 60%, rgba(2,20,50,0.5) 100%); transition: opacity 0.8s ease; }
+#underwater-overlay.active { opacity: 1; }
+
 /* Skull Indicator */
 #skull-indicator { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); color: #FF2222; font-size: 16px; font-weight: bold; text-shadow: 0 0 10px rgba(255,0,0,0.5), 2px 2px 4px #000; z-index: 25; pointer-events: none; animation: skull-pulse 1s ease-in-out infinite; background: rgba(0,0,0,0.4); padding: 4px 12px; border-radius: 4px; border: 1px solid #FF4444; }
 @keyframes skull-pulse { 0%,100% { opacity:0.8; } 50% { opacity:1; } }
@@ -404,7 +444,12 @@ body { overflow: hidden; background: #000; font-family: 'Segoe UI', Tahoma, Gene
 .chat-msg.multiplayer { color: #FFFFFF; }
 .player-name-label { position: absolute; color: #FFFFFF; font-size: 11px; font-weight: bold; text-shadow: 1px 1px 2px #000, -1px -1px 2px #000; pointer-events: none; white-space: nowrap; transform: translate(-50%, -100%); z-index: 50; }
 .player-name-label .player-level { color: #00CCFF; font-size: 9px; font-weight: normal; }
-#mp-status { position: absolute; top: 10px; left: 10px; color: #00CCFF; font-size: 11px; text-shadow: 1px 1px 2px #000; pointer-events: none; }
+#mp-status { position: absolute; top: 10px; left: 10px; color: #00CCFF; font-size: 11px; text-shadow: 1px 1px 2px #000; pointer-events: none; display: flex; align-items: center; gap: 4px; }
+.mp-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.mp-dot-green { background: #44FF44; box-shadow: 0 0 4px rgba(68,255,68,0.6); }
+.mp-dot-yellow { background: #FFCC00; box-shadow: 0 0 4px rgba(255,204,0,0.6); animation: mp-dot-pulse 1s ease-in-out infinite; }
+.mp-dot-red { background: #FF4444; box-shadow: 0 0 4px rgba(255,68,68,0.4); }
+@keyframes mp-dot-pulse { 0%,100% { opacity:0.5; } 50% { opacity:1; } }
 
 #update-banner {
     position: absolute; top: 30px; left: 50%; transform: translateX(-50%);
@@ -418,4 +463,191 @@ body { overflow: hidden; background: #000; font-family: 'Segoe UI', Tahoma, Gene
 #update-banner.hidden { display: none; }
 @keyframes bannerPulse { 0%,100% { box-shadow: 0 0 6px rgba(102,187,68,0.3); } 50% { box-shadow: 0 0 14px rgba(102,187,68,0.6); } }
 
+/* Allow text selection ONLY in text inputs */
+#chat-input, #ge-search, #player-name-input { user-select: text; -webkit-user-select: text; }
+
+/* Prevent image/text ghost drag on all UI elements */
+#hud, #hud * { -webkit-user-drag: none; user-drag: none; }
+img, span, div, button { -webkit-user-drag: none; }
+
+/* Cutscene letterbox */
+#cutscene-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    pointer-events: none;
+    transition: opacity 0.5s;
+}
+#cutscene-overlay.hidden { display: none; }
+#cutscene-bar-top, #cutscene-bar-bottom {
+    position: absolute;
+    left: 0; right: 0;
+    height: 60px;
+    background: #000;
+}
+#cutscene-bar-top { top: 0; }
+#cutscene-bar-bottom { bottom: 0; }
+#cutscene-text {
+    position: absolute;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #fff;
+    font-family: 'RuneScape UF', sans-serif;
+    font-size: 18px;
+    text-align: center;
+    text-shadow: 1px 1px 3px #000;
+    max-width: 600px;
+    padding: 8px 16px;
+    background: rgba(0,0,0,0.5);
+    border-radius: 4px;
+}
+#cutscene-text.hidden { display: none; }
+
 .hidden { display: none !important; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   RESPONSIVE / MOBILE SUPPORT
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── Tablet (≤768px) ────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    #right-panel { width: 180px; }
+    #panel-content { min-height: 240px; max-height: calc(100vh - 220px); padding: 4px; }
+    .tab-btn { font-size: 8px; padding: 2px 1px; }
+    #inventory-grid { grid-template-columns: repeat(4, 40px); grid-template-rows: repeat(7, 40px); }
+    .inv-slot { width: 40px; height: 40px; }
+    .inv-icon { font-size: 18px; }
+    #minimap-container { width: 120px; height: 120px; }
+    #minimap-canvas { width: 112px; height: 112px; }
+    #chat-box { width: 300px; height: 110px; }
+    #xp-drops { right: 170px; }
+    .skill-cell { padding: 3px 1px; }
+    .skill-icon { font-size: 11px; }
+    .skill-lvl { font-size: 10px; }
+    #dialogue-box { width: 400px; }
+    .overlay-panel { width: 380px; }
+    #smithing-overlay { width: 420px; }
+    .overlay-grid { grid-template-columns: repeat(6, 48px); }
+}
+
+/* ── Phone (≤480px) ─────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+    #right-panel { position: absolute; top: auto; bottom: 0; right: 0; left: 0; width: 100%; max-height: 45vh; }
+    #panel-tabs { justify-content: center; gap: 0; }
+    .tab-btn { flex: 0 1 auto; min-width: 36px; font-size: 7px; padding: 4px 3px; }
+    #panel-content { min-height: 0; max-height: 35vh; padding: 4px; }
+    #inventory-grid { grid-template-columns: repeat(7, 40px); grid-template-rows: repeat(4, 40px); }
+    .inv-slot { width: 40px; height: 40px; }
+    #minimap-container { width: 100px; height: 100px; }
+    #minimap-canvas { width: 92px; height: 92px; }
+    #chat-box { width: calc(100vw - 20px); height: 90px; bottom: 46vh; left: 10px; }
+    #chat-input { font-size: 14px; padding: 6px 8px; }
+    #xp-drops { right: 10px; top: 25%; }
+    .chat-msg { font-size: 11px; }
+    #stats-bar { bottom: 48vh; left: 6px; }
+    .orb { width: 34px; height: 34px; }
+    .orb-ring { width: 34px; height: 34px; }
+    .orb-icon { font-size: 12px; }
+    .orb-text { font-size: 10px; left: 38px; }
+    #coords { bottom: auto; top: 32px; left: 6px; font-size: 9px; }
+    #dialogue-box { width: 90vw; }
+    .overlay-panel { width: 95vw; max-height: 70vh; }
+    #smithing-overlay, #ge-overlay { width: 95vw; }
+    .overlay-grid { grid-template-columns: repeat(5, 48px); }
+    #crosshair { font-size: 20px; }
+}
+
+/* ── Touch / no-hover devices ────────────────────────────────────────── */
+@media (hover: none) {
+    .tab-btn { min-height: 44px; font-size: 10px; }
+    .inv-slot { min-width: 44px; min-height: 44px; }
+    .context-option { padding: 8px 12px; min-height: 44px; display: flex; align-items: center; }
+    .inv-context-option { padding: 8px 12px; min-height: 44px; display: flex; align-items: center; }
+    .dialogue-option { padding: 10px 14px; min-height: 44px; }
+    .prayer-entry { width: 48px; height: 48px; }
+    .spell-entry { min-height: 54px; }
+    .style-btn { min-height: 44px; }
+    .substyle-btn { min-height: 40px; }
+    .equip-slot { width: 46px; height: 46px; }
+    .overlay-btn { min-height: 40px; padding: 6px 12px; }
+    .bank-qty-btn { min-height: 40px; padding: 4px 12px; }
+    .ge-mode-btn { min-height: 40px; }
+    .ge-item { padding: 10px 6px; }
+    #chat-input { font-size: 16px; min-height: 44px; }
+    #player-name-input { font-size: 18px; min-height: 48px; }
+    #start-btn { min-height: 52px; font-size: 20px; }
+    .smith-item, .smelt-item { min-height: 88px; }
+}
+
+/* ── Touch-mode body class (added by InputManager) ───────────────────── */
+body.touch-mode #crosshair { display: none; }
+body.touch-mode #controls-hint { display: none; }
+
+/* ── Virtual Joystick ─────────────────────────────────────────────────── */
+#touch-joystick { position: absolute; bottom: 30px; left: 20px; pointer-events: none; z-index: 35; }
+body.touch-mode #touch-joystick { display: block !important; pointer-events: auto; }
+#joystick-base {
+    position: relative; width: 120px; height: 120px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(60,45,30,0.35) 0%, rgba(60,45,30,0.15) 70%, transparent 100%);
+    border: 2px solid rgba(139,115,85,0.4);
+}
+#joystick-thumb {
+    position: absolute; width: 50px; height: 50px; border-radius: 50%;
+    background: radial-gradient(circle at 40% 35%, rgba(255,215,0,0.5), rgba(139,115,85,0.6));
+    border: 2px solid rgba(255,215,0,0.6);
+    top: 50%; left: 50%; transform: translate(-50%, -50%);
+    box-shadow: 0 0 10px rgba(255,215,0,0.2);
+    transition: transform 0.05s;
+}
+
+/* ── Mobile Action Bar ────────────────────────────────────────────────── */
+#mobile-action-bar { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: none; gap: 6px; z-index: 36; pointer-events: auto; }
+body.touch-mode #mobile-action-bar { display: flex !important; }
+.action-btn { width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(180deg, #3C2D1E, #2A1F14); border: 2px solid #8B7355; color: #FFD700; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; }
+.action-btn:active { background: #4A3828; border-color: #FFD700; transform: scale(0.9); }
+.action-btn.active-toggle { border-color: #FFD700; background: rgba(255,215,0,0.2); box-shadow: 0 0 8px rgba(255,215,0,0.4); }
+
+/* ── Chat bubbles ─────────────────────────────────────────────────────── */
+.chat-bubble {
+    position: absolute; pointer-events: none; z-index: 50;
+    transform: translate(-50%, -100%);
+    background: rgba(0,0,0,0.7); border: 1px solid rgba(255,215,0,0.4);
+    border-radius: 8px; padding: 3px 8px;
+    color: #FFFFFF; font-size: 12px; font-weight: bold;
+    text-shadow: 1px 1px 1px #000;
+    white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis;
+    animation: chat-bubble-fade 5s ease-out forwards;
+}
+.chat-bubble::after {
+    content: ''; position: absolute;
+    bottom: -6px; left: 50%; transform: translateX(-50%);
+    width: 0; height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 6px solid rgba(0,0,0,0.7);
+}
+@keyframes chat-bubble-fade { 0% { opacity:1; } 75% { opacity:1; } 100% { opacity:0; } }
+
+/* ── Trade system ─────────────────────────────────────────────────────── */
+#trade-overlay { max-width: 460px; left: 50%; transform: translateX(-50%); }
+#trade-columns { display: flex; gap: 8px; padding: 8px; }
+.trade-column { flex: 1; }
+.trade-col-title { color: #FFD700; font-size: 12px; font-weight: bold; text-align: center; margin-bottom: 4px; text-shadow: 1px 1px 1px #000; }
+.trade-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; }
+.trade-slot { width: 48px; height: 48px; background: rgba(0,0,0,0.4); border: 1px solid #5A4A3A; border-radius: 3px; display: flex; align-items: center; justify-content: center; position: relative; cursor: pointer; }
+.trade-slot:hover { border-color: #FFD700; background: rgba(255,215,0,0.1); }
+.trade-item-icon { font-size: 22px; }
+.trade-item-qty { position: absolute; bottom: 1px; right: 3px; color: #FFD700; font-size: 10px; font-weight: bold; text-shadow: 1px 1px 1px #000; }
+.trade-status { font-size: 10px; color: #C0A875; }
+.trade-status.accepted { color: #44CC44; }
+#trade-buttons { display: flex; justify-content: center; padding: 6px; }
+.trade-accept { background: #2A5A1E !important; border-color: #44CC44 !important; color: #44CC44 !important; font-size: 14px; padding: 6px 24px; }
+.trade-accept:hover { background: #3A7A2E !important; }
+.trade-accept:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Trade request popup */
+#trade-request-popup { position: fixed; top: 30%; left: 50%; transform: translate(-50%, -50%); z-index: 60; pointer-events: auto; }
+.trade-req-box { background: linear-gradient(180deg, #3C2D1E, #2A1F14); border: 2px solid #FFD700; border-radius: 8px; padding: 16px 24px; text-align: center; color: #FFD700; font-size: 14px; font-weight: bold; text-shadow: 1px 1px 1px #000; }
+.trade-req-btns { display: flex; gap: 12px; justify-content: center; margin-top: 12px; }
+.trade-req-btns button { padding: 6px 20px; font-size: 13px; }

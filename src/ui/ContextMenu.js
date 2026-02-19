@@ -118,6 +118,11 @@ export class ContextMenu {
             case 'church':
                 actions.push({ label: 'Pray at altar', handler: () => this.game.interactionSystem._handleChurchClick() });
                 break;
+            case 'remote_player':
+                if (data.playerId && this.game.tradeSystem) {
+                    actions.push({ label: `Trade ${data.name}`, handler: () => this.game.tradeSystem.requestTrade(data.playerId) });
+                }
+                break;
         }
         actions.push({ label: `Examine ${data.name}`, handler: () => this._examine(data, entity) });
         return actions;

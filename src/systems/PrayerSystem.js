@@ -47,6 +47,29 @@ export class PrayerSystem {
         this.game.addChatMessage(`Activated: ${config.name}`, 'system');
     }
 
+    /** Quick prayer toggle — activate first available prayer or deactivate all (mobile action bar) */
+    quickPray() {
+        if (this.activePrayers.size > 0) {
+            this.activePrayers.clear();
+            this.game.addChatMessage('Prayers deactivated.', 'system');
+            return;
+        }
+        if (this.points <= 0) {
+            this.game.addChatMessage("You've run out of prayer points!", 'system');
+            return;
+        }
+        // Activate the highest-level prayer the player can use
+        const prayerLevel = this.game.player.skills.prayer.level;
+        let best = null;
+        for (const [id, cfg] of Object.entries(CONFIG.PRAYERS)) {
+            if (prayerLevel >= cfg.level && (!best || cfg.level > CONFIG.PRAYERS[best].level)) {
+                best = id;
+            }
+        }
+        if (best) this.togglePrayer(best);
+        else this.game.addChatMessage('No prayers available.', 'system');
+    }
+
     update(dt) {
         if (this.activePrayers.size === 0) return;
 

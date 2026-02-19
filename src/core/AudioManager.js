@@ -233,7 +233,7 @@ export class AudioManager {
     }
 
     // Call each frame with dt and whether the player is moving
-    updateFootsteps(dt, isMoving, isRunning) {
+    updateFootsteps(dt, isMoving, isRunning, surface) {
         if (!isMoving) {
             this._footstepTimer = 0;
             return;
@@ -243,7 +243,11 @@ export class AudioManager {
         this._footstepTimer += dt;
         if (this._footstepTimer >= interval) {
             this._footstepTimer -= interval;
-            this.playFootstep();
+            if (surface) {
+                this.playFootstepSurface(surface);
+            } else {
+                this.playFootstep();
+            }
         }
     }
 
@@ -443,7 +447,7 @@ export class AudioManager {
     }
 
     setMusicArea(area) {
-        this._musicArea = area; // 'peaceful', 'combat', 'wilderness', 'dungeon'
+        this._musicArea = area; // 'peaceful', 'combat', 'wilderness', 'dungeon', 'volcanic', 'desert', 'underwater'
     }
 
     /** Set master volume (0-1). Affects all audio immediately. */
@@ -480,6 +484,9 @@ export class AudioManager {
             combat: [[196, 233, 294], [185, 220, 277], [196, 247, 294], [175, 220, 262]],
             wilderness: [[147, 175, 220], [165, 196, 247], [147, 185, 220], [131, 165, 196]],
             dungeon: [[131, 156, 196], [123, 147, 185], [131, 165, 196], [117, 147, 175]],
+            volcanic: [[165, 196, 247], [147, 185, 220], [156, 196, 233], [139, 175, 208]],
+            desert: [[220, 277, 330], [233, 294, 349], [208, 262, 330], [220, 277, 349]],
+            underwater: [[196, 247, 294], [175, 220, 262], [185, 233, 277], [196, 247, 311]],
         };
 
         const progression = chords[area] || chords.peaceful;
@@ -598,5 +605,246 @@ export class AudioManager {
         noise.connect(filter).connect(gain).connect(this.dest);
         noise.start(t);
         noise.stop(t + 0.2);
+    }
+
+    // ── Night & ambient sounds ───────────────────────────────────────────
+
+    // Cricket chirp: two quick 4kHz sine chirps
+    playCricket() {
+        if (!this.ctx) return;
+        this._init();
+        const ctx = this.ctx;
+        const t = ctx.currentTime;
+
+        for (let i = 0; i < 2; i++) {
+            const osc = ctx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.value = 4000;
+
+            const gain = ctx.createGain();
+            const start = t + i * 0.1; // 0.05s chirp + 0.05s gap
+            gain.gain.setValueAtTime(0.03, start);
+            gain.gain.exponentialRampToValueAtTime(0.001, start + 0.05);
+
+            osc.connect(gain).connect(this.dest);
+            osc.start(start);
+            osc.stop(start + 0.05);
+        }
+    }
+
+    // Owl hoot: 300Hz→200Hz sine sweep
+    playOwlHoot() {
+        if (!this.ctx) return;
+        this._init();
+        const ctx = this.ctx;
+        const t = ctx.currentTime;
+
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(300, t);
+        osc.frequency.exponentialRampToValueAtTime(200, t + 0.4);
+
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.02, t);
+        gain.gain.setValueAtTime(0.02, t + 0.3);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+
+        osc.connect(gain).connect(this.dest);
+        osc.start(t);
+        osc.stop(t + 0.4);
+    }
+
+    // Wind gust: bandpass-filtered noise at 800Hz, 1.5s with fade in/out
+    playWindGust() {
+        if (!this.ctx) return;
+        this._init();
+        const ctx = this.ctx;
+        const t = ctx.currentTime;
+        const duration = 1.5;
+
+        const buffer = ctx.createBuffer(1, ctx.sampleRate * duration, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < data.length; i++) {
+            data[i] = Math.random() * 2 - 1;
+        }
+        const src = ctx.createBufferSource();
+        src.buffer = buffer;
+
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.value = 800;
+        filter.Q.value = 1;
+
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.02, t + 0.3);
+        gain.gain.setValueAtTime(0.02, t + duration - 0.4);
+        gain.gain.linearRampToValueAtTime(0, t + duration);
+
+        src.connect(filter).connect(gain).connect(this.dest);
+        src.start(t);
+        src.stop(t + duration);
+    }
+
+    // Looping water ambient: bandpass noise at 600Hz, very quiet
+    startWaterAmbient() {
+        if (!this.ctx) return;
+        this._init();
+        if (this._waterAmbientNode) return; // already playing
+        const ctx = this.ctx;
+        const duration = 4;
+
+        const playLoop = () => {
+            if (!this._waterAmbientNode) return;
+            const buffer = ctx.createBuffer(1, ctx.sampleRate * duration, ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < data.length; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+            const src = ctx.createBufferSource();
+            src.buffer = buffer;
+
+            const filter = ctx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.value = 600;
+            filter.Q.value = 0.8;
+
+            const gain = ctx.createGain();
+            gain.gain.value = 0.01;
+
+            src.connect(filter).connect(gain).connect(this.dest);
+            src.start();
+            src.stop(ctx.currentTime + duration);
+            src.onended = () => playLoop();
+            this._waterAmbientSource = src;
+        };
+
+        this._waterAmbientNode = true; // flag to keep loop alive
+        playLoop();
+    }
+
+    stopWaterAmbient() {
+        this._waterAmbientNode = null;
+        if (this._waterAmbientSource) {
+            try { this._waterAmbientSource.stop(); } catch (e) {}
+            this._waterAmbientSource = null;
+        }
+    }
+
+    // Night ambience: random cricket chirps + owl hoots on intervals
+    startNightAmbience() {
+        if (!this.ctx) return;
+        this._init();
+        if (this._nightAmbienceActive) return;
+        this._nightAmbienceActive = true;
+        this._nightAmbienceIntervals = [];
+
+        // Cricket chirps every 2-5s
+        const cricketLoop = () => {
+            if (!this._nightAmbienceActive) return;
+            this.playCricket();
+            const delay = 2000 + Math.random() * 3000;
+            const id = setTimeout(cricketLoop, delay);
+            this._nightAmbienceIntervals.push(id);
+        };
+        const cricketStart = setTimeout(cricketLoop, 2000 + Math.random() * 3000);
+        this._nightAmbienceIntervals.push(cricketStart);
+
+        // Owl hoots every 15-30s
+        const owlLoop = () => {
+            if (!this._nightAmbienceActive) return;
+            this.playOwlHoot();
+            const delay = 15000 + Math.random() * 15000;
+            const id = setTimeout(owlLoop, delay);
+            this._nightAmbienceIntervals.push(id);
+        };
+        const owlStart = setTimeout(owlLoop, 15000 + Math.random() * 15000);
+        this._nightAmbienceIntervals.push(owlStart);
+    }
+
+    stopNightAmbience() {
+        this._nightAmbienceActive = false;
+        if (this._nightAmbienceIntervals) {
+            for (const id of this._nightAmbienceIntervals) {
+                clearTimeout(id);
+            }
+            this._nightAmbienceIntervals = [];
+        }
+    }
+
+    // Surface-aware footstep sounds
+    playFootstepSurface(surface) {
+        this._init();
+        const ctx = this.ctx;
+        const t = ctx.currentTime;
+
+        if (surface === 'stone') {
+            // Sharp noise burst at 120Hz
+            const noise = ctx.createBufferSource();
+            const buffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.04), ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < data.length; i++) {
+                data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+            }
+            noise.buffer = buffer;
+
+            const filter = ctx.createBiquadFilter();
+            filter.type = 'highpass';
+            filter.frequency.value = 120;
+
+            const gain = ctx.createGain();
+            gain.gain.setValueAtTime(0.1, t);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.04);
+
+            noise.connect(filter).connect(gain).connect(this.dest);
+            noise.start(t);
+            noise.stop(t + 0.04);
+        } else if (surface === 'wood') {
+            // Bandpass 300Hz noise, 0.06s
+            const noise = ctx.createBufferSource();
+            const buffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.06), ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < data.length; i++) {
+                data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+            }
+            noise.buffer = buffer;
+
+            const filter = ctx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.value = 300;
+            filter.Q.value = 1;
+
+            const gain = ctx.createGain();
+            gain.gain.setValueAtTime(0.08, t);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.06);
+
+            noise.connect(filter).connect(gain).connect(this.dest);
+            noise.start(t);
+            noise.stop(t + 0.06);
+        } else if (surface === 'sand') {
+            // Lowpass 200Hz noise, very quiet, 0.05s
+            const noise = ctx.createBufferSource();
+            const buffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.05), ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < data.length; i++) {
+                data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+            }
+            noise.buffer = buffer;
+
+            const filter = ctx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.value = 200;
+
+            const gain = ctx.createGain();
+            gain.gain.setValueAtTime(0.04, t);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.05);
+
+            noise.connect(filter).connect(gain).connect(this.dest);
+            noise.start(t);
+            noise.stop(t + 0.05);
+        } else {
+            // Default 'grass': use existing footstep sound
+            this.playFootstep();
+        }
     }
 }

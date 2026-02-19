@@ -15,6 +15,11 @@ export class CombatSystem {
 
         // Arrow projectiles in flight
         this._projectiles = [];
+
+        // Monster bar DOM pooling + temp vector reuse
+        this._barPool = [];     // reusable { nameTag, bar, fill } objects
+        this._barPoolUsed = 0;
+        this._projVec = new THREE.Vector3();
     }
 
     tick() {
@@ -272,6 +277,38 @@ export class CombatSystem {
         });
     }
 
+    _spawnMagicProjectile(from, to, spell) {
+        const scene = this.game.engine.scene;
+        const colorMap = { wind: 0xCCCCFF, water: 0x4488FF, earth: 0x886644, fire: 0xFF4400 };
+        const element = (spell.name || '').split(' ')[0].toLowerCase();
+        const color = colorMap[element] || 0xCC88FF;
+
+        const orb = new THREE.Mesh(
+            new THREE.SphereGeometry(0.15, 8, 8),
+            new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9 })
+        );
+        const glow = new THREE.PointLight(color, 1.5, 6);
+        glow.position.set(0, 0, 0);
+
+        const group = new THREE.Group();
+        group.add(orb);
+        group.add(glow);
+
+        const start = new THREE.Vector3(from.x, (from.y || 0) + 1.2, from.z);
+        const end = new THREE.Vector3(to.x, (to.y || 0) + 0.8, to.z);
+        group.position.copy(start);
+        scene.add(group);
+
+        const speed = 18;
+        const distance = start.distanceTo(end);
+        const duration = distance / speed;
+
+        this._projectiles.push({
+            mesh: group, start: start.clone(), end: end.clone(),
+            elapsed: 0, duration: Math.max(0.1, duration),
+        });
+    }
+
     /** Update all in-flight projectiles (call every frame) */
     updateProjectiles(dt) {
         for (let i = this._projectiles.length - 1; i >= 0; i--) {
@@ -356,7 +393,7 @@ export class CombatSystem {
         if (attackRoll >= defenceRoll) {
             const strBonus = player.getEquipmentBonus('strengthBonus');
             const prayerStr = this.game.prayerSystem ? this.game.prayerSystem.getPrayerBonus('strengthBonus') : 0;
-            const maxHit = Math.max(1, Math.floor(0.5 + (player.skills.strength.level + strBuff) * 0.15 + 1 + (strBonus + prayerStr) * 0.2));
+            const maxHit = Math.max(2, Math.floor(1 + (player.skills.strength.level + strBuff) * 0.22 + 1 + (strBonus + prayerStr) * 0.25));
 
             // Dagger special: double hit
             const hitCount = specialType === 'dagger' ? 2 : 1;
@@ -369,6 +406,26 @@ export class CombatSystem {
                 this._showHitsplat(monster.mesh, damage, false);
                 this.game.audio.playHit();
                 this.game.particleSystem.createHitBurst(monster.position, damage);
+
+                // Multiplayer: sync damage to server
+                if (monster.id && this.game.networkManager?.connected) {
+                    this.game.networkManager.sendMonsterAttack(monster.id, damage);
+                }
+
+                // Slash trail VFX
+                const slashStart = this.game.player.position.clone();
+                slashStart.y += 0.5;
+                const slashEnd = monster.position.clone();
+                slashEnd.y += 0.8;
+                this.game.particleSystem.createSlashTrail(slashStart, slashEnd, 0xCCCCCC);
+
+                // Blood splatter VFX
+                this.game.particleSystem.createBloodSplatter(monster.position, damage);
+
+                // Impact crack on heavy hits
+                if (damage > 5) {
+                    this.game.particleSystem.createImpactCrack(monster.position);
+                }
 
                 if (damage > 0) {
                     this.game.addChatMessage(`You hit the ${monster.name} for ${damage} damage.`, 'damage');
@@ -411,22 +468,24 @@ export class CombatSystem {
     }
 
     _playerRangedAttack(player, monster) {
-        // Check for arrows
-        const arrowTypes = ['steel_arrow', 'iron_arrow', 'bronze_arrow'];
-        let arrowId = null;
-        for (const at of arrowTypes) {
-            if (this.game.inventorySystem.hasItem(at)) { arrowId = at; break; }
-        }
-        if (!arrowId) {
-            this.game.addChatMessage("You don't have any arrows.", 'system');
-            player.attackStyle = 'melee';
-            return;
-        }
-        // Check for bow
+        // Check for bow first
         const weapon = player.equipment.weapon;
         const weaponDef = weapon ? CONFIG.ITEMS[weapon] : null;
         if (!weaponDef || weaponDef.attackStyle !== 'ranged') {
             this.game.addChatMessage("You need a bow equipped to use ranged.", 'system');
+            player.attackStyle = 'melee';
+            return;
+        }
+        // Check for arrows matching bow tier
+        const bowTier = weaponDef.bowTier || 99;
+        const arrowTypes = ['steel_arrow', 'iron_arrow', 'bronze_arrow'];
+        let arrowId = null;
+        for (const at of arrowTypes) {
+            const aDef = CONFIG.ITEMS[at];
+            if ((aDef?.arrowTier || 1) <= bowTier && this.game.inventorySystem.hasItem(at)) { arrowId = at; break; }
+        }
+        if (!arrowId) {
+            this.game.addChatMessage("You don't have any suitable arrows for this bow.", 'system');
             player.attackStyle = 'melee';
             return;
         }
@@ -443,13 +502,19 @@ export class CombatSystem {
         const defenceRoll = Math.random() * (monster.defenceLevel + 8);
 
         if (attackRoll >= defenceRoll) {
-            const maxHit = Math.max(1, Math.floor(0.5 + player.skills.ranged.level * 0.18 + rangedBonus * 0.35));
+            const maxHit = Math.max(2, Math.floor(1 + player.skills.ranged.level * 0.25 + rangedBonus * 0.4));
             const damage = Math.floor(Math.random() * (maxHit + 1));
 
             const killed = monster.takeDamage(damage);
             this._showHitsplat(monster.mesh, damage, false);
             this.game.audio.playHit();
             this.game.particleSystem.createHitBurst(monster.position, damage);
+
+            // Multiplayer: sync damage to server
+            if (monster.id && this.game.networkManager?.connected) {
+                this.game.networkManager.sendMonsterAttack(monster.id, damage);
+            }
+
             if (damage > 0) {
                 this.game.addChatMessage(`Your arrow hits the ${monster.name} for ${damage} damage.`, 'damage');
                 monster.flinch();
@@ -502,6 +567,7 @@ export class CombatSystem {
             this.game.inventorySystem.removeItem(runeId, qty);
         }
         this.game.audio.playCast();
+        this._spawnMagicProjectile(player.position, monster.position, spell);
 
         const magicBonus = player.getEquipmentBonus('magicBonus') || 0;
         const attackRoll = Math.random() * (player.skills.magic.level + 8 + magicBonus);
@@ -519,6 +585,12 @@ export class CombatSystem {
             this._showHitsplat(monster.mesh, damage, false);
             this.game.audio.playHit();
             this.game.particleSystem.createHitBurst(monster.position, damage);
+
+            // Multiplayer: sync damage to server
+            if (monster.id && this.game.networkManager?.connected) {
+                this.game.networkManager.sendMonsterAttack(monster.id, damage);
+            }
+
             if (damage > 0) {
                 this.game.addChatMessage(`Your ${spell.name} hits the ${monster.name} for ${damage}.`, 'damage');
                 monster.flinch();
@@ -608,6 +680,30 @@ export class CombatSystem {
         // Award base combat XP from config
         const xpReward = monster.xpReward;
         if (xpReward.hitpoints) this.game.skillSystem.addXP('hitpoints', xpReward.hitpoints);
+        // Award combat skill XP based on player's active style
+        const killStyle = player.attackStyle || 'melee';
+        if (killStyle === 'melee') {
+            switch (player.meleeStyle) {
+                case 'accurate':
+                    if (xpReward.attack) this.game.skillSystem.addXP('attack', xpReward.attack);
+                    break;
+                case 'aggressive':
+                    if (xpReward.strength) this.game.skillSystem.addXP('strength', xpReward.strength);
+                    break;
+                case 'defensive':
+                    if (xpReward.defence) this.game.skillSystem.addXP('defence', xpReward.defence);
+                    break;
+                case 'controlled':
+                    if (xpReward.attack) this.game.skillSystem.addXP('attack', Math.ceil(xpReward.attack / 3));
+                    if (xpReward.strength) this.game.skillSystem.addXP('strength', Math.ceil(xpReward.strength / 3));
+                    if (xpReward.defence) this.game.skillSystem.addXP('defence', Math.ceil(xpReward.defence / 3));
+                    break;
+            }
+        } else if (killStyle === 'ranged') {
+            if (xpReward.attack) this.game.skillSystem.addXP('ranged', xpReward.attack);
+        } else if (killStyle === 'magic') {
+            if (xpReward.attack) this.game.skillSystem.addXP('magic', xpReward.attack);
+        }
 
         // Track kill count
         const monsterType = monster.config?.type || monster.mesh?.userData?.subType;
@@ -761,44 +857,68 @@ export class CombatSystem {
     }
 
     updateMonsterBars() {
-        this._monsterBarsContainer.innerHTML = '';
         const camera = this.game.engine.camera;
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        let idx = 0;
+
         for (const monster of this.game.environment.monsters) {
             if (!monster.alive || !monster.inCombat) continue;
-            const pos = monster.mesh.position.clone();
-            pos.y += monster.config.name === 'Chicken' ? 1.2 : (monster.config.name === 'King Black Dragon' ? 4 : 2.0);
-            const screenPos = pos.clone().project(camera);
-            if (screenPos.z > 1) continue;
-            const x = (screenPos.x * 0.5 + 0.5) * window.innerWidth;
-            const y = (-screenPos.y * 0.5 + 0.5) * window.innerHeight;
 
-            const nameTag = document.createElement('div');
-            nameTag.className = 'monster-name-tag';
-            nameTag.textContent = `${monster.name} (lvl ${monster.combatLevel})`;
-            nameTag.style.left = x + 'px';
-            nameTag.style.top = (y - 12) + 'px';
-            this._monsterBarsContainer.appendChild(nameTag);
+            // Reuse temp vector instead of clone()
+            const pv = this._projVec;
+            pv.copy(monster.mesh.position);
+            pv.y += monster.config.name === 'Chicken' ? 1.2 : (monster.config.name === 'King Black Dragon' ? 4 : 2.0);
+            pv.project(camera);
+            if (pv.z > 1) continue;
 
-            const bar = document.createElement('div');
-            bar.className = 'monster-hp-bar';
-            bar.style.left = x + 'px';
-            bar.style.top = y + 'px';
-            const fill = document.createElement('div');
+            const x = (pv.x * 0.5 + 0.5) * vw;
+            const y = (-pv.y * 0.5 + 0.5) * vh;
+
+            // Get or create pooled DOM elements
+            let entry = this._barPool[idx];
+            if (!entry) {
+                const nameTag = document.createElement('div');
+                nameTag.className = 'monster-name-tag';
+                const bar = document.createElement('div');
+                bar.className = 'monster-hp-bar';
+                const fill = document.createElement('div');
+                bar.appendChild(fill);
+                this._monsterBarsContainer.appendChild(nameTag);
+                this._monsterBarsContainer.appendChild(bar);
+                entry = { nameTag, bar, fill };
+                this._barPool.push(entry);
+            }
+
+            entry.nameTag.textContent = `${monster.name} (lvl ${monster.combatLevel})`;
+            entry.nameTag.style.left = x + 'px';
+            entry.nameTag.style.top = (y - 12) + 'px';
+            entry.nameTag.style.display = '';
+            entry.bar.style.left = x + 'px';
+            entry.bar.style.top = y + 'px';
+            entry.bar.style.display = '';
             const pct = Math.max(0, monster.hp / monster.maxHp * 100);
-            fill.className = 'monster-hp-fill' + (pct < 30 ? ' low' : '');
-            fill.style.width = pct + '%';
-            bar.appendChild(fill);
-            this._monsterBarsContainer.appendChild(bar);
+            entry.fill.className = 'monster-hp-fill' + (pct < 30 ? ' low' : '');
+            entry.fill.style.width = pct + '%';
+            idx++;
         }
+
+        // Hide unused pool entries
+        for (let i = idx; i < this._barPool.length; i++) {
+            this._barPool[i].nameTag.style.display = 'none';
+            this._barPool[i].bar.style.display = 'none';
+        }
+        this._barPoolUsed = idx;
     }
 
     _showHitsplat(mesh, damage, isMiss) {
-        const pos = mesh.position.clone(); pos.y += 2;
+        const pv = this._projVec;
+        pv.copy(mesh.position); pv.y += 2;
         const camera = this.game.engine.camera;
-        const screenPos = pos.project(camera);
-        if (screenPos.z > 1) return;
-        const x = (screenPos.x * 0.5 + 0.5) * window.innerWidth;
-        let y = (-screenPos.y * 0.5 + 0.5) * window.innerHeight;
+        pv.project(camera);
+        if (pv.z > 1) return;
+        const x = (pv.x * 0.5 + 0.5) * window.innerWidth;
+        let y = (-pv.y * 0.5 + 0.5) * window.innerHeight;
 
         // Stack offset for multiple simultaneous hitsplats on same monster
         if (!this._hitsplatOffsets) this._hitsplatOffsets = new Map();

@@ -26,6 +26,9 @@ export class SkillSystem {
             player.maxHp = player.skills.hitpoints.level;
         }
 
+        // Mark UI dirty
+        if (this.game.ui) this.game.ui.markDirty('skills');
+
         // Floating XP drop
         this._showXPDrop(skillName, amount);
 
@@ -122,9 +125,13 @@ export class SkillSystem {
         // Attempt to harvest
         const skillLevel = player.skills[skillType].level;
         const baseChance = node.successChance;
-        // Higher level = higher success chance (up to ~90%)
-        const levelBonus = (skillLevel - node.requiredLevel) * 0.01;
-        const chance = Math.min(0.9, baseChance + levelBonus);
+        // Higher level = higher success chance with diminishing returns
+        // At required level: base chance only. Each level adds less and less.
+        // Formula: base + 0.5 * (1 - base) * (levelDiff / (levelDiff + 40))
+        // e.g. copper(0.30) at lv1: 30%, lv20: 44%, lv50: 56%, lv99: 64%
+        const levelDiff = Math.max(0, skillLevel - node.requiredLevel);
+        const levelBonus = 0.5 * (1 - baseChance) * (levelDiff / (levelDiff + 40));
+        const chance = Math.min(0.75, baseChance + levelBonus);
 
         // Play sound + animation on each tick attempt
         if (skillType === 'woodcutting') {
@@ -198,8 +205,9 @@ export class SkillSystem {
             return;
         }
 
-        const levelBonus = (skillLevel - fishConfig.requiredLevel) * 0.01;
-        const chance = Math.min(0.9, fishConfig.successChance + levelBonus);
+        const levelDiff = Math.max(0, skillLevel - fishConfig.requiredLevel);
+        const levelBonus = 0.5 * (1 - fishConfig.successChance) * (levelDiff / (levelDiff + 40));
+        const chance = Math.min(0.75, fishConfig.successChance + levelBonus);
 
         this.game.audio.playSplash();
 
@@ -253,9 +261,10 @@ export class SkillSystem {
         // Remove raw item
         this.game.inventorySystem.removeItem(itemId, 1);
 
-        // Burn chance decreases with level
-        const levelBonus = (player.skills.cooking.level - itemDef.cookLevel) * 0.02;
-        const burnChance = Math.max(0.05, itemDef.burnChance - levelBonus);
+        // Burn chance decreases with level (diminishing returns)
+        const cookDiff = Math.max(0, player.skills.cooking.level - itemDef.cookLevel);
+        const burnReduction = itemDef.burnChance * 0.7 * (cookDiff / (cookDiff + 25));
+        const burnChance = Math.max(0.05, itemDef.burnChance - burnReduction);
 
         if (Math.random() < burnChance) {
             this.game.inventorySystem.addItem('burnt_food');

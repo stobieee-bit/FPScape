@@ -2,14 +2,17 @@ import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 import { ResourceNode } from '../entities/ResourceNode.js';
 import { Monster } from '../entities/Monster.js';
+import { InstancedScenery } from './InstancedScenery.js';
 
 export class Environment {
     constructor(scene, assets, terrain) {
         this.scene = scene;
         this.assets = assets;
         this.terrain = terrain;
+        this.instancedScenery = new InstancedScenery(scene);
 
         this.monsters = [];
+        this.monsterById = new Map(); // ID → Monster for multiplayer sync
         this.resourceNodes = [];
         this.npcs = [];
         this.sheep = [];
@@ -19,6 +22,7 @@ export class Environment {
 
         this.campfirePosition = null;
         this.fishingSpots = [];
+        this._fishingSpotTimers = []; // time until next relocation per spot
         this.furnaceMesh = null;
         this.anvilMesh = null;
         this.churchMesh = null;
@@ -30,6 +34,8 @@ export class Environment {
         this.gravestones = [];
         // Loot beams
         this.lootBeams = [];
+        this.lavaPools = [];
+        this.underwaterCave = null;  // { y, bounds }
 
         this._placeBuildings();
         this._placePaths();
@@ -47,6 +53,7 @@ export class Environment {
         this._placeWildernessBoundary();
         this._placeTorches();
         this._placeBiomes();
+        this._placeUnderwaterCave();
     }
 
     _placeBuildings() {
@@ -57,10 +64,19 @@ export class Environment {
             church: [3.5, 4.5],
             house: [3, 3],
             shop: [3, 3],
+            desert_house: [3, 3],
+            desert_palace: [6, 5],
         };
 
+        // Types that benefit from LOD (have enough geometry to simplify)
+        const lodTypes = new Set(['castle', 'tavern', 'church', 'house', 'shop', 'desert_house', 'desert_palace']);
+
         for (const data of CONFIG.WORLD_OBJECTS.buildings) {
-            const building = this.assets.createBuilding(data.type);
+            // Use LOD for large buildings, plain mesh for small interactables (furnace, anvil)
+            const useLOD = lodTypes.has(data.type);
+            const building = useLOD
+                ? this.assets.createBuildingLOD(data.type)
+                : this.assets.createBuilding(data.type);
 
             // Flatten terrain under large buildings first
             const fp = footprints[data.type];
@@ -121,166 +137,179 @@ export class Environment {
 
     _placeTrees() {
         for (const data of CONFIG.WORLD_OBJECTS.trees) {
-            const treeMesh = this.assets.createTree(data.type);
+            const treeLOD = this.assets.createTreeLOD(data.type);
             const y = this.terrain.getHeightAt(data.x, data.z);
-            treeMesh.position.set(data.x, y, data.z);
-            this.scene.add(treeMesh);
+            treeLOD.position.set(data.x, y, data.z);
+            this.scene.add(treeLOD);
 
             const treeConfig = CONFIG.TREES[data.type];
-            const node = new ResourceNode(treeMesh, {
+            const node = new ResourceNode(treeLOD, {
                 type: 'tree', subType: data.type, ...treeConfig,
             });
 
             this.resourceNodes.push(node);
-            this.interactables.push(treeMesh);
-            treeMesh._entityRef = node;
+            this.interactables.push(treeLOD);
+            treeLOD._entityRef = node;
         }
     }
 
     _placeRocks() {
         for (const data of CONFIG.WORLD_OBJECTS.rocks) {
-            const rockMesh = this.assets.createRock(data.type);
+            const rockLOD = this.assets.createRockLOD(data.type);
             const y = this.terrain.getHeightAt(data.x, data.z);
-            rockMesh.position.set(data.x, y, data.z);
-            this.scene.add(rockMesh);
+            rockLOD.position.set(data.x, y, data.z);
+            this.scene.add(rockLOD);
 
             const rockConfig = CONFIG.ROCKS[data.type];
-            const node = new ResourceNode(rockMesh, {
+            const node = new ResourceNode(rockLOD, {
                 type: 'rock', subType: data.type, ...rockConfig,
             });
 
             this.resourceNodes.push(node);
-            this.interactables.push(rockMesh);
-            rockMesh._entityRef = node;
+            this.interactables.push(rockLOD);
+            rockLOD._entityRef = node;
         }
     }
 
     _placeScenery() {
-        // ── Multi-petal flowers ──
+        // ── Instanced Flowers (45 flowers → 3 batches: stems, petals, centers) ──
         const flowerColors = [0xFF6699, 0xFFFF44, 0xFF44FF, 0x44BBFF, 0xFFAA33];
-        const stemMat = new THREE.MeshStandardMaterial({ color: 0x228B22 });
-        const centerMat = new THREE.MeshStandardMaterial({ color: 0xFFFF00 });
+        const stemTransforms = [];
+        const petalTransforms = [];
+        const centerTransforms = [];
+
         for (let i = 0; i < 45; i++) {
-            const x = (Math.random() - 0.5) * 80;
-            const z = (Math.random() - 0.5) * 80;
+            const x = (Math.random() - 0.5) * 120;
+            const z = (Math.random() - 0.5) * 120;
             const y = this.terrain.getHeightAt(x, z);
-            const group = new THREE.Group();
-            const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.3, 3), stemMat);
-            stem.position.y = 0.15; group.add(stem);
-            // Ring of 4-5 petals
             const petalColor = flowerColors[i % flowerColors.length];
-            const petalMat = new THREE.MeshStandardMaterial({ color: petalColor });
+
+            // Stem
+            stemTransforms.push({ position: [x, y + 0.15, z] });
+
+            // Petals — 4-5 per flower
             const petalCount = 4 + Math.floor(Math.random() * 2);
             for (let p = 0; p < petalCount; p++) {
                 const angle = (p / petalCount) * Math.PI * 2;
-                const petal = new THREE.Mesh(new THREE.SphereGeometry(0.045, 4, 3), petalMat);
-                petal.position.set(Math.cos(angle) * 0.055, 0.32, Math.sin(angle) * 0.055);
-                petal.scale.set(1.2, 0.6, 1.2);
-                group.add(petal);
+                petalTransforms.push({
+                    position: [x + Math.cos(angle) * 0.055, y + 0.32, z + Math.sin(angle) * 0.055],
+                    scale: [1.2, 0.6, 1.2],
+                    color: petalColor,
+                });
             }
+
             // Center pistil
-            const center = new THREE.Mesh(new THREE.SphereGeometry(0.025, 3, 2), centerMat);
-            center.position.y = 0.33; group.add(center);
-            group.position.set(x, y, z);
-            this.scene.add(group);
+            centerTransforms.push({ position: [x, y + 0.33, z] });
         }
 
-        // ── Bushes ──
+        const stemGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.3, 3);
+        const stemMat = this.assets.getCachedMaterial(0x228B22, 0.8);
+        this.instancedScenery.addBatch('flower_stems', stemGeo, stemMat, stemTransforms);
+
+        const petalGeo = new THREE.SphereGeometry(0.045, 4, 3);
+        const petalMat = new THREE.MeshStandardMaterial({ color: 0xFF6699, roughness: 0.8, vertexColors: false });
+        this.instancedScenery.addBatch('flower_petals', petalGeo, petalMat, petalTransforms);
+
+        const centerGeo = new THREE.SphereGeometry(0.025, 3, 2);
+        const centerMat = this.assets.getCachedMaterial(0xFFFF00, 0.8);
+        this.instancedScenery.addBatch('flower_centers', centerGeo, centerMat, centerTransforms);
+
+        // ── Instanced Bushes ──
         const bushPositions = [
-            // Near tree clusters
             {x:13, z:12}, {x:16, z:16}, {x:19, z:11}, {x:11, z:20},
             {x:-12, z:17}, {x:-9, z:19}, {x:-15, z:22},
-            // Along main road
             {x:2, z:-2}, {x:-2, z:-8}, {x:1, z:-12},
-            // Near pond
-            {x:22, z:18}, {x:28, z:19}, {x:27, z:22},
-            // Near buildings
+            {x:12, z:16}, {x:38, z:19}, {x:30, z:33},
             {x:14, z:-8}, {x:-11, z:-5}, {x:6, z:-18},
-            // Near farm
             {x:17, z:28}, {x:14, z:32}, {x:24, z:30},
-            // Near mining area
             {x:-18, z:-3}, {x:-24, z:-8}, {x:-16, z:-10},
-            // General scatter
             {x:35, z:10}, {x:-25, z:18}, {x:8, z:15},
         ];
-        for (const bp of bushPositions) {
-            const bush = this.assets.createBush();
-            const by = this.terrain.getHeightAt(bp.x, bp.z);
-            bush.position.set(bp.x, by + 0.25, bp.z);
-            bush.rotation.y = Math.random() * Math.PI * 2;
-            this.scene.add(bush);
-        }
+        const bushGeo = new THREE.IcosahedronGeometry(0.65, 1);
+        this.assets._displaceVertices(bushGeo, 0.12);
+        const bushMat = this.assets.getCachedMaterial(0x2D7B2A, 0.8);
+        const bushTransforms = bushPositions.map(bp => ({
+            position: [bp.x, this.terrain.getHeightAt(bp.x, bp.z) + 0.25, bp.z],
+            rotation: [0, Math.random() * Math.PI * 2, 0],
+            scale: [1, 0.5 + Math.random() * 0.2, 1],
+        }));
+        this.instancedScenery.addBatch('bushes', bushGeo, bushMat, bushTransforms);
 
-        // ── Barrels & Crates near buildings ──
+        // ── Instanced Barrels ──
         const barrelPositions = [
-            {x:8, z:-6}, {x:8.5, z:-5.5}, {x:-7, z:-2}, {x:-7.5, z:-1.5},  // Near shop & house
-            {x:2, z:-16}, {x:-1, z:-14},                                      // Near castle
+            {x:8, z:-6}, {x:8.5, z:-5.5}, {x:-7, z:-2}, {x:-7.5, z:-1.5},
+            {x:2, z:-16}, {x:-1, z:-14},
         ];
-        for (const bp of barrelPositions) {
-            const barrel = this.assets.createBarrel();
-            const by = this.terrain.getHeightAt(bp.x, bp.z);
-            barrel.position.set(bp.x, by, bp.z);
-            barrel.rotation.y = Math.random() * Math.PI * 2;
-            this.scene.add(barrel);
-        }
+        const barrelGeo = new THREE.CylinderGeometry(0.28, 0.3, 0.7, 8);
+        const barrelMat = this.assets.getCachedMaterial(0x8B6914, 0.9);
+        const barrelTransforms = barrelPositions.map(bp => ({
+            position: [bp.x, this.terrain.getHeightAt(bp.x, bp.z) + 0.35, bp.z],
+            rotation: [0, Math.random() * Math.PI * 2, 0],
+        }));
+        this.instancedScenery.addBatch('barrels', barrelGeo, barrelMat, barrelTransforms);
+
+        // ── Instanced Crates ──
         const cratePositions = [{x:11, z:-4}, {x:-6.5, z:-2.5}, {x:1, z:-17}];
-        for (const cp of cratePositions) {
-            const crate = this.assets.createCrate();
-            const cy = this.terrain.getHeightAt(cp.x, cp.z);
-            crate.position.set(cp.x, cy, cp.z);
-            crate.rotation.y = Math.random() * Math.PI;
-            this.scene.add(crate);
-        }
+        const crateGeo = new THREE.BoxGeometry(0.6, 0.6, 0.6);
+        const crateMat = this.assets.getCachedMaterial(0x6B4226, 0.9);
+        const crateTransforms = cratePositions.map(cp => ({
+            position: [cp.x, this.terrain.getHeightAt(cp.x, cp.z) + 0.3, cp.z],
+            rotation: [0, Math.random() * Math.PI, 0],
+        }));
+        this.instancedScenery.addBatch('crates', crateGeo, crateMat, crateTransforms);
 
-        // ── Hay bales in farm area ──
+        // ── Instanced Hay Bales ──
         const hayPositions = [{x:18, z:33}, {x:23, z:37}, {x:21, z:40}, {x:16, z:36}];
-        for (const hp of hayPositions) {
-            const hay = this.assets.createHayBale();
-            const hy = this.terrain.getHeightAt(hp.x, hp.z);
-            hay.position.set(hp.x, hy, hp.z);
-            hay.rotation.y = Math.random() * Math.PI;
-            this.scene.add(hay);
-        }
+        const hayGeo = new THREE.CylinderGeometry(0.5, 0.5, 0.6, 8);
+        const hayMat = this.assets.getCachedMaterial(0xCCBB55, 0.95);
+        const hayTransforms = hayPositions.map(hp => ({
+            position: [hp.x, this.terrain.getHeightAt(hp.x, hp.z) + 0.3, hp.z],
+            rotation: [0, Math.random() * Math.PI, Math.PI / 2],
+        }));
+        this.instancedScenery.addBatch('hay_bales', hayGeo, hayMat, hayTransforms);
 
-        // ── Well in town ──
+        // ── Well in town (not instanced — unique) ──
         const well = this.assets.createWell();
         const wellY = this.terrain.getHeightAt(5, -8);
         well.position.set(5, wellY, -8);
         this.scene.add(well);
 
-        // ── Mine cart near rocks ──
+        // ── Mine cart near rocks (not instanced — unique) ──
         const cart = this.assets.createMineCart();
         const cartY = this.terrain.getHeightAt(-22, -7);
         cart.position.set(-22, cartY, -7);
         cart.rotation.y = Math.PI * 0.4;
         this.scene.add(cart);
 
-        // ── Fences ──
-        const fenceMat = new THREE.MeshStandardMaterial({ color: 0x8B6914, roughness: 0.95 });
-        const fencePosts = [
+        // ── Instanced Fence Posts + Rails ──
+        const fencePostData = [
             [0, 22], [2, 22], [4, 22], [6, 22], [8, 22], [10, 22], [12, 22],
             [12, 24], [12, 26], [12, 28], [12, 30], [12, 32],
         ];
-        for (const [fx, fz] of fencePosts) {
-            const y = this.terrain.getHeightAt(fx, fz);
-            const post = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1, 4), fenceMat);
-            post.position.set(fx, y + 0.5, fz);
-            post.castShadow = true;
-            this.scene.add(post);
-            const rail = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.08, 0.06), fenceMat);
-            rail.position.set(fx + 1, y + 0.7, fz);
-            this.scene.add(rail);
-        }
+        const fencePostGeo = new THREE.CylinderGeometry(0.06, 0.06, 1, 4);
+        const fenceMat = this.assets.getCachedMaterial(0x8B6914, 0.95);
+        const fencePostTransforms = fencePostData.map(([fx, fz]) => ({
+            position: [fx, this.terrain.getHeightAt(fx, fz) + 0.5, fz],
+        }));
+        this.instancedScenery.addBatch('fence_posts', fencePostGeo, fenceMat, fencePostTransforms);
 
+        const fenceRailGeo = new THREE.BoxGeometry(2.2, 0.08, 0.06);
+        const fenceRailTransforms = fencePostData.map(([fx, fz]) => ({
+            position: [fx + 1, this.terrain.getHeightAt(fx, fz) + 0.7, fz],
+        }));
+        this.instancedScenery.addBatch('fence_rails', fenceRailGeo, fenceMat, fenceRailTransforms);
+
+        // ── Pond ──
         this.pondMesh = this._createPond(25, 20);
 
+        // ── Signpost ──
         const signGroup = new THREE.Group();
         const signPost = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 2, 4), fenceMat);
         signPost.position.y = 1;
         signGroup.add(signPost);
         const signBoard = new THREE.Mesh(
             new THREE.BoxGeometry(1.2, 0.5, 0.06),
-            new THREE.MeshStandardMaterial({ color: 0xC4A86B })
+            this.assets.getCachedMaterial(0xC4A86B, 0.8)
         );
         signBoard.position.set(0, 1.8, 0);
         signGroup.add(signBoard);
@@ -289,44 +318,188 @@ export class Environment {
         this.scene.add(signGroup);
     }
 
-    _createPond(x, z) {
-        const pondGeo = new THREE.CircleGeometry(5, 32);
-        pondGeo.rotateX(-Math.PI / 2);
-        const pondMat = new THREE.ShaderMaterial({
+    _createWaterMaterial() {
+        return new THREE.ShaderMaterial({
             uniforms: {
                 time: { value: 0 },
-                baseColor: { value: new THREE.Color(0x3388BB) },
+                baseColor: { value: new THREE.Color(0x2277AA) },
+                deepColor: { value: new THREE.Color(0x0D3D5C) },
+                skyColor: { value: new THREE.Color(0x88BBDD) },
+                foamColor: { value: new THREE.Color(0xCCEEFF) },
             },
             vertexShader: `
                 varying vec2 vUv;
+                varying vec3 vWorldPos;
                 void main() {
                     vUv = uv;
+                    vec4 wp = modelMatrix * vec4(position, 1.0);
+                    vWorldPos = wp.xyz;
                     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
                 }
             `,
             fragmentShader: `
                 uniform float time;
                 uniform vec3 baseColor;
+                uniform vec3 deepColor;
+                uniform vec3 skyColor;
+                uniform vec3 foamColor;
                 varying vec2 vUv;
+                varying vec3 vWorldPos;
                 void main() {
-                    vec2 p = vUv * 6.0;
-                    float ripple = sin(p.x * 3.0 + time * 2.0) * 0.5 + 0.5;
-                    ripple += sin(p.y * 4.0 - time * 1.5) * 0.5 + 0.5;
-                    ripple *= 0.15;
-                    vec3 col = baseColor + vec3(ripple * 0.3, ripple * 0.4, ripple * 0.5);
+                    vec2 p = vUv * 8.0;
+
+                    // Dual-layer ripples at different frequencies
+                    float ripple1 = sin(p.x * 3.0 + time * 1.8) * sin(p.y * 2.5 - time * 1.2) * 0.5 + 0.5;
+                    float ripple2 = sin(p.x * 5.0 - time * 2.5 + 1.7) * sin(p.y * 4.5 + time * 1.8) * 0.5 + 0.5;
+                    float ripple = ripple1 * 0.6 + ripple2 * 0.4;
+
+                    // Specular highlight (fake sun reflection)
+                    float spec = pow(max(ripple1, 0.0), 8.0) * 0.3;
+
+                    // Edge distance for Fresnel and foam
                     float edgeDist = length(vUv - 0.5) * 2.0;
-                    float alpha = smoothstep(1.0, 0.7, edgeDist) * 0.7;
+
+                    // Fresnel-like edge brightening (more reflective at edges)
+                    float fresnel = pow(edgeDist, 2.0) * 0.4;
+
+                    // Base water color: blend deep and surface based on ripple
+                    vec3 col = mix(baseColor, deepColor, ripple * 0.3);
+
+                    // Add sky reflection via fresnel
+                    col = mix(col, skyColor, fresnel);
+
+                    // Add ripple highlights
+                    col += vec3(ripple * 0.08, ripple * 0.12, ripple * 0.18);
+
+                    // Specular
+                    col += vec3(spec, spec * 0.95, spec * 0.85);
+
+                    // Edge foam
+                    float foamThreshold = 0.82 + sin(time * 1.5 + p.x * 2.0) * 0.04;
+                    float foam = smoothstep(foamThreshold, foamThreshold + 0.08, edgeDist);
+                    col = mix(col, foamColor, foam * 0.6);
+
+                    // Alpha: solid center, fade at extreme edges
+                    float alpha = smoothstep(1.0, 0.75, edgeDist) * 0.75;
+                    alpha = max(alpha, foam * 0.5);
+
                     gl_FragColor = vec4(col, alpha);
                 }
             `,
             transparent: true,
+            side: THREE.FrontSide,
+        });
+    }
+
+    _createLavaMaterial() {
+        return new THREE.ShaderMaterial({
+            uniforms: {
+                time: { value: 0 },
+                baseColor: { value: new THREE.Color(0xFF4400) },
+                deepColor: { value: new THREE.Color(0x880000) },
+                hotColor: { value: new THREE.Color(0xFFAA00) },
+                crustColor: { value: new THREE.Color(0x331100) },
+            },
+            vertexShader: `
+                varying vec2 vUv;
+                varying vec3 vWorldPos;
+                void main() {
+                    vUv = uv;
+                    vec4 wp = modelMatrix * vec4(position, 1.0);
+                    vWorldPos = wp.xyz;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform float time;
+                uniform vec3 baseColor;
+                uniform vec3 deepColor;
+                uniform vec3 hotColor;
+                uniform vec3 crustColor;
+                varying vec2 vUv;
+                varying vec3 vWorldPos;
+                void main() {
+                    vec2 p = vUv * 6.0;
+                    float t = time * 0.5;
+
+                    // Slow lava flow ripples
+                    float ripple1 = sin(p.x * 2.0 + t * 1.2) * sin(p.y * 1.8 - t * 0.8) * 0.5 + 0.5;
+                    float ripple2 = sin(p.x * 3.5 - t * 1.5 + 1.3) * sin(p.y * 3.0 + t * 1.0) * 0.5 + 0.5;
+                    float ripple = ripple1 * 0.6 + ripple2 * 0.4;
+
+                    // Hot spots
+                    float hotSpot = pow(max(ripple1, 0.0), 4.0) * 0.6;
+
+                    // Edge distance
+                    float edgeDist = length(vUv - 0.5) * 2.0;
+
+                    // Base lava: blend crust and hot lava based on ripple
+                    vec3 col = mix(crustColor, baseColor, ripple * 0.7);
+
+                    // Hot lava veins
+                    col = mix(col, hotColor, hotSpot);
+
+                    // Bright center
+                    float centerGlow = 1.0 - smoothstep(0.0, 0.8, edgeDist);
+                    col += hotColor * centerGlow * 0.15;
+
+                    // Specular highlights
+                    float spec = pow(max(ripple, 0.0), 6.0) * 0.4;
+                    col += vec3(spec, spec * 0.6, spec * 0.1);
+
+                    // Cooled edges
+                    float edgeCool = smoothstep(0.6, 1.0, edgeDist);
+                    col = mix(col, crustColor, edgeCool * 0.5);
+
+                    gl_FragColor = vec4(col, 1.0);
+                }
+            `,
             side: THREE.DoubleSide,
         });
+    }
+
+    _createPond(x, z) {
+        // Flatten terrain under the lake
+        this.terrain.flattenArea(x, z, 12, 12, this.terrain.getHeightAt(x, z) - 0.3);
+
+        const pondGeo = new THREE.CircleGeometry(12, 48);
+        pondGeo.rotateX(-Math.PI / 2);
+        const pondMat = this._createWaterMaterial();
+
         const pond = new THREE.Mesh(pondGeo, pondMat);
         const pondY = this.terrain.getHeightAt(x, z);
-        pond.position.set(x, pondY + 0.1, z);
+        pond.position.set(x, pondY + 0.15, z);
         this.scene.add(pond);
+
+        // Store pond center for audio proximity checks
+        this.pondCenter = new THREE.Vector3(x, pondY, z);
+
+        // River segment connecting pond toward fishing area
+        this._createRiver(x - 5, z + 12, x - 8, z + 22, pondY);
+
         return pond;
+    }
+
+    _createRiver(startX, startZ, endX, endZ, waterY) {
+        const dx = endX - startX;
+        const dz = endZ - startZ;
+        const length = Math.sqrt(dx * dx + dz * dz);
+        const angle = Math.atan2(dx, dz);
+
+        const riverGeo = new THREE.PlaneGeometry(3, length, 1, 8);
+        riverGeo.rotateX(-Math.PI / 2);
+        const riverMat = this._createWaterMaterial();
+        // Will share time uniform via updateAnimations
+
+        const river = new THREE.Mesh(riverGeo, riverMat);
+        river.position.set(
+            startX + dx * 0.5,
+            waterY + 0.12,
+            startZ + dz * 0.5
+        );
+        river.rotation.y = angle;
+        this.scene.add(river);
+        this._riverMesh = river;
     }
 
     _placeCampfire() {
@@ -371,6 +544,26 @@ export class Environment {
             flame.userData._baseZ = flame.position.z;
             flame.userData._phase = Math.random() * Math.PI * 2;
             flame.userData._speed = 2 + Math.random() * 2;
+            this.scene.add(flame);
+            this.fireParticles.push(flame);
+        }
+
+        // Extra red-orange inner flames
+        const innerFlameMat = new THREE.MeshBasicMaterial({ color: 0xFF3300, transparent: true, opacity: 0.6 });
+        for (let i = 0; i < 2; i++) {
+            const height = 0.2 + Math.random() * 0.3;
+            const geo = new THREE.ConeGeometry(0.05 + Math.random() * 0.04, height, 4);
+            const flame = new THREE.Mesh(geo, innerFlameMat);
+            flame.position.set(
+                fireX + (Math.random() - 0.5) * 0.15,
+                fireY + 0.25 + height / 2,
+                fireZ + (Math.random() - 0.5) * 0.15
+            );
+            flame.userData._baseY = flame.position.y;
+            flame.userData._baseX = flame.position.x;
+            flame.userData._baseZ = flame.position.z;
+            flame.userData._phase = Math.random() * Math.PI * 2;
+            flame.userData._speed = 3 + Math.random() * 2;
             this.scene.add(flame);
             this.fireParticles.push(flame);
         }
@@ -425,6 +618,47 @@ export class Environment {
             this.fishingSpot = this.fishingSpots[0].mesh;
             this.fishingSpotBaseY = this.fishingSpots[0].baseY;
         }
+        // Stagger initial roaming timers so spots don't all move at once
+        const baseInterval = CONFIG.WORLD_OBJECTS.fishingSpotMoveInterval || 90;
+        for (let i = 0; i < this.fishingSpots.length; i++) {
+            this._fishingSpotTimers.push(baseInterval * (0.5 + i * 0.35) + (Math.random() - 0.5) * 10);
+        }
+    }
+
+    _relocateFishingSpot(index) {
+        const spot = this.fishingSpots[index];
+        if (!spot) return;
+        const pool = CONFIG.WORLD_OBJECTS.fishingSpotPool;
+        if (!pool || pool.length === 0) return;
+
+        // Collect positions currently occupied by other spots
+        const occupied = new Set();
+        for (let i = 0; i < this.fishingSpots.length; i++) {
+            if (i === index) continue;
+            const s = this.fishingSpots[i];
+            occupied.add(`${Math.round(s.mesh.position.x)},${Math.round(s.mesh.position.z)}`);
+        }
+
+        // Filter pool to available positions (not occupied and not current)
+        const curKey = `${Math.round(spot.mesh.position.x)},${Math.round(spot.mesh.position.z)}`;
+        const available = pool.filter(p => {
+            const key = `${p.x},${p.z}`;
+            return key !== curKey && !occupied.has(key);
+        });
+        if (available.length === 0) return;
+
+        const chosen = available[Math.floor(Math.random() * available.length)];
+        const newY = this.terrain.getHeightAt(chosen.x, chosen.z) + 0.2;
+
+        spot.mesh.position.set(chosen.x, newY, chosen.z);
+        spot.baseY = newY;
+
+        // Update backward-compat reference
+        if (index === 0) {
+            this.fishingSpotBaseY = newY;
+        }
+
+        return { x: chosen.x, z: chosen.z };
     }
 
     _placeNPCs() {
@@ -432,11 +666,14 @@ export class Environment {
             const mesh = this.assets.createNPC(npcId);
             const y = this.terrain.getHeightAt(npcConfig.x, npcConfig.z);
             mesh.position.set(npcConfig.x, y, npcConfig.z);
-            mesh.userData = { type: 'npc', interactable: true, name: npcConfig.name, npcId };
+            const parts = mesh.userData._parts;
+            mesh.userData = { type: 'npc', interactable: true, name: npcConfig.name, npcId, _parts: parts };
             mesh._entityRef = { type: 'npc', npcId: npcId };
             this.scene.add(mesh);
             this.interactables.push(mesh);
-            this.npcs.push({ mesh, id: npcId, config: npcConfig });
+            const npc = { mesh, id: npcId, config: npcConfig };
+            npc._breathPhase = Math.random() * Math.PI * 2;
+            this.npcs.push(npc);
         }
     }
 
@@ -496,6 +733,11 @@ export class Environment {
 
         const monsterConfig = CONFIG.MONSTERS[data.type];
         const monster = new Monster(monsterMesh, monsterConfig, new THREE.Vector3(data.x, y, data.z));
+        // Assign multiplayer sync ID if present
+        if (data.id) {
+            monster.id = data.id;
+            this.monsterById.set(data.id, monster);
+        }
         this.monsters.push(monster);
         this.interactables.push(monsterMesh);
         monsterMesh._entityRef = monster;
@@ -507,6 +749,11 @@ export class Environment {
         this.scene.add(monsterMesh);
         const monsterConfig = CONFIG.MONSTERS[data.type];
         const monster = new Monster(monsterMesh, monsterConfig, new THREE.Vector3(data.x, floorY, data.z));
+        // Assign multiplayer sync ID if present
+        if (data.id) {
+            monster.id = data.id;
+            this.monsterById.set(data.id, monster);
+        }
         this.monsters.push(monster);
         this.interactables.push(monsterMesh);
         monsterMesh._entityRef = monster;
@@ -656,7 +903,7 @@ export class Environment {
         });
 
         // Place poles/skulls along the boundary
-        for (let x = -80; x <= 80; x += 8) {
+        for (let x = -140; x <= 140; x += 8) {
             const y = this.terrain.getHeightAt(x, boundaryZ);
 
             // Pole
@@ -700,7 +947,7 @@ export class Environment {
         }
 
         // Warning ditch (dark strip along the boundary)
-        const ditchGeo = new THREE.PlaneGeometry(160, 3);
+        const ditchGeo = new THREE.PlaneGeometry(280, 3);
         ditchGeo.rotateX(-Math.PI / 2);
         const ditchMat = new THREE.MeshStandardMaterial({
             color: 0x111100, roughness: 1.0, transparent: true, opacity: 0.8,
@@ -773,6 +1020,58 @@ export class Environment {
             }
         }
 
+        // Volcanic (x > 85)
+        const volcanic = CONFIG.BIOMES?.volcanic;
+        if (volcanic) {
+            // Volcano landmark at (110, 0)
+            const volcano = this.assets.createVolcano();
+            const vy = this.terrain.getHeightAt(110, 0);
+            volcano.position.set(110, vy, 0);
+            this.scene.add(volcano);
+
+            // 3 lava pools
+            const lavaSpots = [{x:100, z:5}, {x:108, z:-10}, {x:115, z:12}];
+            for (const ls of lavaSpots) {
+                const lavaGeo = new THREE.CircleGeometry(3, 24);
+                lavaGeo.rotateX(-Math.PI / 2);
+                const lavaMat = this._createLavaMaterial();
+                const lavaMesh = new THREE.Mesh(lavaGeo, lavaMat);
+                const ly = this.terrain.getHeightAt(ls.x, ls.z);
+                this.terrain.flattenArea(ls.x, ls.z, 4, 4, ly - 0.2);
+                lavaMesh.position.set(ls.x, ly - 0.05, ls.z);
+                this.scene.add(lavaMesh);
+                this.lavaPools.push(lavaMesh);
+
+                // Orange point light near lava
+                const lavaLight = new THREE.PointLight(0xFF4400, 0.6, 12);
+                lavaLight.position.set(ls.x, ly + 1, ls.z);
+                this.scene.add(lavaLight);
+            }
+
+            // 5 volcanic rocks (dark decorations)
+            for (let i = 0; i < 5; i++) {
+                const rx = 90 + Math.random() * 30;
+                const rz = -15 + Math.random() * 30;
+                const vrock = this.assets.createVolcanicRock();
+                vrock.position.set(rx, this.terrain.getHeightAt(rx, rz), rz);
+                this.scene.add(vrock);
+            }
+
+            // Fire elemental spawns
+            const fireSpots = [{x:100, z:10}, {x:108, z:-5}, {x:115, z:5}];
+            for (const sp of fireSpots) {
+                this._spawnMonster({ type: 'fire_elemental', x: sp.x, z: sp.z });
+            }
+        }
+
+        // Desert City guards (x 68-82, z 5-20)
+        if (desert) {
+            const guardSpots = [{x:74, z:12}, {x:80, z:14}];
+            for (const sp of guardSpots) {
+                this._spawnMonster({ type: 'desert_guard', x: sp.x, z: sp.z });
+            }
+        }
+
         // Firefly spawn positions (near tree clusters)
         this.fireflyPositions = [
             { x: 15, y: this.terrain.getHeightAt(15, 10), z: 10 },
@@ -784,7 +1083,91 @@ export class Environment {
         ];
     }
 
-    spawnGroundItem(itemId, qty, worldPos) {
+    _placeUnderwaterCave() {
+        const caveY = -15;
+        const caveX = 0, caveZ = 0;
+        const caveW = 30, caveD = 30, caveH = 6;
+
+        // Room structure (reuse dungeon room pattern)
+        const room = this.assets.createDungeonRoom(caveW, caveD, caveH);
+        // Override material to cave blue-gray
+        room.traverse(child => {
+            if (child.isMesh) {
+                child.material = this.assets.materials.caveFloor;
+            }
+        });
+        room.position.set(caveX, caveY, caveZ);
+        this.scene.add(room);
+
+        // Ambient blue light
+        const caveAmbient = new THREE.PointLight(0x2288AA, 0.4, caveW);
+        caveAmbient.position.set(caveX, caveY + caveH - 1, caveZ);
+        this.scene.add(caveAmbient);
+
+        // Glowing mushrooms (10)
+        for (let i = 0; i < 10; i++) {
+            const mx = caveX - caveW / 2 + 2 + Math.random() * (caveW - 4);
+            const mz = caveZ - caveD / 2 + 2 + Math.random() * (caveD - 4);
+            const mush = this.assets.createGlowingMushroom();
+            mush.position.set(mx, caveY, mz);
+            this.scene.add(mush);
+        }
+
+        // Sea serpent spawns (3)
+        const serpentSpots = [{x:-5, z:-5}, {x:5, z:5}, {x:0, z:-8}];
+        for (const sp of serpentSpots) {
+            this._spawnDungeonMonster({ type: 'sea_serpent', x: sp.x, z: sp.z }, caveY);
+        }
+
+        // Obsidian rock nodes inside cave (3)
+        const rockSpots = [{x:-8, z:0}, {x:8, z:-3}, {x:0, z:8}];
+        for (const ps of rockSpots) {
+            const rockMesh = this.assets.createRock('obsidian');
+            rockMesh.position.set(ps.x, caveY, ps.z);
+            this.scene.add(rockMesh);
+            const rockConfig = CONFIG.ROCKS.obsidian;
+            const node = new ResourceNode(rockMesh, {
+                type: 'rock', subType: 'obsidian', ...rockConfig,
+            });
+            this.resourceNodes.push(node);
+            this.interactables.push(rockMesh);
+            rockMesh._entityRef = node;
+        }
+
+        // Entry portal (on surface near pond ~18, 14)
+        const portalIn = this.assets.createPortal(0x2288FF);
+        const portalY = this.terrain.getHeightAt(18, 14);
+        portalIn.position.set(18, portalY, 14);
+        portalIn.userData = { type: 'portal', interactable: true, name: 'Underwater Portal',
+            targetX: caveX, targetZ: caveZ, targetY: caveY + 1.6 };
+        portalIn._entityRef = { type: 'portal', targetX: caveX, targetZ: caveZ, targetY: caveY + 1.6 };
+        this.scene.add(portalIn);
+        this.interactables.push(portalIn);
+
+        // Return portal (inside cave, near east wall)
+        const portalOut = this.assets.createPortal(0x22FF88);
+        portalOut.position.set(caveX + caveW / 2 - 2, caveY + 0.1, caveZ);
+        const surfaceY = this.terrain.getHeightAt(20, 14) + CONFIG.PLAYER.height;
+        portalOut.userData = { type: 'portal', interactable: true, name: 'Surface Portal',
+            targetX: 20, targetZ: 14, targetY: surfaceY };
+        portalOut._entityRef = { type: 'portal', targetX: 20, targetZ: 14, targetY: surfaceY };
+        this.scene.add(portalOut);
+        this.interactables.push(portalOut);
+
+        // Store cave data for main.js fog/bounds
+        this.underwaterCave = {
+            y: caveY,
+            caveH: caveH,
+            bounds: {
+                minX: caveX - caveW / 2 + 1,
+                maxX: caveX + caveW / 2 - 1,
+                minZ: caveZ - caveD / 2 + 1,
+                maxZ: caveZ + caveD / 2 - 1,
+            },
+        };
+    }
+
+    spawnGroundItem(itemId, qty, worldPos, serverId) {
         const itemDef = CONFIG.ITEMS[itemId];
         if (!itemDef) return;
         const colors = {
@@ -822,6 +1205,7 @@ export class Environment {
             pet_phoenix: 0xFF4400, pet_rocky: 0x666666, pet_kbd_jr: 0x222222,
             pet_demon_jr: 0xFF2200, pet_bloodhound: 0xAA6633,
             stamina_potion: 0xFFAA00, antipoison: 0x00AA44,
+            obsidian_ore: 0x222222, palm_logs: 0x8B6914, pearl: 0xF0E8D0, raw_seaweed: 0x226644,
         };
         const color = colors[itemId] || 0xFFFFFF;
         const geo = new THREE.BoxGeometry(0.25, 0.25, 0.25);
@@ -833,10 +1217,10 @@ export class Environment {
             worldPos.z + (Math.random() - 0.5) * 1.5
         );
         mesh.userData = { type: 'ground_item', interactable: true, name: `${itemDef.name}${qty > 1 ? ' x' + qty : ''}` };
-        mesh._entityRef = { type: 'ground_item', itemId, qty };
+        mesh._entityRef = { type: 'ground_item', itemId, qty, serverId: serverId || null };
         this.scene.add(mesh);
         this.interactables.push(mesh);
-        this.groundItems.push({ mesh, itemId, qty, timer: 60 });
+        this.groundItems.push({ mesh, itemId, qty, timer: 60, serverId: serverId || null });
     }
 
     removeGroundItem(mesh) {
@@ -845,12 +1229,30 @@ export class Environment {
         const iIdx = this.interactables.indexOf(mesh);
         if (iIdx >= 0) this.interactables.splice(iIdx, 1);
         this.scene.remove(mesh);
+        if (mesh.geometry) mesh.geometry.dispose();
+        if (mesh.material) mesh.material.dispose();
     }
 
-    updateAnimations(dt) {
+    /** Remove a server-tracked ground item by its server ID */
+    removeGroundItemByServerId(serverId) {
+        const idx = this.groundItems.findIndex(g => g.serverId === serverId);
+        if (idx < 0) return;
+        const gi = this.groundItems[idx];
+        this.removeGroundItem(gi.mesh);
+    }
+
+    updateAnimations(dt, playerPos) {
         const time = performance.now() * 0.001;
         if (this.pondMesh && this.pondMesh.material.uniforms) {
             this.pondMesh.material.uniforms.time.value = time;
+        }
+        if (this._riverMesh && this._riverMesh.material.uniforms) {
+            this._riverMesh.material.uniforms.time.value = time;
+        }
+        for (const lava of this.lavaPools) {
+            if (lava.material.uniforms) {
+                lava.material.uniforms.time.value = time;
+            }
         }
         for (const flame of this.fireParticles) {
             const d = flame.userData;
@@ -859,6 +1261,7 @@ export class Environment {
             flame.position.x = d._baseX + Math.sin(t * 1.3) * 0.03;
             flame.position.z = d._baseZ + Math.cos(t * 0.9) * 0.03;
             flame.scale.y = 0.8 + Math.sin(t * 2) * 0.3;
+            flame.scale.x = 0.8 + Math.sin(t * d._speed * 1.3 + d._phase * 0.7) * 0.3;
             flame.material.opacity = 0.5 + Math.sin(t * 1.5) * 0.3;
         }
         if (this.fireLight) {
@@ -866,6 +1269,28 @@ export class Environment {
         }
         for (const spot of this.fishingSpots) {
             spot.mesh.position.y = spot.baseY + Math.sin(time * 2) * 0.08;
+        }
+        // Roaming fishing spots — relocate periodically
+        const moveInterval = CONFIG.WORLD_OBJECTS.fishingSpotMoveInterval || 90;
+        for (let i = 0; i < this._fishingSpotTimers.length; i++) {
+            this._fishingSpotTimers[i] -= dt;
+            if (this._fishingSpotTimers[i] <= 0) {
+                const result = this._relocateFishingSpot(i);
+                this._fishingSpotTimers[i] = moveInterval + (Math.random() - 0.5) * 20;
+                if (result && this._game) {
+                    // Notify player if they were fishing this spot type
+                    const spot = this.fishingSpots[i];
+                    const player = this._game.player;
+                    if (player && player.skillingTarget && player.skillingTarget.type === 'fishing_spot'
+                        && player.skillingTarget.fishType === spot.fishType) {
+                        this._game.uiManager?.addChatMessage('The fishing spot has moved!', '#3388FF');
+                    }
+                    // Play splash sound at new location
+                    if (this._game.audioManager) {
+                        this._game.audioManager.playSplash?.();
+                    }
+                }
+            }
         }
         for (let i = this.groundItems.length - 1; i >= 0; i--) {
             const item = this.groundItems[i];
@@ -928,6 +1353,39 @@ export class Environment {
                 npc.mesh.position.y = npc._baseY + Math.sin(time * 1.2 + npc._phase) * 0.04;
                 npc.mesh.rotation.y = Math.sin(time * 0.4 + npc._phase) * 0.26;
             }
+
+            // Idle animations: head turn, arm swing, breathing
+            const parts = npc.mesh.userData._parts;
+            if (parts) {
+                // Head turn toward player when within 10m
+                if (playerPos && parts.head) {
+                    const hdx = playerPos.x - npc.mesh.position.x;
+                    const hdz = playerPos.z - npc.mesh.position.z;
+                    const hdist = Math.sqrt(hdx * hdx + hdz * hdz);
+                    if (hdist < 10) {
+                        const angleToPlayer = Math.atan2(hdx, hdz) - npc.mesh.rotation.y;
+                        const clamped = Math.max(-0.5, Math.min(0.5, angleToPlayer));
+                        parts.head.rotation.y += (clamped - parts.head.rotation.y) * dt * 3;
+                    } else {
+                        parts.head.rotation.y += (0 - parts.head.rotation.y) * dt * 3;
+                    }
+                }
+
+                // Arm swing while walking
+                if (npc._walking) {
+                    if (parts.armL) parts.armL.rotation.x = Math.sin(time * 6) * 0.4;
+                    if (parts.armR) parts.armR.rotation.x = -Math.sin(time * 6) * 0.4;
+                } else {
+                    if (parts.armL) parts.armL.rotation.x *= 0.9;
+                    if (parts.armR) parts.armR.rotation.x *= 0.9;
+                }
+
+                // Breathing animation on torso
+                if (parts.torso) {
+                    const breathPhase = npc._breathPhase || 0;
+                    parts.torso.scale.y = 1.0 + Math.sin(time * 2 + breathPhase) * 0.015;
+                }
+            }
         }
 
         // Loot beam animations
@@ -941,6 +1399,15 @@ export class Environment {
                 beam.mesh.geometry.dispose();
                 beam.mesh.material.dispose();
                 this.lootBeams.splice(i, 1);
+            }
+        }
+
+        // Portal animations
+        if (this._portals) {
+            for (const portal of this._portals) {
+                portal.rotation.x += dt * 1.2;
+                portal.rotation.y += dt * 0.8;
+                portal.material.opacity = 0.5 + Math.sin(time * 3) * 0.2;
             }
         }
 
@@ -1091,5 +1558,59 @@ export class Environment {
         const iIdx = this.interactables.indexOf(mesh);
         if (iIdx >= 0) this.interactables.splice(iIdx, 1);
         this.scene.remove(mesh);
+    }
+
+    spawnNewNPC(npcData) {
+        // Dynamically add an NPC to the world
+        const npcConfig = {
+            id: npcData.id,
+            name: npcData.name,
+            x: npcData.x,
+            z: npcData.z,
+            dialogues: npcData.dialogues || { default: [{ text: `Hello, traveler!` }] },
+        };
+
+        // Add to CONFIG so quest system can find it
+        if (!CONFIG.NPCS[npcData.id]) {
+            CONFIG.NPCS[npcData.id] = npcConfig;
+        }
+
+        const mesh = this.assets.createNPC(npcData.colors || {});
+        const y = this.terrain.getHeightAt(npcData.x, npcData.z);
+        mesh.position.set(npcData.x, y, npcData.z);
+
+        const parts = mesh.userData._parts;
+        mesh.userData = { type: 'npc', interactable: true, name: npcData.name, npcId: npcData.id, _parts: parts };
+        mesh._entityRef = { type: 'npc', npcId: npcData.id };
+        this.scene.add(mesh);
+
+        const npc = { mesh, config: npcConfig };
+        npc._breathPhase = Math.random() * Math.PI * 2;
+        this.npcs.push(npc);
+        this.interactables.push(mesh);
+    }
+
+    spawnPortal(portalData) {
+        const geo = new THREE.TorusGeometry(1.5, 0.3, 8, 16);
+        const mat = new THREE.MeshBasicMaterial({
+            color: 0x9933FF,
+            transparent: true,
+            opacity: 0.7,
+        });
+        const portal = new THREE.Mesh(geo, mat);
+        const y = this.terrain.getHeightAt(portalData.x, portalData.z);
+        portal.position.set(portalData.x, y + 1.5, portalData.z);
+        portal.userData = {
+            type: 'portal',
+            interactable: true,
+            name: portalData.name || 'Mysterious Portal',
+            targetX: portalData.targetX,
+            targetZ: portalData.targetZ,
+        };
+        portal._entityRef = { type: 'portal' };
+        this.scene.add(portal);
+        this.interactables.push(portal);
+        this._portals = this._portals || [];
+        this._portals.push(portal);
     }
 }
