@@ -481,22 +481,32 @@ export class InteractionSystem {
             return;
         }
 
-        // Obstacles must be completed in order (0-4) for a lap
-        const expectedIndex = (player.lastAgilityObstacle === undefined || player.lastAgilityObstacle === 4)
-            ? 0
-            : player.lastAgilityObstacle + 1;
-
-        if (obstacleIndex !== expectedIndex && obstacleIndex !== 0) {
-            this.game.addChatMessage('You need to start from the beginning of the course.', 'system');
+        // Cooldown: prevent spamming the same obstacle (3 second cooldown)
+        const now = Date.now();
+        if (player._agilityCooldown && now - player._agilityCooldown < 3000) {
+            this.game.addChatMessage("You're not ready to attempt another obstacle yet.", 'system');
             return;
         }
 
-        // Reset lap tracking if starting over
-        if (obstacleIndex === 0) {
-            player.lastAgilityObstacle = 0;
-        } else {
-            player.lastAgilityObstacle = obstacleIndex;
+        // Obstacles must be completed in order (0-4) for a lap
+        const lastDone = player.lastAgilityObstacle;
+        const expectedIndex = (lastDone === undefined || lastDone === -1)
+            ? 0
+            : lastDone + 1;
+
+        if (obstacleIndex !== expectedIndex) {
+            if (obstacleIndex === 0) {
+                // Restarting the course — reset progress
+                player.lastAgilityObstacle = -1;
+            } else {
+                this.game.addChatMessage('You need to start from the beginning of the course.', 'system');
+                return;
+            }
         }
+
+        // Mark this obstacle as completed and set cooldown
+        player.lastAgilityObstacle = obstacleIndex;
+        player._agilityCooldown = now;
 
         this.game.skillSystem.addXP('agility', obstacle.xp);
         this.game.addChatMessage(`You successfully cross the ${obstacle.name || 'obstacle'}.`);
@@ -506,9 +516,13 @@ export class InteractionSystem {
             const completionXP = CONFIG.AGILITY_COURSE.completionXP || 0;
             if (completionXP > 0) {
                 this.game.skillSystem.addXP('agility', completionXP);
+                this.game.addChatMessage(`You complete a lap of the agility course! (+${completionXP} bonus XP)`);
+            } else {
+                this.game.addChatMessage('You complete a lap of the agility course!');
             }
-            this.game.addChatMessage('You complete a lap of the agility course!');
             if (this.game.achievementSystem) this.game.achievementSystem.unlock('agility_lap');
+            // Reset for next lap
+            player.lastAgilityObstacle = -1;
         }
     }
 
