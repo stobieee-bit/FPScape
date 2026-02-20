@@ -157,8 +157,8 @@ export class Monster {
             const dz = this.combatTarget.z - this.position.z;
             const dist = Math.sqrt(dx * dx + dz * dz);
 
-            // Only chase if further than melee range
-            if (dist > 1.5) {
+            // Only chase if further than melee range (2.5 prevents camera clipping)
+            if (dist > 2.5) {
                 const speed = this.moveSpeed * 1.2 * dt; // Slightly faster when chasing
                 this.position.x += (dx / dist) * speed;
                 this.position.z += (dz / dist) * speed;

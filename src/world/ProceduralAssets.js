@@ -83,7 +83,7 @@ export class ProceduralAssets {
             churchWhite: new THREE.MeshStandardMaterial({ color: 0xEEEEDD, roughness: 0.9 }),
             furnaceBrick: new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.95 }),
             agilityLog: new THREE.MeshStandardMaterial({ color: 0x6B4226, roughness: 0.9 }),
-            agilityNet: new THREE.MeshStandardMaterial({ color: 0xCCBB88, roughness: 0.9, wireframe: true }),
+            agilityNet: new THREE.MeshStandardMaterial({ color: 0xCCBB88, roughness: 0.9 }),
             altarStone: new THREE.MeshStandardMaterial({ color: 0x7777AA, roughness: 0.7, metalness: 0.2 }),
             // Shared materials previously created inline in monster builders
             redEyes: new THREE.MeshStandardMaterial({ color: 0xFF0000 }),

@@ -151,6 +151,10 @@ export class Environment {
             this.resourceNodes.push(node);
             this.interactables.push(treeLOD);
             treeLOD._entityRef = node;
+            // Propagate _entityRef to LOD level groups so raycasts that stop
+            // at a child group (which has userData.interactable from spread)
+            // can still find the ResourceNode
+            for (const child of treeLOD.children) child._entityRef = node;
         }
     }
 
@@ -169,6 +173,7 @@ export class Environment {
             this.resourceNodes.push(node);
             this.interactables.push(rockLOD);
             rockLOD._entityRef = node;
+            for (const child of rockLOD.children) child._entityRef = node;
         }
     }
 
@@ -1254,14 +1259,14 @@ export class Environment {
 
     _placeGrass() {
         const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-        const count = isMobile ? 300 : 800;
-        const geo = new THREE.PlaneGeometry(0.4, 0.35);
-        geo.translate(0, 0.175, 0); // pivot at base
+        const count = isMobile ? 300 : 600;
+        const geo = new THREE.PlaneGeometry(0.3, 0.25);
+        geo.translate(0, 0.125, 0); // pivot at base
 
         const mat = new THREE.MeshBasicMaterial({
             color: 0x4A7A30,
             transparent: true,
-            opacity: 0.9,
+            opacity: 0.75,
             alphaTest: 0.3,
             side: THREE.DoubleSide,
             depthWrite: false,
@@ -1287,7 +1292,7 @@ export class Environment {
             }
             if (attempts >= 20) continue;
             const y = this.terrain.getHeightAt(x, z);
-            const scale = 0.7 + Math.random() * 0.6;
+            const scale = 0.6 + Math.random() * 0.4;
             const rotY = Math.random() * Math.PI * 2;
             transforms.push({ x, y, z, scale, rotY });
         }

@@ -161,6 +161,7 @@ export class InteractionSystem {
     }
 
     _handleResourceClick(node, skillType) {
+        if (!node) return;
         if (node.depleted) { this.game.addChatMessage('This resource is depleted.', 'system'); return; }
         const player = this.game.player;
         player.stopActions();

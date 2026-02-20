@@ -140,6 +140,9 @@ export class QuestSystem {
     closeDialogue() {
         this._overlay.classList.add('hidden');
         this.activeDialogue = null;
+        // Restore pointer lock so player can interact again
+        this.game.input.cursorMode = false;
+        this.game.input.requestLock();
     }
 
     _handleAction(action) {
