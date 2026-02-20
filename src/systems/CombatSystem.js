@@ -758,6 +758,11 @@ export class CombatSystem {
             this.game.clueScrollSystem.checkKill(monsterType);
         }
 
+        // In multiplayer, the server handles loot drops via 'loot_drop' messages
+        // to prevent duplicate items. Only spawn loot locally for offline/non-synced monsters.
+        const isServerMonster = monster.id && this.game.networkManager?.connected;
+        if (isServerMonster) return;
+
         // Generate loot now (before respawn recycles the monster), but delay spawning
         const deathPos = monster.position.clone();
         const loot = monster.generateLoot();

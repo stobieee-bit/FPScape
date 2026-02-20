@@ -1278,13 +1278,13 @@ export class Environment {
             obsidian_ore: 0x222222, palm_logs: 0x8B6914, pearl: 0xF0E8D0, raw_seaweed: 0x226644,
         };
         const color = colors[itemId] || 0xFFFFFF;
-        const geo = new THREE.BoxGeometry(0.25, 0.25, 0.25);
-        const mat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.3 });
+        const geo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+        const mat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.4 });
         const mesh = new THREE.Mesh(geo, mat);
         mesh.position.set(
-            worldPos.x + (Math.random() - 0.5) * 1.5,
+            worldPos.x + (Math.random() - 0.5) * 0.8,
             worldPos.y + 0.3,
-            worldPos.z + (Math.random() - 0.5) * 1.5
+            worldPos.z + (Math.random() - 0.5) * 0.8
         );
         mesh.userData = { type: 'ground_item', interactable: true, name: `${itemDef.name}${qty > 1 ? ' x' + qty : ''}` };
         mesh._entityRef = { type: 'ground_item', itemId, qty, serverId: serverId || null };
