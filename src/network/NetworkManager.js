@@ -340,7 +340,7 @@ export class NetworkManager {
     /** Send monster attack to server for multiplayer sync */
     sendMonsterAttack(monsterId, damage) {
         if (!this.connected || !monsterId) return;
-        this._send({ type: 'monster_attack', monsterId, damage });
+        this._send({ type: 'attack_monster', monsterId, damage });
     }
 
     // ── Trade send methods ──────────────────────────────────────────
