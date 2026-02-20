@@ -370,10 +370,11 @@ wss.on('connection', (ws) => {
             const m = monsters.get(mId);
             if (!m || !m.alive) return;
 
-            // Validate distance (within 5u of attacker position)
+            // Validate distance — use generous range since server monster
+            // positions are static spawns while client-side monsters chase players
             const dx = state.x - m.x;
             const dz = state.z - m.z;
-            if (dx * dx + dz * dz > 25) return;
+            if (dx * dx + dz * dz > 2500) return;
 
             // Validate damage range
             if (isNaN(damage) || damage < 0 || damage > 50) return;
