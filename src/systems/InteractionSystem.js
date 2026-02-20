@@ -701,7 +701,9 @@ export class InteractionSystem {
     }
 
     _handleChurchClick() {
-        const dist = this.game.distanceToPlayer(this.hoveredMesh.position);
+        const worldPos = new THREE.Vector3();
+        this.hoveredMesh.getWorldPosition(worldPos);
+        const dist = this.game.distanceToPlayer(worldPos);
         if (dist > CONFIG.PLAYER.interactionRange) { this.game.addChatMessage("You're too far away.", 'system'); return; }
 
         this.game.prayerSystem.restorePoints();
