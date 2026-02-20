@@ -334,7 +334,7 @@ export class Environment {
                 foamColor: { value: new THREE.Color(0xCCEEFF) },
                 sunDirection: { value: new THREE.Vector3(0.4, 0.6, 0.3).normalize() },
                 sunColor: { value: new THREE.Color(0xFFEECC) },
-                cameraPosition: { value: new THREE.Vector3() },
+                eyePos: { value: new THREE.Vector3() },
             },
             vertexShader: `
                 uniform float time;
@@ -366,7 +366,7 @@ export class Environment {
                 uniform vec3 foamColor;
                 uniform vec3 sunDirection;
                 uniform vec3 sunColor;
-                uniform vec3 cameraPosition;
+                uniform vec3 eyePos;
                 varying vec2 vUv;
                 varying vec3 vWorldPos;
                 varying vec3 vNormal;
@@ -384,7 +384,7 @@ export class Environment {
                     vec3 N = normalize(vNormal + vec3(nx, 0.0, nz));
 
                     // View direction and reflection
-                    vec3 viewDir = normalize(cameraPosition - vWorldPos);
+                    vec3 viewDir = normalize(eyePos - vWorldPos);
                     vec3 reflDir = reflect(-viewDir, N);
 
                     // Fresnel (Schlick approximation, water IOR ~1.33)
@@ -1402,14 +1402,14 @@ export class Environment {
 
         if (this.pondMesh && this.pondMesh.material.uniforms) {
             this.pondMesh.material.uniforms.time.value = time;
-            if (this.pondMesh.material.uniforms.cameraPosition) {
-                this.pondMesh.material.uniforms.cameraPosition.value.copy(camPos);
+            if (this.pondMesh.material.uniforms.eyePos) {
+                this.pondMesh.material.uniforms.eyePos.value.copy(camPos);
             }
         }
         if (this._riverMesh && this._riverMesh.material.uniforms) {
             this._riverMesh.material.uniforms.time.value = time;
-            if (this._riverMesh.material.uniforms.cameraPosition) {
-                this._riverMesh.material.uniforms.cameraPosition.value.copy(camPos);
+            if (this._riverMesh.material.uniforms.eyePos) {
+                this._riverMesh.material.uniforms.eyePos.value.copy(camPos);
             }
         }
         for (const lava of this.lavaPools) {
