@@ -1457,7 +1457,7 @@ export class ProceduralAssets {
             g.add(at(new THREE.Mesh(new THREE.BoxGeometry(0.3, 8, 10), castleWallMat), 6, 4, 0));    // right
             g.add(at(new THREE.Mesh(new THREE.BoxGeometry(4.5, 8, 0.3), castleWallMat), -3.75, 4, -5)); // front-L
             g.add(at(new THREE.Mesh(new THREE.BoxGeometry(4.5, 8, 0.3), castleWallMat), 3.75, 4, -5));  // front-R
-            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(3, 0.5, 0.3), castleWallMat), 0, 7.75, -5));  // lintel
+            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(3, 4, 0.3), castleWallMat), 0, 6, -5));       // above door
             // Corner towers
             for (const [cx, cz] of [[-6,-5],[6,-5],[-6,5],[6,5]]) {
                 const t = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.8, 10, 8), this.materials.castleStone);
