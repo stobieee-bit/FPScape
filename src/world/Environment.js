@@ -332,11 +332,15 @@ export class Environment {
                 deepColor: { value: new THREE.Color(0x0D3D5C) },
                 skyColor: { value: new THREE.Color(0x88BBDD) },
                 foamColor: { value: new THREE.Color(0xCCEEFF) },
+                sunDirection: { value: new THREE.Vector3(0.4, 0.6, 0.3).normalize() },
+                sunColor: { value: new THREE.Color(0xFFEECC) },
+                cameraPosition: { value: new THREE.Vector3() },
             },
             vertexShader: `
                 uniform float time;
                 varying vec2 vUv;
                 varying vec3 vWorldPos;
+                varying vec3 vNormal;
                 void main() {
                     vUv = uv;
                     // Vertex wave displacement
@@ -345,6 +349,12 @@ export class Environment {
                     vec3 displaced = position + vec3(0.0, wave, 0.0);
                     vec4 wp = modelMatrix * vec4(displaced, 1.0);
                     vWorldPos = wp.xyz;
+
+                    // Compute perturbed normal from wave derivatives
+                    float dWdx = cos(position.x * 0.6 + time * 1.2) * 0.6 * 0.06;
+                    float dWdz = cos(position.z * 0.8 - time * 0.9) * 0.8 * 0.04;
+                    vNormal = normalize(vec3(-dWdx, 1.0, -dWdz));
+
                     gl_Position = projectionMatrix * modelViewMatrix * vec4(displaced, 1.0);
                 }
             `,
@@ -354,8 +364,12 @@ export class Environment {
                 uniform vec3 deepColor;
                 uniform vec3 skyColor;
                 uniform vec3 foamColor;
+                uniform vec3 sunDirection;
+                uniform vec3 sunColor;
+                uniform vec3 cameraPosition;
                 varying vec2 vUv;
                 varying vec3 vWorldPos;
+                varying vec3 vNormal;
                 void main() {
                     vec2 p = vUv * 8.0;
 
@@ -364,26 +378,50 @@ export class Environment {
                     float ripple2 = sin(p.x * 5.0 - time * 2.5 + 1.7) * sin(p.y * 4.5 + time * 1.8) * 0.5 + 0.5;
                     float ripple = ripple1 * 0.6 + ripple2 * 0.4;
 
-                    // Specular highlight (fake sun reflection)
-                    float spec = pow(max(ripple1, 0.0), 8.0) * 0.3;
+                    // Perturb normal with ripple detail
+                    float nx = sin(p.x * 3.0 + time * 1.8) * 0.04 + sin(p.x * 5.0 - time * 2.5) * 0.02;
+                    float nz = sin(p.y * 2.5 - time * 1.2) * 0.04 + sin(p.y * 4.5 + time * 1.8) * 0.02;
+                    vec3 N = normalize(vNormal + vec3(nx, 0.0, nz));
 
-                    // Edge distance for Fresnel and foam
+                    // View direction and reflection
+                    vec3 viewDir = normalize(cameraPosition - vWorldPos);
+                    vec3 reflDir = reflect(-viewDir, N);
+
+                    // Fresnel (Schlick approximation, water IOR ~1.33)
+                    float cosTheta = max(dot(viewDir, N), 0.0);
+                    float R0 = 0.02; // ((1.33 - 1) / (1.33 + 1))^2
+                    float fresnel = R0 + (1.0 - R0) * pow(1.0 - cosTheta, 5.0);
+                    fresnel = clamp(fresnel, 0.0, 0.6);
+
+                    // Analytical sky color from reflection direction
+                    // Sky gradient: horizon = haze, zenith = blue, below horizon = dark water
+                    float reflY = clamp(reflDir.y, -0.1, 1.0);
+                    vec3 horizonColor = vec3(0.7, 0.8, 0.9);
+                    vec3 zenithColor = vec3(0.3, 0.5, 0.85);
+                    vec3 skyRefl = mix(horizonColor, zenithColor, smoothstep(0.0, 0.6, reflY));
+                    // Below horizon: darken to water depth color
+                    skyRefl = mix(deepColor * 0.5, skyRefl, smoothstep(-0.1, 0.05, reflY));
+
+                    // Sun specular on water surface
+                    vec3 halfVec = normalize(viewDir + sunDirection);
+                    float sunSpec = pow(max(dot(N, halfVec), 0.0), 128.0) * 0.8;
+                    // Secondary broader sun glint
+                    float sunGlint = pow(max(dot(N, halfVec), 0.0), 16.0) * 0.15;
+
+                    // Edge distance for foam
                     float edgeDist = length(vUv - 0.5) * 2.0;
-
-                    // Fresnel-like edge brightening (more reflective at edges)
-                    float fresnel = pow(edgeDist, 2.0) * 0.4;
 
                     // Base water color: blend deep and surface based on ripple
                     vec3 col = mix(baseColor, deepColor, ripple * 0.3);
 
-                    // Add sky reflection via fresnel
-                    col = mix(col, skyColor, fresnel);
-
                     // Add ripple highlights
-                    col += vec3(ripple * 0.08, ripple * 0.12, ripple * 0.18);
+                    col += vec3(ripple * 0.06, ripple * 0.09, ripple * 0.14);
 
-                    // Specular
-                    col += vec3(spec, spec * 0.95, spec * 0.85);
+                    // Blend in sky reflection via Fresnel
+                    col = mix(col, skyRefl, fresnel);
+
+                    // Sun specular highlight
+                    col += sunColor * (sunSpec + sunGlint);
 
                     // Edge foam
                     float foamThreshold = 0.82 + sin(time * 1.5 + p.x * 2.0) * 0.04;
@@ -391,8 +429,10 @@ export class Environment {
                     col = mix(col, foamColor, foam * 0.6);
 
                     // Alpha: solid center, fade at extreme edges
-                    float alpha = smoothstep(1.0, 0.75, edgeDist) * 0.75;
+                    float alpha = smoothstep(1.0, 0.75, edgeDist) * 0.78;
                     alpha = max(alpha, foam * 0.5);
+                    // More opaque at steep viewing angles (looking down = see through)
+                    alpha = mix(alpha, min(alpha + 0.15, 0.9), fresnel);
 
                     gl_FragColor = vec4(col, alpha);
                 }
@@ -625,9 +665,23 @@ export class Environment {
             group.userData = { type: 'fishing_spot', interactable: true, name: `${fishName} fishing spot`, fishType: spotData.type };
             group._entityRef = { type: 'fishing_spot', fishType: spotData.type };
 
+            // Small fish meshes orbiting the spot
+            const fishMeshes = [];
+            const fishMat = new THREE.MeshStandardMaterial({ color: 0xAABBCC, metalness: 0.3, roughness: 0.5 });
+            for (let fi = 0; fi < 3; fi++) {
+                const fishG = new THREE.Group();
+                const body = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.25, 4), fishMat);
+                body.rotation.x = Math.PI / 2; fishG.add(body);
+                const tail = new THREE.Mesh(new THREE.PlaneGeometry(0.08, 0.06), fishMat);
+                tail.position.z = 0.14; tail.rotation.y = Math.PI / 2; fishG.add(tail);
+                fishG.position.set(0, -0.1, 0);
+                group.add(fishG);
+                fishMeshes.push({ mesh: fishG, phase: fi * Math.PI * 2 / 3, speed: 0.8 + Math.random() * 0.6 });
+            }
+
             this.scene.add(group);
             this.interactables.push(group);
-            this.fishingSpots.push({ mesh: group, baseY: spotY, fishType: spotData.type });
+            this.fishingSpots.push({ mesh: group, baseY: spotY, fishType: spotData.type, fish: fishMeshes });
         }
         // Keep backward compat: first spot is "fishingSpot"
         if (this.fishingSpots.length > 0) {
@@ -1343,11 +1397,20 @@ export class Environment {
 
     updateAnimations(dt, playerPos) {
         const time = performance.now() * 0.001;
+        // Camera position for water reflections (player eye height)
+        const camPos = playerPos ? new THREE.Vector3(playerPos.x, playerPos.y + 1.6, playerPos.z) : new THREE.Vector3(0, 2, 0);
+
         if (this.pondMesh && this.pondMesh.material.uniforms) {
             this.pondMesh.material.uniforms.time.value = time;
+            if (this.pondMesh.material.uniforms.cameraPosition) {
+                this.pondMesh.material.uniforms.cameraPosition.value.copy(camPos);
+            }
         }
         if (this._riverMesh && this._riverMesh.material.uniforms) {
             this._riverMesh.material.uniforms.time.value = time;
+            if (this._riverMesh.material.uniforms.cameraPosition) {
+                this._riverMesh.material.uniforms.cameraPosition.value.copy(camPos);
+            }
         }
         for (const lava of this.lavaPools) {
             if (lava.material.uniforms) {
@@ -1369,6 +1432,19 @@ export class Environment {
         }
         for (const spot of this.fishingSpots) {
             spot.mesh.position.y = spot.baseY + Math.sin(time * 2) * 0.08;
+            // Animate fish orbiting the spot
+            if (spot.fish) {
+                for (const f of spot.fish) {
+                    const angle = time * f.speed + f.phase;
+                    f.mesh.position.x = Math.cos(angle) * 1.2;
+                    f.mesh.position.z = Math.sin(angle) * 1.2;
+                    // Occasional jump arc
+                    const jumpCycle = Math.sin(time * f.speed * 0.7 + f.phase * 3);
+                    f.mesh.position.y = jumpCycle > 0.85 ? Math.pow((jumpCycle - 0.85) / 0.15, 0.5) * 0.4 : -0.1;
+                    // Face direction of travel
+                    f.mesh.rotation.y = -angle + Math.PI / 2;
+                }
+            }
         }
         // Roaming fishing spots — relocate periodically
         const moveInterval = CONFIG.WORLD_OBJECTS.fishingSpotMoveInterval || 90;

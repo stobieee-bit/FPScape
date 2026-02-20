@@ -381,31 +381,49 @@ export class ParticleSystem {
         this._firefliesActive = active;
     }
 
-    // Lightning flash — briefly brighten the scene (reuses single PointLight)
+    // Lightning flash — double-flash pattern for realistic thunderstorm
     flashLightning() {
         if (!this._lightningLight) {
-            this._lightningLight = new THREE.PointLight(0xFFFFFF, 0, 200);
+            this._lightningLight = new THREE.PointLight(0xCCCCFF, 0, 250);
             this._lightningLight.visible = false;
             this.scene.add(this._lightningLight);
         }
-        // If already flashing, just reposition
         const light = this._lightningLight;
+        // Reposition each flash
         light.position.set(
-            (Math.random() - 0.5) * 80,
-            50,
-            (Math.random() - 0.5) * 80
+            (Math.random() - 0.5) * 100,
+            55,
+            (Math.random() - 0.5) * 100
         );
-        light.intensity = 8;
+
+        // Clear any in-progress flash sequence
+        for (const t of (this._lightningTimers || [])) clearTimeout(t);
+        this._lightningTimers = [];
+
+        // Double-flash sequence:
+        // 1) Bright flash (intensity 10) for 60ms
+        // 2) Dim to 1 for 80ms (brief darkness)
+        // 3) Second weaker flash (intensity 5) for 50ms
+        // 4) Fade off over 200ms
+        light.intensity = 10;
         light.visible = true;
-        clearTimeout(this._lightningDimTimer);
-        clearTimeout(this._lightningOffTimer);
-        this._lightningDimTimer = setTimeout(() => {
-            light.intensity = 3;
-        }, 50);
-        this._lightningOffTimer = setTimeout(() => {
+
+        this._lightningTimers.push(setTimeout(() => {
+            light.intensity = 1;
+        }, 60));
+
+        this._lightningTimers.push(setTimeout(() => {
+            light.intensity = 5;
+        }, 140));
+
+        this._lightningTimers.push(setTimeout(() => {
+            light.intensity = 2;
+        }, 190));
+
+        this._lightningTimers.push(setTimeout(() => {
             light.intensity = 0;
             light.visible = false;
-        }, 150);
+        }, 350));
     }
 
     // Create slash trail VFX (melee combat)

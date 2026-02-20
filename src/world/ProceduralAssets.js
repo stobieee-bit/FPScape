@@ -1120,14 +1120,39 @@ export class ProceduralAssets {
         };
         const [shirt, pants, hair] = mats[npcId] || [this.materials.npcShirt, this.materials.npcPants, this.materials.npcHair];
         this._buildHumanoidNPC(group, shirt, pants, hair);
+        // ── Per-NPC accessories for visual variety ──
+
+        if (npcId === 'hans') {
+            // Chef hat (white cylinder + poofy top)
+            const hatBrim = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.2, 0.08, 8), new THREE.MeshStandardMaterial({ color: 0xF5F5F5, roughness: 0.7 }));
+            hatBrim.position.set(0, 1.92, 0); group.add(hatBrim);
+            const hatTop = new THREE.Mesh(new THREE.SphereGeometry(0.16, 6, 5), new THREE.MeshStandardMaterial({ color: 0xFFFFFF, roughness: 0.6 }));
+            hatTop.position.set(0, 2.06, 0); hatTop.scale.y = 1.3; group.add(hatTop);
+            // White apron (flat box on front of torso)
+            const apron = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.5, 0.02), new THREE.MeshStandardMaterial({ color: 0xF0F0F0, roughness: 0.8 }));
+            apron.position.set(0, 0.95, -0.14); group.add(apron);
+        }
+
         if (npcId === 'guide') {
+            // Staff with glowing orb
             group.add(at(new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 2, 5), this.materials.trunk), 0.5, 1.0, 0));
             group.add(at(new THREE.Mesh(new THREE.SphereGeometry(0.1, 6, 4), new THREE.MeshStandardMaterial({ color: 0x44AAFF, emissive: 0x2266BB, emissiveIntensity: 0.5 })), 0.5, 2.1, 0));
+            // Cape hanging from shoulders
+            const capeMat = new THREE.MeshStandardMaterial({ color: 0x2244AA, side: THREE.DoubleSide, roughness: 0.9 });
+            const cape = new THREE.Mesh(new THREE.PlaneGeometry(0.45, 0.7), capeMat);
+            cape.position.set(0, 1.05, 0.16); cape.rotation.x = 0.1; group.add(cape);
         }
+
         if (npcId === 'turael') {
+            // Sword on hip
             const sword = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.7, 0.02), new THREE.MeshStandardMaterial({ color: 0x999999, metalness: 0.6 }));
             sword.position.set(0.45, 0.9, 0); sword.rotation.z = -0.2; group.add(sword);
+            // Shoulder pads (small spheres)
+            const padMat = new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.5, roughness: 0.3 });
+            group.add(at(new THREE.Mesh(new THREE.SphereGeometry(0.1, 5, 4), padMat), -0.32, 1.42, 0));
+            group.add(at(new THREE.Mesh(new THREE.SphereGeometry(0.1, 5, 4), padMat), 0.32, 1.42, 0));
         }
+
         if (npcId === 'fishing_tutor') {
             // Fishing rod
             const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.01, 1.8, 4), this.materials.trunk);
@@ -1135,7 +1160,47 @@ export class ProceduralAssets {
             // Line dangling from rod tip
             const line = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.005, 0.6, 3), new THREE.MeshBasicMaterial({ color: 0xCCCCCC }));
             line.position.set(0.9, 1.8, 0); group.add(line);
+            // Bucket in other hand
+            const bucket = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.06, 0.12, 6, 1, true), new THREE.MeshStandardMaterial({ color: 0x886644, roughness: 0.9 }));
+            bucket.position.set(-0.4, 0.55, 0); group.add(bucket);
         }
+
+        if (npcId === 'fred') {
+            // Straw hat (flat wide brim + low crown)
+            const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.32, 0.03, 8), new THREE.MeshStandardMaterial({ color: 0xD4B86A, roughness: 0.95 }));
+            brim.position.set(0, 1.92, 0); group.add(brim);
+            const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.16, 0.12, 6), new THREE.MeshStandardMaterial({ color: 0xC8AA58, roughness: 0.95 }));
+            crown.position.set(0, 2.01, 0); group.add(crown);
+            // Pitchfork in hand
+            const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.6, 4), this.materials.trunk);
+            handle.position.set(0.5, 1.1, 0); handle.rotation.z = -0.15; group.add(handle);
+            // Pitchfork prongs (3 thin cylinders)
+            const prongMat = new THREE.MeshStandardMaterial({ color: 0x777777, metalness: 0.4 });
+            for (let pi = -1; pi <= 1; pi++) {
+                const prong = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.25, 3), prongMat);
+                prong.position.set(0.42 + pi * 0.04, 1.98, 0); group.add(prong);
+            }
+        }
+
+        if (npcId === 'banker') {
+            // Formal vest overlay on torso
+            const vest = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.55, 0.27), new THREE.MeshStandardMaterial({ color: 0x222233, roughness: 0.6 }));
+            vest.position.set(0, 1.17, 0); group.add(vest);
+            // Gold chain / necklace
+            const chain = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.012, 5, 8), new THREE.MeshStandardMaterial({ color: 0xFFCC00, metalness: 0.8, roughness: 0.2 }));
+            chain.position.set(0, 1.38, -0.13); chain.rotation.x = Math.PI / 2; group.add(chain);
+            // Slightly taller scale
+            group.scale.y = 1.05;
+        }
+
+        if (npcId === 'general') {
+            // Shopkeeper apron (brown)
+            const apron = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.55, 0.02), new THREE.MeshStandardMaterial({ color: 0x8B6914, roughness: 0.9 }));
+            apron.position.set(0, 0.9, -0.14); group.add(apron);
+            // Slightly wider build
+            group.scale.x = 1.1;
+        }
+
         if (npcId === 'merchant') {
             // Backpack
             const pack = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.35, 0.2), new THREE.MeshStandardMaterial({ color: 0x6B4226, roughness: 0.9 }));
@@ -1145,6 +1210,65 @@ export class ProceduralAssets {
                 const strap = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.4, 4), new THREE.MeshStandardMaterial({ color: 0x553322 }));
                 strap.position.set(s * 0.1, 1.25, 0.1); strap.rotation.x = 0.3; group.add(strap);
             }
+        }
+
+        if (npcId === 'bartender') {
+            // Bar towel over shoulder (thin box)
+            const towel = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.3, 0.02), new THREE.MeshStandardMaterial({ color: 0xDDDDDD, roughness: 0.9 }));
+            towel.position.set(-0.28, 1.35, 0.05); towel.rotation.z = 0.3; group.add(towel);
+        }
+
+        if (npcId === 'oziach') {
+            // Old wizard hat
+            const hatBase = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.22, 0.04, 8), new THREE.MeshStandardMaterial({ color: 0x5555AA, roughness: 0.8 }));
+            hatBase.position.set(0, 1.93, 0); group.add(hatBase);
+            const hatCone = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.35, 6), new THREE.MeshStandardMaterial({ color: 0x4444AA, roughness: 0.7 }));
+            hatCone.position.set(0, 2.14, 0); hatCone.rotation.z = 0.1; group.add(hatCone);
+        }
+
+        if (npcId === 'swamp_witch') {
+            // Pointed witch hat
+            const witchBrim = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.28, 0.03, 8), new THREE.MeshStandardMaterial({ color: 0x1A2A1A, roughness: 0.9 }));
+            witchBrim.position.set(0, 1.93, 0); group.add(witchBrim);
+            const witchCone = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.4, 6), new THREE.MeshStandardMaterial({ color: 0x1A2A1A, roughness: 0.9 }));
+            witchCone.position.set(0, 2.18, 0); group.add(witchCone);
+            // Gnarled staff
+            const wStaff = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.03, 1.6, 5), new THREE.MeshStandardMaterial({ color: 0x3A2A1A, roughness: 0.95 }));
+            wStaff.position.set(-0.45, 1.0, 0); wStaff.rotation.z = 0.12; group.add(wStaff);
+        }
+
+        if (npcId === 'desert_merchant') {
+            // Head wrap / turban
+            const turban = new THREE.Mesh(new THREE.SphereGeometry(0.24, 6, 5), new THREE.MeshStandardMaterial({ color: 0xE8D8B0, roughness: 0.9 }));
+            turban.position.set(0, 1.88, 0); turban.scale.y = 0.7; group.add(turban);
+        }
+
+        if (npcId === 'ice_hermit') {
+            // Fur-trimmed hood (larger hair sphere)
+            const hood = new THREE.Mesh(new THREE.SphereGeometry(0.28, 6, 5, 0, Math.PI * 2, 0, Math.PI * 0.65), new THREE.MeshStandardMaterial({ color: 0x8899AA, roughness: 0.95 }));
+            hood.position.set(0, 1.74, 0); group.add(hood);
+            // Walking stick
+            const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.02, 1.4, 4), new THREE.MeshStandardMaterial({ color: 0x998877, roughness: 0.9 }));
+            stick.position.set(0.45, 0.9, 0); stick.rotation.z = -0.1; group.add(stick);
+        }
+
+        if (npcId === 'archaeologist') {
+            // Safari / explorer hat
+            const expBrim = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.28, 0.03, 8), new THREE.MeshStandardMaterial({ color: 0x9B7B4A, roughness: 0.9 }));
+            expBrim.position.set(0, 1.93, 0); group.add(expBrim);
+            const expCrown = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.17, 0.1, 6), new THREE.MeshStandardMaterial({ color: 0x8B6B3A, roughness: 0.9 }));
+            expCrown.position.set(0, 2.0, 0); group.add(expCrown);
+            // Brush tool in hand
+            const brush = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.3, 4), new THREE.MeshStandardMaterial({ color: 0x886644 }));
+            brush.position.set(-0.42, 0.7, -0.05); brush.rotation.z = -0.3; group.add(brush);
+        }
+
+        if (npcId === 'dungeon_guide') {
+            // Lantern in hand (small glowing box)
+            const lanternHandle = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.15, 4), new THREE.MeshStandardMaterial({ color: 0x666666, metalness: 0.5 }));
+            lanternHandle.position.set(-0.42, 0.8, -0.05); group.add(lanternHandle);
+            const lanternBody = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.1, 0.08), new THREE.MeshStandardMaterial({ color: 0xFFCC44, emissive: 0xFFAA22, emissiveIntensity: 0.6 }));
+            lanternBody.position.set(-0.42, 0.7, -0.05); group.add(lanternBody);
         }
         return group;
     }
@@ -1251,15 +1375,24 @@ export class ProceduralAssets {
         const foundationMat = this.materials.stoneGray;
 
         if (type === 'house' || type === 'shop') {
-            const walls = new THREE.Mesh(new THREE.BoxGeometry(6, 3, 5), this.materials.woodWall);
-            walls.position.y = 1.5; walls.castShadow = true; walls.receiveShadow = true; g.add(walls);
+            const wallMat = new THREE.MeshStandardMaterial({ color: 0x8B6914, roughness: 0.9, side: THREE.DoubleSide });
+            const floorMat = new THREE.MeshStandardMaterial({ color: 0x5C4033, roughness: 0.95 });
+            // Floor
+            const floor = new THREE.Mesh(new THREE.PlaneGeometry(6, 5), floorMat);
+            floor.rotation.x = -Math.PI / 2; floor.position.y = 0.05; floor.receiveShadow = true; g.add(floor);
+            // Walls with doorway
+            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(6, 3, 0.2), wallMat), 0, 1.5, 2.5));   // back
+            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(0.2, 3, 5), wallMat), -3, 1.5, 0));     // left
+            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(0.2, 3, 5), wallMat), 3, 1.5, 0));      // right
+            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(1.8, 3, 0.2), wallMat), -2.1, 1.5, -2.5)); // front-L
+            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(1.8, 3, 0.2), wallMat), 2.1, 1.5, -2.5));  // front-R
+            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.3, 0.2), wallMat), 0, 2.85, -2.5)); // lintel
             // Stone foundation strip
             const foundation = new THREE.Mesh(new THREE.BoxGeometry(6.3, 0.3, 5.3), foundationMat);
             foundation.position.y = 0.15; g.add(foundation);
             const rs = new THREE.Shape(); rs.moveTo(-3.5, 0); rs.lineTo(0, 2.5); rs.lineTo(3.5, 0); rs.lineTo(-3.5, 0);
             const roof = new THREE.Mesh(new THREE.ExtrudeGeometry(rs, { depth: 5.5, bevelEnabled: false }), this.materials.roof);
             roof.position.set(0, 3, -2.75); roof.castShadow = true; g.add(roof);
-            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(1.2, 2.2, 0.1), this.materials.door), 0, 1.1, -2.55));
             // Windows on front and back
             for (const side of [-1, 1]) {
                 for (const face of [-1, 1]) {
@@ -1276,15 +1409,64 @@ export class ProceduralAssets {
                     g.add(frame);
                 }
             }
+            // ── Interior furniture ──
+            if (type === 'shop') {
+                // Shop counter
+                const barMat = new THREE.MeshStandardMaterial({ color: 0x4A3728, roughness: 0.85 });
+                g.add(at(new THREE.Mesh(new THREE.BoxGeometry(4, 0.9, 0.5), barMat), 0, 0.45, 1.5));
+                g.add(at(new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.06, 0.6), barMat), 0, 0.93, 1.5));
+                // Shelves on back wall
+                const shelfMat = new THREE.MeshStandardMaterial({ color: 0x6B4226, roughness: 0.9 });
+                for (const sx of [-1.8, 0, 1.8]) {
+                    g.add(at(new THREE.Mesh(new THREE.BoxGeometry(1.4, 2, 0.3), shelfMat), sx, 1, 2.3));
+                }
+                // Crate near door
+                g.add(at(new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.6), shelfMat), -2.2, 0.3, -1.5));
+                g.add(at(new THREE.PointLight(0xFFDD99, 0.5, 8), 0, 2.5, 0));
+            } else {
+                // House: bed, table, bookshelf
+                const furnMat = new THREE.MeshStandardMaterial({ color: 0x6B4226, roughness: 0.9 });
+                const bedMat = new THREE.MeshStandardMaterial({ color: 0x884422, roughness: 0.9 });
+                const blanketMat = new THREE.MeshStandardMaterial({ color: 0xCC8844, roughness: 0.95 });
+                // Bed frame + blanket
+                g.add(at(new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.4, 2), bedMat), -1.8, 0.2, 1.2));
+                g.add(at(new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.08, 1.8), blanketMat), -1.8, 0.42, 1.1));
+                // Pillow
+                g.add(at(new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.12, 0.35), new THREE.MeshStandardMaterial({ color: 0xDDCCBB })), -1.8, 0.48, 2.0));
+                // Table + chair
+                g.add(at(new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.06, 0.8), furnMat), 1.5, 0.62, 1));
+                g.add(at(new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.6, 4), furnMat), 1.5, 0.3, 1));
+                g.add(at(new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.5, 0.4), furnMat), 1.5, 0.25, 0.2));
+                // Bookshelf
+                g.add(at(new THREE.Mesh(new THREE.BoxGeometry(1.5, 2, 0.3), furnMat), -1.5, 1, 2.3));
+                // Rug
+                const rugMat = new THREE.MeshStandardMaterial({ color: 0xAA5533, roughness: 0.95 });
+                const rug = new THREE.Mesh(new THREE.PlaneGeometry(2, 1.5), rugMat);
+                rug.rotation.x = -Math.PI / 2; rug.position.set(0, 0.06, 0); g.add(rug);
+                g.add(at(new THREE.PointLight(0xFFDD88, 0.4, 6), 0, 2.5, 0));
+            }
         } else if (type === 'castle') {
-            const keep = new THREE.Mesh(new THREE.BoxGeometry(12, 8, 10), this.materials.castleStone);
-            keep.position.y = 4; keep.castShadow = true; keep.receiveShadow = true; g.add(keep);
+            const castleWallMat = new THREE.MeshStandardMaterial({ color: 0xAAAAAA, roughness: 0.85, side: THREE.DoubleSide });
+            const castleFloorMat = new THREE.MeshStandardMaterial({ color: 0x666666, roughness: 0.95 });
+            // Floor
+            const cFloor = new THREE.Mesh(new THREE.PlaneGeometry(12, 10), castleFloorMat);
+            cFloor.rotation.x = -Math.PI / 2; cFloor.position.y = 0.05; cFloor.receiveShadow = true; g.add(cFloor);
+            // Walls with doorway
+            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(12, 8, 0.3), castleWallMat), 0, 4, 5));    // back
+            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(0.3, 8, 10), castleWallMat), -6, 4, 0));   // left
+            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(0.3, 8, 10), castleWallMat), 6, 4, 0));    // right
+            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(4.5, 8, 0.3), castleWallMat), -3.75, 4, -5)); // front-L
+            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(4.5, 8, 0.3), castleWallMat), 3.75, 4, -5));  // front-R
+            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(3, 0.5, 0.3), castleWallMat), 0, 7.75, -5));  // lintel
+            // Corner towers
             for (const [cx, cz] of [[-6,-5],[6,-5],[-6,5],[6,5]]) {
                 const t = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.8, 10, 8), this.materials.castleStone);
                 t.position.set(cx, 5, cz); t.castShadow = true; g.add(t);
                 g.add(at(new THREE.Mesh(new THREE.ConeGeometry(2, 3, 8), this.materials.roof), cx, 11.5, cz));
             }
+            // Door
             g.add(at(new THREE.Mesh(new THREE.BoxGeometry(3, 4, 0.5), this.materials.door), 0, 2, -5.25));
+            // Battlements
             for (let i = -4; i <= 4; i += 2) {
                 const m = new THREE.Mesh(new THREE.BoxGeometry(1, 1.5, 0.8), this.materials.castleStone);
                 m.position.set(i, 8.75, -5); g.add(m); const m2 = m.clone(); m2.position.z = 5; g.add(m2);
@@ -1297,6 +1479,36 @@ export class ProceduralAssets {
             // Stone foundation
             const castleBase = new THREE.Mesh(new THREE.BoxGeometry(12.5, 0.5, 10.5), new THREE.MeshStandardMaterial({ color: 0x777777, roughness: 0.95 }));
             castleBase.position.y = 0.25; g.add(castleBase);
+            // ── Castle interior furniture ──
+            const cFurnMat = new THREE.MeshStandardMaterial({ color: 0x6B4226, roughness: 0.9 });
+            // Long table + benches
+            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(6, 0.08, 1.5), cFurnMat), 0, 0.8, 0));
+            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.8, 0.15), cFurnMat), -2.5, 0.4, -0.6));
+            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.8, 0.15), cFurnMat), 2.5, 0.4, -0.6));
+            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.8, 0.15), cFurnMat), -2.5, 0.4, 0.6));
+            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.8, 0.15), cFurnMat), 2.5, 0.4, 0.6));
+            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(5, 0.06, 0.3), cFurnMat), 0, 0.4, -1.2)); // bench front
+            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(5, 0.06, 0.3), cFurnMat), 0, 0.4, 1.2));  // bench back
+            // Throne at back
+            const throneMat = new THREE.MeshStandardMaterial({ color: 0x8B0000, roughness: 0.8 });
+            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.5, 0.8), throneMat), 0, 0.25, 3.8));
+            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.6, 0.15), throneMat), 0, 1.3, 4.15)); // backrest
+            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.8, 0.8), throneMat), -0.52, 0.65, 3.8)); // armrest L
+            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.8, 0.8), throneMat), 0.52, 0.65, 3.8));  // armrest R
+            // Weapon racks on side walls
+            const rackMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.6, metalness: 0.4 });
+            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.5, 2), rackMat), -5.8, 2, -2));
+            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.5, 2), rackMat), 5.8, 2, -2));
+            // Fireplace on back wall
+            const fireMat = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.95 });
+            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(2, 2, 0.5), fireMat), 0, 1, 4.75));
+            g.add(at(new THREE.PointLight(0xFF6633, 0.4, 6), 0, 0.8, 4.2)); // fireplace glow
+            // Banners on side walls
+            const bannerMat = new THREE.MeshStandardMaterial({ color: 0xCC2222, roughness: 0.9, side: THREE.DoubleSide });
+            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(0.05, 2, 0.8), bannerMat), -5.85, 5, 2));
+            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(0.05, 2, 0.8), bannerMat), 5.85, 5, 2));
+            // Chandelier light
+            g.add(at(new THREE.PointLight(0xFFCC88, 0.7, 15), 0, 6, 0));
         } else if (type === 'furnace') {
             const base = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2), this.materials.furnaceBrick);
             base.position.y = 1; base.castShadow = true; g.add(base);
@@ -1316,18 +1528,30 @@ export class ProceduralAssets {
             g._entityRef = { type: 'anvil' };
             return g;
         } else if (type === 'church') {
-            const walls = new THREE.Mesh(new THREE.BoxGeometry(5, 4, 7), this.materials.churchWhite);
-            walls.position.y = 2; walls.castShadow = true; g.add(walls);
+            const churchWallMat = new THREE.MeshStandardMaterial({ color: 0xEEEEDD, roughness: 0.9, side: THREE.DoubleSide });
+            const churchFloorMat = new THREE.MeshStandardMaterial({ color: 0x777777, roughness: 0.95 });
+            // Floor
+            const chFloor = new THREE.Mesh(new THREE.PlaneGeometry(5, 7), churchFloorMat);
+            chFloor.rotation.x = -Math.PI / 2; chFloor.position.y = 0.05; chFloor.receiveShadow = true; g.add(chFloor);
+            // Walls with doorway
+            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(5, 4, 0.2), churchWallMat), 0, 2, 3.5));     // back
+            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(0.2, 4, 7), churchWallMat), -2.5, 2, 0));    // left
+            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(0.2, 4, 7), churchWallMat), 2.5, 2, 0));     // right
+            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(1.5, 4, 0.2), churchWallMat), -1.75, 2, -3.5)); // front-L
+            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(1.5, 4, 0.2), churchWallMat), 1.75, 2, -3.5));  // front-R
+            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(2, 0.3, 0.2), churchWallMat), 0, 3.85, -3.5));  // lintel
             // Stone foundation
             const churchBase = new THREE.Mesh(new THREE.BoxGeometry(5.3, 0.3, 7.3), foundationMat);
             churchBase.position.y = 0.15; g.add(churchBase);
+            // Roof + steeple + cross (unchanged)
             const roof = new THREE.Mesh(new THREE.ConeGeometry(4, 3, 4), this.materials.roof);
             roof.position.y = 5.5; roof.rotation.y = Math.PI / 4; g.add(roof);
             const st = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.5, 3, 4), this.materials.churchWhite);
             st.position.set(0, 5, -2); g.add(st);
             const crossG = new THREE.Group();
-            crossG.add(new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.6, 0.06), new THREE.MeshStandardMaterial({ color: 0xFFD700 })));
-            const carm = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.06, 0.06), new THREE.MeshStandardMaterial({ color: 0xFFD700 }));
+            const goldMat = new THREE.MeshStandardMaterial({ color: 0xFFD700 });
+            crossG.add(new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.6, 0.06), goldMat));
+            const carm = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.06, 0.06), goldMat);
             carm.position.y = 0.15; crossG.add(carm);
             crossG.position.set(0, 6.8, -2); g.add(crossG);
             // Stained glass windows on side walls
@@ -1339,6 +1563,27 @@ export class ProceduralAssets {
                     g.add(win);
                 }
             }
+            // ── Church interior furniture ──
+            // Altar at back
+            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(2, 1, 0.8), churchFloorMat), 0, 0.5, 2.8));
+            g.add(at(new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.05, 0.6), goldMat), 0, 1.03, 2.8)); // golden cloth
+            // Pew rows
+            const pewMat = new THREE.MeshStandardMaterial({ color: 0x6B4226, roughness: 0.9 });
+            for (const pz of [-2.2, -1.2, -0.2, 0.8]) {
+                g.add(at(new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.06, 0.3), pewMat), 0, 0.45, pz)); // seat
+                g.add(at(new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.5, 0.06), pewMat), 0, 0.5, pz - 0.15)); // backrest
+                g.add(at(new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.45, 4), pewMat), -1.5, 0.22, pz));
+                g.add(at(new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.45, 4), pewMat), 1.5, 0.22, pz));
+            }
+            // Candle stands near altar
+            const candleMat = new THREE.MeshStandardMaterial({ color: 0xCCBB88, roughness: 0.8 });
+            for (const cx of [-1.5, 1.5]) {
+                g.add(at(new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.06, 1.2, 6), candleMat), cx, 0.6, 2.8));
+                g.add(at(new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.15, 4), new THREE.MeshBasicMaterial({ color: 0xFFEE88 })), cx, 1.27, 2.8));
+                g.add(at(new THREE.PointLight(0xFFCC44, 0.3, 5), cx, 1.4, 2.8));
+            }
+            // Main interior light
+            g.add(at(new THREE.PointLight(0xFFEECC, 0.5, 10), 0, 3.5, 0));
             g.userData = { type: 'church', interactable: true, name: 'Church Altar' };
             g._entityRef = { type: 'church' };
             return g;

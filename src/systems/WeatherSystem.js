@@ -93,34 +93,71 @@ export class WeatherSystem {
     }
 
     _flashLightning() {
+        // Flash the PointLight via particle system
         if (this.game.particleSystem) {
             this.game.particleSystem.flashLightning();
         }
-        // Thunder sound after short delay
+
+        // Also flash the ambient light for full-scene illumination
+        const engine = this.game.engine;
+        if (engine && engine.ambientLight) {
+            const amb = engine.ambientLight;
+            const originalIntensity = amb.intensity;
+
+            // Clear previous ambient flash timers
+            for (const t of (this._ambientTimers || [])) clearTimeout(t);
+            this._ambientTimers = [];
+
+            // Flash ambient bright white
+            amb.intensity = 1.8;
+            this._ambientTimers.push(setTimeout(() => { amb.intensity = 0.5; }, 60));
+            this._ambientTimers.push(setTimeout(() => { amb.intensity = 1.2; }, 140));
+            this._ambientTimers.push(setTimeout(() => { amb.intensity = 0.7; }, 190));
+            this._ambientTimers.push(setTimeout(() => { amb.intensity = originalIntensity; }, 400));
+        }
+
+        // Thunder sound after short delay (simulates distance)
+        const thunderDelay = 500 + Math.random() * 1500;
         setTimeout(() => {
             this._playThunder();
-        }, 500 + Math.random() * 1500);
+        }, thunderDelay);
     }
 
     _playThunder() {
         const audio = this.game.audio;
         audio._init();
         const ctx = audio.ctx;
-        // Short burst of low-freq noise for thunder
-        const bufSize = Math.floor(ctx.sampleRate * 0.8);
+
+        // Longer rumble with a sharp crack followed by rolling echo
+        const duration = 1.5 + Math.random() * 1.0;
+        const bufSize = Math.floor(ctx.sampleRate * duration);
         const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
         const data = buf.getChannelData(0);
+
         for (let i = 0; i < bufSize; i++) {
             const t = i / bufSize;
-            data[i] = (Math.random() * 2 - 1) * (1 - t) * 0.6;
+            // Sharp initial crack (first 10%) then rolling rumble decay
+            const envelope = t < 0.1
+                ? Math.pow(1 - t / 0.1, 0.3)    // sharp crack
+                : 0.4 * Math.pow(1 - (t - 0.1) / 0.9, 1.5); // rolling decay
+            // Add subtle warble to the rumble
+            const warble = 1 + 0.3 * Math.sin(t * 25);
+            data[i] = (Math.random() * 2 - 1) * envelope * warble * 0.7;
         }
+
         const src = ctx.createBufferSource();
         src.buffer = buf;
+
+        // Low-pass filter for deep rumble
         const filter = ctx.createBiquadFilter();
         filter.type = 'lowpass';
-        filter.frequency.value = 400;
+        filter.frequency.value = 350;
+        filter.Q.value = 0.7;
+
+        // Gain
         const gain = ctx.createGain();
-        gain.gain.value = 0.15;
+        gain.gain.value = 0.18;
+
         src.connect(filter).connect(gain).connect(audio.dest);
         src.start();
     }
