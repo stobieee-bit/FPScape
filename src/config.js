@@ -800,7 +800,7 @@ export const CONFIG = {
 
     NPCS: {
         hans: {
-            name: 'Hans', x: -2, z: -10,
+            name: 'Hans', x: -2, z: -12,
             quest: 'cooks_assistant',
             dialogues: {
                 quest_offer: [
