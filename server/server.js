@@ -4,6 +4,7 @@ const path = require('path');
 const { WebSocketServer } = require('ws');
 
 const PORT = process.env.PORT || 3000;
+const DEPLOY_VERSION = 'asterian-clarity-ae1e7bc';
 
 // ── MIME types for static file serving ───────────────────────────────
 const MIME = {
@@ -61,10 +62,16 @@ const httpServer = http.createServer((req, res) => {
             res.writeHead(404); res.end('Not found');
             return;
         }
-        const headers = { 'Content-Type': mime };
+        const headers = {
+            'Content-Type': mime,
+            'X-Asterian-Build': DEPLOY_VERSION,
+        };
         if (lowerPath.endsWith('.br')) headers['Content-Encoding'] = 'br';
         if (lowerPath.endsWith('.gz')) headers['Content-Encoding'] = 'gzip';
-        if (lowerPath.includes('/game/build/') || lowerPath.includes('\\game\\build\\')) {
+        if (lowerPath.endsWith('/game/index.html') || lowerPath.endsWith('\\game\\index.html')
+            || lowerPath.endsWith('/game/templatedata/style.css') || lowerPath.endsWith('\\game\\templatedata\\style.css')) {
+            headers['Cache-Control'] = 'no-cache, max-age=0, must-revalidate';
+        } else if (lowerPath.includes('/game/build/') || lowerPath.includes('\\game\\build\\')) {
             headers['Cache-Control'] = 'public, max-age=31536000, immutable';
         }
         res.writeHead(200, headers);
