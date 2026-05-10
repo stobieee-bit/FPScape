@@ -4,7 +4,7 @@ const path = require('path');
 const { WebSocketServer } = require('ws');
 
 const PORT = process.env.PORT || 3000;
-const DEPLOY_VERSION = 'asterian-clarity-ae1e7bc';
+const DEPLOY_VERSION = 'asterian-terrain-camera-20260510';
 
 // ── MIME types for static file serving ───────────────────────────────
 const MIME = {
@@ -72,7 +72,7 @@ const httpServer = http.createServer((req, res) => {
             || lowerPath.endsWith('/game/templatedata/style.css') || lowerPath.endsWith('\\game\\templatedata\\style.css')) {
             headers['Cache-Control'] = 'no-cache, max-age=0, must-revalidate';
         } else if (lowerPath.includes('/game/build/') || lowerPath.includes('\\game\\build\\')) {
-            headers['Cache-Control'] = 'public, max-age=31536000, immutable';
+            headers['Cache-Control'] = 'no-cache, max-age=0, must-revalidate';
         }
         res.writeHead(200, headers);
         res.end(data);

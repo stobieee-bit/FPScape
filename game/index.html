@@ -54,12 +54,13 @@
       }
 
       var buildUrl = "Build";
-      var loaderUrl = buildUrl + "/game.loader.js";
+      var buildStamp = "20260510234111";
+      var loaderUrl = buildUrl + "/game.loader.js?v=" + buildStamp;
       var config = {
         arguments: [],
-        dataUrl: buildUrl + "/game.data",
-        frameworkUrl: buildUrl + "/game.framework.js",
-        codeUrl: buildUrl + "/game.wasm",
+        dataUrl: buildUrl + "/game.data?v=" + buildStamp,
+        frameworkUrl: buildUrl + "/game.framework.js?v=" + buildStamp,
+        codeUrl: buildUrl + "/game.wasm?v=" + buildStamp,
         streamingAssetsUrl: "StreamingAssets",
         companyName: "Asterian",
         productName: "Asterian Link",
