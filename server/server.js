@@ -10,11 +10,20 @@ const MIME = {
     '.html': 'text/html',
     '.css': 'text/css',
     '.js': 'application/javascript',
+    '.mjs': 'application/javascript',
     '.json': 'application/json',
     '.png': 'image/png',
     '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
     '.svg': 'image/svg+xml',
     '.ico': 'image/x-icon',
+    '.wasm': 'application/wasm',
+    '.data': 'application/octet-stream',
+    '.symbols.json': 'application/octet-stream',
+    '.unityweb': 'application/octet-stream',
+    '.mem': 'application/octet-stream',
+    '.framework.js': 'application/javascript',
+    '.loader.js': 'application/javascript',
 };
 
 // Static files root — one level up from server/
@@ -23,7 +32,12 @@ const STATIC_ROOT = path.join(__dirname, '..');
 // ── HTTP server (serves the game files) ──────────────────────────────
 const httpServer = http.createServer((req, res) => {
     let urlPath = decodeURIComponent(req.url.split('?')[0]);
-    if (urlPath === '/') urlPath = '/index.html';
+    if (urlPath === '/' || urlPath === '/game') {
+        res.writeHead(302, { Location: '/game/' });
+        res.end();
+        return;
+    }
+    if (urlPath === '/game/') urlPath = '/game/index.html';
 
     // Only serve files inside the game root (no traversal)
     const filePath = path.join(STATIC_ROOT, urlPath);
@@ -36,15 +50,24 @@ const httpServer = http.createServer((req, res) => {
         res.writeHead(403); res.end('Forbidden'); return;
     }
 
+    const lowerPath = filePath.toLowerCase();
     const ext = path.extname(filePath).toLowerCase();
-    const mime = MIME[ext] || 'application/octet-stream';
+    const mime = MIME[ext]
+        || Object.entries(MIME).find(([suffix]) => lowerPath.endsWith(suffix))?.[1]
+        || 'application/octet-stream';
 
     fs.readFile(filePath, (err, data) => {
         if (err) {
             res.writeHead(404); res.end('Not found');
             return;
         }
-        res.writeHead(200, { 'Content-Type': mime });
+        const headers = { 'Content-Type': mime };
+        if (lowerPath.endsWith('.br')) headers['Content-Encoding'] = 'br';
+        if (lowerPath.endsWith('.gz')) headers['Content-Encoding'] = 'gzip';
+        if (lowerPath.includes('/game/build/') || lowerPath.includes('\\game\\build\\')) {
+            headers['Cache-Control'] = 'public, max-age=31536000, immutable';
+        }
+        res.writeHead(200, headers);
         res.end(data);
     });
 });
