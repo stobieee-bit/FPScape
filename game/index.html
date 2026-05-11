@@ -54,7 +54,7 @@
       }
 
       var buildUrl = "Build";
-      var buildStamp = "20260510234111";
+      var buildStamp = "20260511123635";
       var loaderUrl = buildUrl + "/game.loader.js?v=" + buildStamp;
       var config = {
         arguments: [],
@@ -78,6 +78,7 @@
       const rawPixelRatio = window.devicePixelRatio || 1;
       config.devicePixelRatio = Math.min(Math.max(rawPixelRatio, isMobile ? 1 : 1.35), isMobile ? 1.5 : 1.75);
       config.matchWebGLToCanvasSize = true;
+      config.autoSyncPersistentDataPath = true;
 
       function resizeCanvasToViewport() {
         canvas.style.width = "100vw";

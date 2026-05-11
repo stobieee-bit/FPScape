@@ -4,7 +4,7 @@ const path = require('path');
 const { WebSocketServer } = require('ws');
 
 const PORT = process.env.PORT || 3000;
-const DEPLOY_VERSION = 'asterian-terrain-camera-20260510';
+const DEPLOY_VERSION = 'asterian-profile-terrain-20260511';
 
 // ── MIME types for static file serving ───────────────────────────────
 const MIME = {
