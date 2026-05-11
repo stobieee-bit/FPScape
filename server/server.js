@@ -4,7 +4,7 @@ const path = require('path');
 const { WebSocketServer } = require('ws');
 
 const PORT = process.env.PORT || 3000;
-const DEPLOY_VERSION = 'asterian-biome-landforms-20260511';
+const DEPLOY_VERSION = 'asterian-v0.4.1-mp-chat-20260511';
 
 // ── MIME types for static file serving ───────────────────────────────
 const MIME = {
@@ -200,6 +200,18 @@ function broadcastAll(data) {
     }
 }
 
+function sanitizeToken(value, maxLength = 32) {
+    return String(value || '').replace(/[^a-zA-Z0-9_ -]/g, '').trim().slice(0, maxLength);
+}
+
+function sanitizeChat(value) {
+    return String(value || '')
+        .replace(/[\r\n\t]+/g, ' ')
+        .replace(/\s{2,}/g, ' ')
+        .trim()
+        .slice(0, 180);
+}
+
 function getPlayerSnapshot(state) {
     return {
         id: state.id,
@@ -212,6 +224,7 @@ function getPlayerSnapshot(state) {
         equipment: state.equipment,
         combatLevel: state.combatLevel,
         isRunning: state.isRunning,
+        style: state.style || 'nano',
     };
 }
 
@@ -228,6 +241,7 @@ wss.on('connection', (ws) => {
         equipment: { weapon: null, shield: null, body: null, legs: null, feet: null, head: null },
         combatLevel: 3,
         isRunning: false,
+        style: 'nano',
         lastUpdate: Date.now(),
     };
 
@@ -247,6 +261,7 @@ wss.on('connection', (ws) => {
         type: 'welcome',
         id,
         name,
+        build: DEPLOY_VERSION,
         players: existingPlayers,
     });
 
@@ -268,7 +283,7 @@ wss.on('connection', (ws) => {
 
         if (data.type === 'set_name') {
             // Player chose a custom name — sanitize and update
-            let custom = String(data.name || '').replace(/[^a-zA-Z0-9_ -]/g, '').trim().slice(0, 16);
+            let custom = sanitizeToken(data.name, 18);
             if (custom.length >= 1) {
                 state.name = custom;
                 send(ws, { type: 'name_confirmed', name: custom });
@@ -286,6 +301,7 @@ wss.on('connection', (ws) => {
             state.equipment = data.equipment ?? state.equipment;
             state.combatLevel = data.combatLevel ?? state.combatLevel;
             state.isRunning = data.isRunning ?? state.isRunning;
+            state.style = sanitizeToken(data.style || state.style || 'nano', 16);
             state.lastUpdate = Date.now();
 
             broadcast({
@@ -294,7 +310,7 @@ wss.on('connection', (ws) => {
             }, ws);
 
         } else if (data.type === 'chat') {
-            let text = String(data.text || '').slice(0, 200).trim();
+            let text = sanitizeChat(data.text);
             if (!text) return;
 
             const ts = new Date().toLocaleTimeString();
