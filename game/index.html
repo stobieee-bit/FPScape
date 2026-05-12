@@ -54,7 +54,7 @@
       }
 
       var buildUrl = "Build";
-      var buildStamp = "20260512194546";
+      var buildStamp = "20260512200911";
       var loaderUrl = buildUrl + "/RenderWebGL.loader.js?v=" + buildStamp;
       var config = {
         arguments: [],
@@ -74,11 +74,24 @@
         // },
       };
 
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      const userAgent = navigator.userAgent || "";
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(userAgent);
+      const isEdge = /Edg\//i.test(userAgent) && !/OPR\//i.test(userAgent);
       const rawPixelRatio = window.devicePixelRatio || 1;
-      config.devicePixelRatio = Math.min(Math.max(rawPixelRatio, isMobile ? 1 : 1.35), isMobile ? 1.5 : 1.75);
+      const desktopFloor = isEdge ? 1.0 : 1.25;
+      const desktopCeiling = isEdge ? 1.0 : 1.55;
+      const mobileCeiling = isEdge ? 1.0 : 1.35;
+      config.devicePixelRatio = Math.min(Math.max(rawPixelRatio, isMobile ? 1 : desktopFloor), isMobile ? mobileCeiling : desktopCeiling);
       config.matchWebGLToCanvasSize = true;
       config.autoSyncPersistentDataPath = true;
+      if (isEdge) {
+        config.webglContextAttributes = {
+          preserveDrawingBuffer: false,
+          powerPreference: "high-performance",
+          antialias: false,
+          desynchronized: true
+        };
+      }
 
       function resizeCanvasToViewport() {
         canvas.style.width = "100vw";
