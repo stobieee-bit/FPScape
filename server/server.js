@@ -4,7 +4,7 @@ const path = require('path');
 const { WebSocketServer } = require('ws');
 
 const PORT = process.env.PORT || 3000;
-const DEPLOY_VERSION = 'asterian-v0.4.22-milestone-rewards-20260512';
+const DEPLOY_VERSION = 'asterian-v0.4.23-party-chat-20260512';
 
 // ── MIME types for static file serving ───────────────────────────────
 const MIME = {
@@ -312,15 +312,18 @@ wss.on('connection', (ws) => {
         } else if (data.type === 'chat') {
             let text = sanitizeChat(data.text);
             if (!text) return;
+            const channel = sanitizeToken(data.channel || 'global', 12).toLowerCase();
+            const safeChannel = ['global', 'party', 'local'].includes(channel) ? channel : 'global';
 
             const ts = new Date().toLocaleTimeString();
-            console.log(`[${ts}] [Chat] ${state.name}: ${text}`);
+            console.log(`[${ts}] [Chat:${safeChannel}] ${state.name}: ${text}`);
 
             broadcastAll({
                 type: 'chat',
                 id: state.id,
                 name: state.name,
                 text,
+                channel: safeChannel,
             });
 
         } else if (data.type === 'trade_request') {
