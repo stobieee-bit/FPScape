@@ -4,7 +4,7 @@ const path = require('path');
 const { WebSocketServer } = require('ws');
 
 const PORT = process.env.PORT || 3000;
-const DEPLOY_VERSION = 'asterian-v0.4.60-enemy-model-detail-pass-20260514';
+const DEPLOY_VERSION = 'asterian-v0.4.61-enemy-hero-models-pass-20260514';
 
 // ── MIME types for static file serving ───────────────────────────────
 const MIME = {
