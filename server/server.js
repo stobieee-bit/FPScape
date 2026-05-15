@@ -4,7 +4,17 @@ const path = require('path');
 const { WebSocketServer } = require('ws');
 
 const PORT = process.env.PORT || 3000;
-const DEPLOY_VERSION = 'asterian-v0.4.61-enemy-hero-models-pass-20260514';
+const VERSION_FILE = path.join(__dirname, '..', 'version.json');
+const FALLBACK_DEPLOY_VERSION = 'asterian-v0.4.62-combat-qol-pass-20260515';
+
+function getDeployVersion() {
+    try {
+        const parsed = JSON.parse(fs.readFileSync(VERSION_FILE, 'utf8'));
+        return parsed.version || FALLBACK_DEPLOY_VERSION;
+    } catch {
+        return FALLBACK_DEPLOY_VERSION;
+    }
+}
 
 // ── MIME types for static file serving ───────────────────────────────
 const MIME = {
@@ -64,7 +74,7 @@ const httpServer = http.createServer((req, res) => {
         }
         const headers = {
             'Content-Type': mime,
-            'X-Asterian-Build': DEPLOY_VERSION,
+            'X-Asterian-Build': getDeployVersion(),
         };
         if (lowerPath.endsWith('.br')) headers['Content-Encoding'] = 'br';
         if (lowerPath.endsWith('.gz')) headers['Content-Encoding'] = 'gzip';
@@ -261,7 +271,7 @@ wss.on('connection', (ws) => {
         type: 'welcome',
         id,
         name,
-        build: DEPLOY_VERSION,
+        build: getDeployVersion(),
         players: existingPlayers,
     });
 
