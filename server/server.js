@@ -5,7 +5,7 @@ const { WebSocketServer } = require('ws');
 
 const PORT = process.env.PORT || 3000;
 const VERSION_FILE = path.join(__dirname, '..', 'version.json');
-const FALLBACK_DEPLOY_VERSION = 'asterian-v0.4.62-combat-qol-pass-20260515';
+const FALLBACK_DEPLOY_VERSION = 'asterian-v0.4.63-insectoid-enemy-pass-20260516';
 
 function getDeployVersion() {
     try {
